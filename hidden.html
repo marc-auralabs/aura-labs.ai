@@ -1,0 +1,614 @@
+.scout-domain:nth-child(4) {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA Framework Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .title {
+            font-size: 2.5em;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+        
+        .architecture-diagram {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            grid-template-rows: auto auto auto;
+            gap: 30px;
+            align-items: start;
+            margin-bottom: 40px;
+        }
+        
+        /* Scout Section */
+        .scout-section {
+            grid-column: 1;
+            grid-row: 1 / -1;
+            background: linear-gradient(135deg, #1e40af, #3730a3);
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
+        }
+        
+        .scout-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #93c5fd;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .scout-description {
+            font-size: 0.9em;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        .scout-domains {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .scout-domain {
+            background: rgba(147, 197, 253, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            border-left: 3px solid #60a5fa;
+        }
+        
+        .scout-domain:first-child {
+            border-left-color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+        }
+        
+        .domain-title {
+            font-size: 0.9em;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 4px;
+        }
+        
+        .domain-subtitle {
+            font-size: 0.75em;
+            color: #cbd5e1;
+        }
+        
+        .scout-capabilities {
+            list-style: none;
+        }
+        
+        .scout-capabilities li {
+            background: rgba(147, 197, 253, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            border-left: 3px solid #60a5fa;
+        }
+        
+        /* AURA Core Section */
+        .aura-core {
+            grid-column: 2;
+            grid-row: 2;
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            border-radius: 25px;
+            padding: 30px;
+            border: 3px solid #8b5cf6;
+            box-shadow: 0 25px 50px rgba(139, 92, 246, 0.3);
+            position: relative;
+        }
+        
+        .aura-title {
+            font-size: 2em;
+            font-weight: 800;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .aura-domains {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .aura-domain {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .aura-domain .domain-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        .domain-capabilities {
+            font-size: 0.8em;
+            color: #e2e8f0;
+            line-height: 1.4;
+        }
+        
+        .aura-capabilities {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .aura-capability {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.8em;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .aura-behavioral {
+            background: rgba(34, 197, 94, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid #22c55e;
+            margin-top: 15px;
+        }
+        
+        .behavioral-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: #86efac;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .behavioral-items {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .behavioral-item {
+            font-size: 0.75em;
+            color: #dcfce7;
+            background: rgba(34, 197, 94, 0.2);
+            padding: 6px 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        /* Beacon Section */
+        .beacon-section {
+            grid-column: 3;
+            grid-row: 1 / -1;
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid #ef4444;
+            box-shadow: 0 20px 40px rgba(239, 68, 68, 0.2);
+        }
+        
+        .beacon-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #fca5a5;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .beacon-description {
+            font-size: 0.9em;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        .beacon-domains {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .beacon-domain {
+            background: rgba(252, 165, 165, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            border-left: 3px solid #f87171;
+        }
+        
+        .beacon-domain .domain-title {
+            font-size: 0.9em;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 4px;
+        }
+        
+        .beacon-domain .domain-subtitle {
+            font-size: 0.75em;
+            color: #cbd5e1;
+        }
+        
+        .beacon-capabilities {
+            list-style: none;
+        }
+        
+        .beacon-capabilities li {
+            background: rgba(252, 165, 165, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            border-left: 3px solid #f87171;
+        }
+        
+        /* Flow Arrows */
+        .flow-arrows {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .arrow-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .arrow {
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, #60a5fa, #8b5cf6);
+            position: relative;
+            border-radius: 2px;
+        }
+        
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid #8b5cf6;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+        
+        .flow-label {
+            font-size: 0.9em;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+        
+        .bottom-flows {
+            grid-column: 2;
+            grid-row: 3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        /* Platform Overview */
+        .platform-overview {
+            background: linear-gradient(135deg, #1f2937, #374151);
+            border-radius: 20px;
+            padding: 30px;
+            border: 2px solid #4b5563;
+            margin-bottom: 30px;
+        }
+        
+        .overview-title {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #f3f4f6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .overview-card {
+            background: rgba(75, 85, 99, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #6b7280;
+        }
+        
+        .card-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin-bottom: 10px;
+        }
+        
+        .card-description {
+            font-size: 0.9em;
+            color: #d1d5db;
+            line-height: 1.5;
+        }
+        
+        /* Hover Effects */
+        .scout-section:hover,
+        .beacon-section:hover,
+        .aura-core:hover {
+            transform: translateY(-5px);
+            transition: transform 0.3s ease;
+        }
+        
+        .aura-capability:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transition: background 0.2s ease;
+        }
+        
+        @media (max-width: 1200px) {
+            .architecture-diagram {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            
+            .scout-section {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            
+            .aura-core {
+                grid-column: 1;
+                grid-row: 2;
+            }
+            
+            .beacon-section {
+                grid-column: 1;
+                grid-row: 3;
+            }
+            
+            .flow-arrows,
+            .bottom-flows {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">AURA Framework Architecture</h1>
+            <p class="subtitle">Agent-Unified Resource Architecture for Commerce Intelligence</p>
+        </div>
+        
+        <div class="architecture-diagram">
+            <!-- Scout Section -->
+            <div class="scout-section">
+                <h2 class="scout-title">🔍 SCOUT</h2>
+                <p class="scout-description">User-Sovereign Discovery & Constraint Platform</p>
+                <div class="scout-domains">
+                    <div class="scout-domain">
+                        <div class="domain-title">🔐 Consent Management</div>
+                        <div class="domain-subtitle">Cross-cutting governance</div>
+                    </div>
+                    
+                    <div class="scout-domain">
+                        <div class="domain-title">🛡️ Privacy & Security</div>
+                        <div class="domain-subtitle">Identity, credentials, wallets, data rights</div>
+                    </div>
+                    
+                    <div class="scout-domain">
+                        <div class="domain-title">🧠 Learning & Adaptation</div>
+                        <div class="domain-subtitle">Preferences, context, intent</div>
+                    </div>
+                    
+                    <div class="scout-domain">
+                        <div class="domain-title">🎯 Constraint Engine</div>
+                        <div class="domain-subtitle">Choice filtering, scoring, breakthrough management</div>
+                    </div>
+                    
+                    <div class="scout-domain">
+                        <div class="domain-title">🤝 Agent Ecosystem</div>
+                        <div class="domain-subtitle">Integration, discovery, trust</div>
+                    </div>
+                    
+                    <div class="scout-domain">
+                        <div class="domain-title">👤 User Experience</div>
+                        <div class="domain-subtitle">Interface, personalization, sessions</div>
+                    </div>
+                    
+                    <div class="scout-domain">
+                        <div class="domain-title">💾 Data Management</div>
+                        <div class="domain-subtitle">Cache, sync, lineage</div>
+                    </div>
+                    
+                    <div class="scout-domain">
+                        <div class="domain-title">🛒 Purchase Execution</div>
+                        <div class="domain-subtitle">Discovery, intelligence, coordination</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flow Arrows Top -->
+            <div class="flow-arrows">
+                <div class="arrow-container">
+                    <span class="flow-label">Agent Network ↔</span>
+                    <div class="arrow"></div>
+                    <span class="flow-label">Data Flow</span>
+                    <div class="arrow"></div>
+                </div>
+            </div>
+            
+            <!-- AURA Core -->
+            <div class="aura-core">
+                <h2 class="aura-title">⚡ AURA CORE</h2>
+                <div class="aura-domains">
+                    <div class="aura-domain">
+                        <div class="domain-title">🔗 Client Integration & Management</div>
+                        <div class="domain-capabilities">Agent Discovery & Registration • Identity • Preferences • Payment • Shipping • Language • Risk • Trust • Reliability</div>
+                    </div>
+                    
+                    <div class="aura-domain">
+                        <div class="domain-title">🧭 Market Navigation Engine</div>
+                        <div class="domain-capabilities">Market Taxonomy • Hierarchy Traversal • Cross-Market Relationships • Dynamic Boundaries</div>
+                    </div>
+                    
+                    <div class="aura-domain">
+                        <div class="domain-title">🛡️ Policy Engine</div>
+                        <div class="domain-capabilities">Boundary Management • Agent Guidance • Negotiation Limits • Compliance Rules</div>
+                    </div>
+                    
+                    <div class="aura-domain">
+                        <div class="domain-title">🧠 Model Management</div>
+                        <div class="domain-capabilities">Prompt Interpretation • Intelligence Processing • Pattern Recognition • Decision Orchestration</div>
+                    </div>
+                </div>
+                
+                <div class="aura-behavioral">
+                    <div class="behavioral-title">Behavioral Intelligence Layer</div>
+                    <div class="behavioral-items">
+                        <div class="behavioral-item">Decision Patterns</div>
+                        <div class="behavioral-item">Purchase Timing</div>
+                        <div class="behavioral-item">Price Sensitivity</div>
+                        <div class="behavioral-item">Brand Loyalty</div>
+                        <div class="behavioral-item">Research Depth</div>
+                        <div class="behavioral-item">Social Influence</div>
+                        <div class="behavioral-item">Channel Preferences</div>
+                        <div class="behavioral-item">Urgency Levels</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flow Arrows Bottom -->
+            <div class="bottom-flows">
+                <div class="arrow-container">
+                    <div class="arrow"></div>
+                    <span class="flow-label">Action Flow</span>
+                </div>
+            </div>
+            
+            <!-- Beacon Section -->
+            <div class="beacon-section">
+                <h2 class="beacon-title">📡 BEACON</h2>
+                <p class="beacon-description">Execution & Orchestration Platform</p>
+                <div class="beacon-domains">
+                    <div class="beacon-domain">
+                        <div class="domain-title">🔄 Scout Interface</div>
+                        <div class="domain-subtitle">Intent translation & action coordination</div>
+                    </div>
+                    
+                    <div class="beacon-domain">
+                        <div class="domain-title">🎭 Autonomous Negotiation</div>
+                        <div class="domain-subtitle">Dynamic pricing & terms</div>
+                    </div>
+                    
+                    <div class="beacon-domain">
+                        <div class="domain-title">⚙️ Orchestration Integration</div>
+                        <div class="domain-subtitle">Payment • Fulfillment • Communication • Returns</div>
+                    </div>
+                    
+                    <div class="beacon-domain">
+                        <div class="domain-title">⚡ Real-Time Intelligence</div>
+                        <div class="domain-subtitle">Pattern recognition • Trigger management</div>
+                    </div>
+                    
+                    <div class="beacon-domain">
+                        <div class="domain-title">📊 Collect & Send</div>
+                        <div class="domain-subtitle">Analytics capture & data forwarding</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="platform-overview">
+            <h2 class="overview-title">Platform Capabilities Overview</h2>
+            <div class="overview-grid">
+                <div class="overview-card">
+                    <h3 class="card-title">Consent-First Architecture</h3>
+                    <p class="card-description">Scout implements consent as a foundational capability that governs all other domains - from data sharing to agent interactions to purchase decisions.</p>
+                </div>
+                
+                <div class="overview-card">
+                    <h3 class="card-title">Choice Optimization Engine</h3>
+                    <p class="card-description">Scout's Constraint Engine transforms overwhelming market choices into manageable, scored options while allowing Beacons to surface exceptional opportunities that break through constraints intelligently.</p>
+                </div>
+                
+                <div class="overview-card">
+                    <h3 class="card-title">User-Sovereign Platform</h3>
+                    <p class="card-description">Scout serves as the user's sovereign agent, managing eight key domains: consent, privacy & security, learning & adaptation, constraint engine, agent ecosystem, user experience, data management, and purchase execution.</p>
+                </div>
+                
+                <div class="overview-card">
+                    <h3 class="card-title">Intelligent Discovery</h3>
+                    <p class="card-description">Scout continuously learns from market patterns, user behavior, and product landscapes to provide increasingly precise recommendations and opportunities.</p>
+                </div>
+                
+                <div class="overview-card">
+                    <h3 class="card-title">Intelligent Commerce Orchestration</h3>
+                    <p class="card-description">AURA Core operates four primary domains: client integration & management, market navigation engine, policy engine, and model management, with behavioral intelligence as the foundation.</p>
+                </div>
+                
+                <div class="overview-card">
+                    <h3 class="card-title">Adaptive Execution Platform</h3>
+                    <p class="card-description">Beacon provides flexible orchestration from simple API calls to complex multi-system coordination, with autonomous negotiation and real-time intelligence capabilities.</p>
+                </div>
+                
+                <div class="overview-card">
+                    <h3 class="card-title">Behavioral Intelligence</h3>
+                    <p class="card-description">The system adapts to individual decision-making patterns, timing preferences, and contextual factors to optimize engagement moments.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
