@@ -331,11 +331,27 @@
     <section class="hero">
         <div class="glow-orb"></div>
         
-        <img class="logo" src="https://i.ibb.co/KpcP0XR/aura-transparent-25.png" alt="Aura Labs Logo" 
-             onload="console.log('✓ Logo loaded!')" 
-             onerror="console.error('✗ Logo failed, trying backup'); 
-                      this.src='https://i.ibb.co/KpcP0XR1.png'; 
-                      this.onerror=function(){console.error('All attempts failed'); this.style.display='none';};" />
+        <svg class="logo" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="outerGlow" cx="50%" cy="50%">
+                    <stop offset="0%" style="stop-color:#4facfe;stop-opacity:0.9" />
+                    <stop offset="40%" style="stop-color:#6366f1;stop-opacity:0.7" />
+                    <stop offset="70%" style="stop-color:#7c3aed;stop-opacity:0.4" />
+                    <stop offset="100%" style="stop-color:#3730a3;stop-opacity:0.1" />
+                </radialGradient>
+                <radialGradient id="innerGlow" cx="50%" cy="50%">
+                    <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#22d3ee;stop-opacity:0.8" />
+                    <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.6" />
+                </radialGradient>
+                <filter id="blur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+                </filter>
+            </defs>
+            <circle cx="200" cy="200" r="150" fill="url(#outerGlow)" filter="url(#blur)" />
+            <circle cx="200" cy="200" r="100" fill="url(#outerGlow)" opacity="0.8" />
+            <circle cx="200" cy="200" r="60" fill="url(#innerGlow)" />
+        </svg>
         
         <div class="hero-content">
             <h1>The Future of Commerce is Agentic</h1>
