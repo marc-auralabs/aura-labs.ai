@@ -16,6 +16,7 @@
             background: #0a0e27;
             color: #ffffff;
             overflow: hidden;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
         }
         
         /* Slide Container */
@@ -34,6 +35,7 @@
             height: 100%;
             padding: 4rem 6rem;
             position: relative;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
         }
         
         .slide.active {
@@ -414,6 +416,476 @@
             font-size: 1.2rem;
             color: #cbd5e1;
             margin: 0.5rem 0;
+        }
+        
+        /* ===== RESPONSIVE DESIGN ===== */
+        
+        /* Tablets (iPad, landscape) */
+        @media (max-width: 1024px) {
+            body {
+                overflow: auto;
+            }
+            
+            .slide {
+                padding: 3rem 4rem;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            
+            .slide.active {
+                display: block;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .slide-content {
+                padding-bottom: 4rem; /* Extra space at bottom for scroll */
+            }
+            .slide {
+                padding: 3rem 4rem;
+            }
+            
+            .slide-title {
+                font-size: 2.8rem;
+            }
+            
+            .slide-subtitle {
+                font-size: 1.3rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.8rem;
+            }
+            
+            .slide h3 {
+                font-size: 1.4rem;
+            }
+            
+            .slide p {
+                font-size: 1.1rem;
+            }
+            
+            .logo {
+                width: 220px;
+            }
+            
+            .logo-small {
+                width: 70px;
+                top: 1.5rem;
+                left: 2rem;
+            }
+            
+            .stat-number {
+                font-size: 2.8rem;
+            }
+            
+            .stat-label {
+                font-size: 1rem;
+            }
+            
+            .comparison-rate {
+                font-size: 2.5rem;
+            }
+            
+            .cta-text {
+                font-size: 1.6rem;
+            }
+            
+            .quote-text {
+                font-size: 1.3rem;
+            }
+            
+            .col-card li {
+                font-size: 0.95rem;
+            }
+        }
+        
+        /* Tablets (iPad portrait) and larger phones */
+        @media (max-width: 768px) {
+            body {
+                overflow: auto;
+            }
+            
+            .slide {
+                padding: 2rem 2rem;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            
+            .slide.active {
+                display: block;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .slide-content {
+                padding-bottom: 3rem;
+            }
+            .slide {
+                padding: 2rem 2rem;
+            }
+            
+            .slide-title {
+                font-size: 2.2rem;
+            }
+            
+            .slide-subtitle {
+                font-size: 1.1rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+            }
+            
+            .slide h3 {
+                font-size: 1.2rem;
+            }
+            
+            .slide p {
+                font-size: 0.95rem;
+                margin-bottom: 1rem;
+            }
+            
+            .logo {
+                width: 180px;
+                margin-bottom: 1.5rem;
+            }
+            
+            .logo-small {
+                width: 60px;
+                top: 1rem;
+                left: 1rem;
+            }
+            
+            /* Stack grids vertically */
+            .stats-grid,
+            .three-col {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin: 2rem 0;
+            }
+            
+            .stat-card {
+                padding: 1.5rem;
+            }
+            
+            .stat-number {
+                font-size: 2.5rem;
+            }
+            
+            .stat-label {
+                font-size: 0.95rem;
+            }
+            
+            .stat-description {
+                font-size: 0.85rem;
+            }
+            
+            /* Comparison layout */
+            .comparison-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .comparison-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .comparison-rate {
+                font-size: 2.2rem;
+            }
+            
+            .vs-text {
+                font-size: 1.5rem;
+                padding: 0.8rem 1.2rem;
+                display: inline-block;
+                margin: 0 auto;
+            }
+            
+            .cta-text {
+                font-size: 1.3rem;
+                margin: 1.5rem 0;
+            }
+            
+            .quote-block {
+                padding: 1.5rem 1.5rem;
+                margin: 1.5rem 0;
+            }
+            
+            .quote-text {
+                font-size: 1.1rem;
+            }
+            
+            .col-card {
+                padding: 1.5rem;
+            }
+            
+            .col-card h3 {
+                font-size: 1.2rem;
+            }
+            
+            .col-card li {
+                font-size: 0.9rem;
+            }
+            
+            .architecture-box {
+                padding: 1.2rem;
+                margin: 0.6rem 0;
+            }
+            
+            .architecture-box h3 {
+                font-size: 1.1rem;
+            }
+            
+            .architecture-box li {
+                font-size: 0.85rem;
+            }
+            
+            .slide-number {
+                bottom: 1rem;
+                right: 1.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .nav-hint {
+                bottom: 1rem;
+                left: 1.5rem;
+                font-size: 0.8rem;
+            }
+            
+            .source {
+                font-size: 0.75rem;
+                margin-top: 1rem;
+            }
+            
+            /* Make comparison label and description smaller */
+            .comparison-label {
+                font-size: 1.1rem;
+            }
+            
+            .comparison-desc {
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* Mobile phones (portrait) */
+        @media (max-width: 480px) {
+            body {
+                overflow: auto;
+            }
+            
+            .slide {
+                padding: 1.5rem 1.5rem;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            
+            .slide.active {
+                display: block;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .slide-content {
+                padding-bottom: 3rem;
+            }
+            .slide {
+                padding: 1.5rem 1.5rem;
+            }
+            
+            .slide-title {
+                font-size: 1.8rem;
+                margin-bottom: 1rem;
+            }
+            
+            .slide-subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 1rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.3rem;
+                margin-bottom: 0.8rem;
+            }
+            
+            .slide h3 {
+                font-size: 1rem;
+            }
+            
+            .slide p {
+                font-size: 0.85rem;
+            }
+            
+            .logo {
+                width: 140px;
+                margin-bottom: 1rem;
+            }
+            
+            .logo-small {
+                width: 50px;
+                top: 0.8rem;
+                left: 0.8rem;
+            }
+            
+            .stat-card {
+                padding: 1.2rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .stat-label {
+                font-size: 0.85rem;
+            }
+            
+            .stat-description {
+                font-size: 0.75rem;
+            }
+            
+            .comparison-card {
+                padding: 1.5rem 1rem;
+            }
+            
+            .comparison-rate {
+                font-size: 1.8rem;
+            }
+            
+            .comparison-label {
+                font-size: 1rem;
+            }
+            
+            .comparison-desc {
+                font-size: 0.8rem;
+            }
+            
+            .vs-text {
+                font-size: 1.2rem;
+                padding: 0.6rem 1rem;
+            }
+            
+            .cta-text {
+                font-size: 1.1rem;
+                margin: 1rem 0;
+            }
+            
+            .quote-block {
+                padding: 1rem 1rem;
+                margin: 1rem 0;
+            }
+            
+            .quote-text {
+                font-size: 0.95rem;
+            }
+            
+            .quote-source {
+                font-size: 0.8rem;
+            }
+            
+            .col-card {
+                padding: 1.2rem;
+            }
+            
+            .col-card h3 {
+                font-size: 1rem;
+                margin-bottom: 0.8rem;
+            }
+            
+            .col-card li {
+                font-size: 0.8rem;
+                margin-bottom: 0.6rem;
+            }
+            
+            .architecture-box {
+                padding: 1rem;
+            }
+            
+            .architecture-box h3 {
+                font-size: 0.95rem;
+            }
+            
+            .architecture-box li {
+                font-size: 0.75rem;
+            }
+            
+            .slide-number {
+                bottom: 0.8rem;
+                right: 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .nav-hint {
+                display: none; /* Hide on small screens to save space */
+            }
+            
+            .source {
+                font-size: 0.7rem;
+            }
+            
+            .contact-info p {
+                font-size: 0.95rem;
+            }
+            
+            /* Reduce glow orb size on mobile */
+            .glow-orb {
+                width: 400px;
+                height: 400px;
+            }
+        }
+        
+        /* Landscape orientation adjustments for phones */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                overflow: auto;
+            }
+            
+            .slide {
+                padding: 1rem 2rem;
+                justify-content: flex-start;
+                overflow-y: auto;
+                overflow-x: hidden;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .slide.active {
+                display: block;
+            }
+            
+            .logo {
+                width: 100px;
+            }
+            
+            .logo-small {
+                width: 40px;
+            }
+            
+            .slide-title {
+                font-size: 1.5rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .slide-subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 0.8rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.2rem;
+            }
+            
+            .stat-number {
+                font-size: 1.8rem;
+            }
+            
+            .stats-grid,
+            .three-col {
+                gap: 1rem;
+                margin: 1rem 0;
+            }
         }
     </style>
 </head>
