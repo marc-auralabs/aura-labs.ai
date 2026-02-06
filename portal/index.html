@@ -688,15 +688,99 @@
         </main>
     </div>
 
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Check authentication (localStorage for demo - use real auth in production)
-        function checkAuth() {
-            const developer = localStorage.getItem('aura_developer');
-            if (developer) {
-                const data = JSON.parse(developer);
-                showPortal(data);
-            } else {
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://umoukcmojqnsgwfywovk.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Global state
+        let currentUser = null;
+        let currentApiKey = null;
+
+        // Check authentication with Supabase
+        async function checkAuth() {
+            try {
+                // Check Supabase session
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (session?.user) {
+                    currentUser = session.user;
+                    await loadUserData(session.user);
+                    return;
+                }
+
+                // Fallback: check localStorage (for users who signed up before migration)
+                const localDev = localStorage.getItem('aura_developer');
+                if (localDev) {
+                    const data = JSON.parse(localDev);
+                    showPortal(data, null);
+                    return;
+                }
+
+                // No session found
                 showAuthGate();
+
+            } catch (error) {
+                console.error('Auth check error:', error);
+                showAuthGate();
+            }
+        }
+
+        // Load user profile and API keys from Supabase
+        async function loadUserData(user) {
+            try {
+                // Fetch profile
+                const { data: profile } = await supabase
+                    .from('developer_profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                // Fetch API keys
+                const { data: apiKeys } = await supabase
+                    .from('api_keys')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .eq('is_active', true);
+
+                // Fetch usage stats
+                const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
+                const { data: usage } = await supabase
+                    .from('usage_stats')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .eq('month', currentMonth)
+                    .single();
+
+                // Find sandbox key
+                const sandboxKey = apiKeys?.find(k => k.key_type === 'sandbox');
+                currentApiKey = sandboxKey;
+
+                // Build user data object
+                const userData = {
+                    id: user.id,
+                    email: user.email,
+                    firstName: profile?.first_name || user.user_metadata?.first_name || user.email.split('@')[0],
+                    lastName: profile?.last_name || user.user_metadata?.last_name || '',
+                    company: profile?.company || '',
+                };
+
+                // Update localStorage for consistency
+                localStorage.setItem('aura_developer', JSON.stringify(userData));
+
+                showPortal(userData, sandboxKey?.api_key, usage);
+
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                // Show portal with basic info
+                showPortal({
+                    email: user.email,
+                    firstName: user.email.split('@')[0],
+                    lastName: ''
+                }, null);
             }
         }
 
@@ -705,51 +789,111 @@
             document.getElementById('portal-content').style.display = 'none';
         }
 
-        function showPortal(userData) {
+        function showPortal(userData, apiKey, usage) {
             document.getElementById('auth-gate').classList.add('hidden');
             document.getElementById('portal-content').style.display = 'flex';
 
             // Populate user info
-            if (userData.firstName && userData.lastName) {
-                const initials = userData.firstName[0] + userData.lastName[0];
-                document.getElementById('user-initials').textContent = initials.toUpperCase();
-                document.getElementById('user-name').textContent = `${userData.firstName} ${userData.lastName}`;
+            const firstName = userData.firstName || '';
+            const lastName = userData.lastName || '';
+
+            if (firstName || lastName) {
+                const initials = (firstName[0] || '') + (lastName[0] || '');
+                document.getElementById('user-initials').textContent = initials.toUpperCase() || '??';
+                document.getElementById('user-name').textContent = `${firstName} ${lastName}`.trim() || 'Developer';
             }
 
-            // Generate a demo sandbox key
-            const sandboxKey = 'sk_test_' + generateRandomKey(24);
-            document.getElementById('sandbox-key').textContent = sandboxKey;
-        }
-
-        function generateRandomKey(length) {
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < length; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            // Display API key
+            if (apiKey) {
+                document.getElementById('sandbox-key').textContent = apiKey;
+            } else {
+                document.getElementById('sandbox-key').textContent = 'No key generated yet - refresh to retry';
             }
-            return result;
+
+            // Display usage stats
+            if (usage) {
+                document.querySelector('.stat-card:nth-child(1) .value').textContent = usage.api_calls || 0;
+                document.querySelector('.stat-card:nth-child(2) .value').textContent = usage.sessions_created || 0;
+                document.querySelector('.stat-card:nth-child(3) .value').textContent = usage.transactions || 0;
+            }
         }
 
-        function copyKey(elementId) {
+        async function copyKey(elementId) {
             const keyElement = document.getElementById(elementId);
-            navigator.clipboard.writeText(keyElement.textContent).then(() => {
+            const keyText = keyElement.textContent;
+
+            if (keyText.startsWith('No key') || keyText.startsWith('Generating')) {
+                alert('No valid API key to copy.');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(keyText);
                 alert('API key copied to clipboard!');
-            });
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = keyText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('API key copied to clipboard!');
+            }
         }
 
-        function regenerateKey(type) {
-            if (confirm('Are you sure you want to regenerate this API key? The old key will stop working immediately.')) {
-                const newKey = 'sk_test_' + generateRandomKey(24);
-                document.getElementById('sandbox-key').textContent = newKey;
-                alert('New sandbox API key generated.');
+        async function regenerateKey(type) {
+            if (!currentApiKey?.id) {
+                alert('No API key found to regenerate.');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to regenerate this API key? The old key will stop working immediately.')) {
+                return;
+            }
+
+            const keyElement = document.getElementById('sandbox-key');
+            const originalText = keyElement.textContent;
+            keyElement.textContent = 'Regenerating...';
+
+            try {
+                // Call Supabase function to regenerate key
+                const { data, error } = await supabase.rpc('regenerate_api_key', {
+                    key_id: currentApiKey.id
+                });
+
+                if (error) throw error;
+
+                keyElement.textContent = data;
+                currentApiKey.api_key = data;
+                alert('New sandbox API key generated successfully!');
+
+            } catch (error) {
+                console.error('Error regenerating key:', error);
+                keyElement.textContent = originalText;
+                alert('Failed to regenerate key: ' + error.message);
             }
         }
 
         // Logout handler
-        document.getElementById('logout-btn').addEventListener('click', function() {
+        document.getElementById('logout-btn').addEventListener('click', async function() {
             if (confirm('Sign out of developer portal?')) {
+                try {
+                    await supabase.auth.signOut();
+                } catch (e) {
+                    console.error('Logout error:', e);
+                }
                 localStorage.removeItem('aura_developer');
-                window.location.href = '../developer-signup.html';
+                window.location.href = '../developer-login.html';
+            }
+        });
+
+        // Listen for auth state changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                showAuthGate();
+            } else if (event === 'SIGNED_IN' && session) {
+                loadUserData(session.user);
             }
         });
 
