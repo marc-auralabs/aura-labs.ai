@@ -333,7 +333,7 @@
                 }
 
                 // Fetch user profile
-                const { data: profile } = await supabase
+                const { data: profile } = await supabaseClient
                     .from('developer_profiles')
                     .select('*')
                     .eq('id', data.user.id)
