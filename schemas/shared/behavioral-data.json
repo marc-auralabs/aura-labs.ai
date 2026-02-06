@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aura-labs.ai/schemas/shared/behavioral-data.json",
+  "title": "Behavioral Data",
+  "description": "Anonymized behavioral context shared during negotiation",
+  "type": "object",
+  "properties": {
+    "purchaseHistory": {
+      "type": "object",
+      "description": "Aggregated purchase behavior (no individual transactions)",
+      "properties": {
+        "totalPurchases": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of past purchases"
+        },
+        "averageOrderValue": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Average order value"
+        },
+        "categoryAffinities": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "description": "Category preference scores (0-1)"
+        },
+        "returnRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Historical return rate (0-1)"
+        }
+      }
+    },
+    "browsingBehavior": {
+      "type": "object",
+      "properties": {
+        "sessionDuration": {
+          "type": "string",
+          "enum": ["short", "medium", "long"],
+          "description": "Typical session length"
+        },
+        "comparisonShopper": {
+          "type": "boolean",
+          "description": "Tends to compare multiple options"
+        },
+        "priceConscious": {
+          "type": "boolean",
+          "description": "Sensitive to price changes"
+        }
+      }
+    },
+    "loyaltyIndicators": {
+      "type": "object",
+      "properties": {
+        "repeatCustomer": {
+          "type": "boolean",
+          "description": "Has purchased from this Beacon before"
+        },
+        "membershipTier": {
+          "type": "string",
+          "description": "Loyalty tier if applicable"
+        }
+      }
+    },
+    "trustScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Scout's trust score in the AURA network"
+    }
+  },
+  "additionalProperties": false
+}

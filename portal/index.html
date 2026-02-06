@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Portal - AURA</title>
+    <meta name="description" content="AURA Developer Portal - Access documentation, SDKs, API keys, and sandbox environment.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --text-muted: #7c7c99;
+            --bg-white: #ffffff;
+            --bg-cream: #fafaf8;
+            --bg-dark: #12121a;
+            --border: #e8e8ed;
+            --accent: #5046e5;
+            --accent-hover: #4338ca;
+            --accent-light: #7c73f7;
+            --accent-bg: #f0efff;
+            --scout-color: #2dd4b3;
+            --beacon-color: #f59e0b;
+            --core-color: #7c3aed;
+            --green: #059669;
+            --green-bg: #ecfdf5;
+            --sidebar-width: 260px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-cream);
+            color: var(--text-primary);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Auth Gate Overlay */
+        .auth-gate {
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .auth-gate.hidden {
+            display: none;
+        }
+
+        .auth-gate .lock-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--bg-cream);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-gate h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .auth-gate p {
+            color: var(--text-secondary);
+            max-width: 400px;
+            margin-bottom: 2rem;
+        }
+
+        .auth-gate .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .auth-gate .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .auth-gate .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .auth-gate .login-link {
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-gate .login-link a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Portal Layout */
+        .portal-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-dark);
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            overflow-y: auto;
+            padding: 1.5rem 0;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .sidebar-logo .mark {
+            width: 32px;
+            height: 32px;
+        }
+
+        .sidebar-logo .wordmark {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        .sidebar-logo .badge {
+            font-size: 0.625rem;
+            background: var(--accent);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            margin-left: 0.25rem;
+        }
+
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            padding: 0 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 1.5rem;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9375rem;
+            transition: all 0.15s;
+        }
+
+        .sidebar-nav a:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-nav a.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-right: 2px solid var(--accent);
+        }
+
+        .sidebar-nav .icon {
+            font-size: 1.125rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--bg-dark);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-plan {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0.25rem;
+            font-size: 1rem;
+        }
+
+        .logout-btn:hover {
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+        }
+
+        /* Dashboard Cards */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .stat-card .label {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .stat-card .sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .action-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 20px rgba(80, 70, 229, 0.1);
+        }
+
+        .action-card .icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-bg);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-card p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* API Keys Section */
+        .section-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-card h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .api-key-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-cream);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+
+        .api-key-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .api-key-label {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .api-key-value {
+            flex: 1;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .api-key-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .api-key-actions button {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .api-key-actions button:hover {
+            background: white;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .sandbox-badge {
+            background: var(--green-bg);
+            color: var(--green);
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+        }
+
+        .production-badge {
+            background: #fef3c7;
+            color: #b45309;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+        }
+
+        /* Documentation Links */
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .doc-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-cream);
+            border-radius: 8px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.15s;
+        }
+
+        .doc-link:hover {
+            background: var(--accent-bg);
+        }
+
+        .doc-link .icon {
+            font-size: 1.25rem;
+        }
+
+        .doc-link span {
+            font-size: 0.9375rem;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .docs-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .dashboard-grid,
+            .quick-actions,
+            .docs-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Gate -->
+    <div id="auth-gate" class="auth-gate">
+        <div class="lock-icon">🔐</div>
+        <h1>Developer Access Required</h1>
+        <p>Sign up for a free developer account to access the full documentation, SDKs, API keys, and sandbox environment.</p>
+        <a href="../developer-signup.html" class="btn btn-primary">Create Developer Account</a>
+        <div class="login-link">
+            Already have an account? <a href="../developer-login.html">Sign in</a>
+        </div>
+    </div>
+
+    <!-- Portal Content -->
+    <div id="portal-content" class="portal-layout" style="display: none;">
+        <aside class="sidebar">
+            <a href="../index.html" class="sidebar-logo">
+                <div class="mark">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="22" fill="#3730a3"/>
+                        <circle cx="24" cy="24" r="16" fill="#5046e5"/>
+                        <circle cx="24" cy="24" r="10" fill="#818cf8"/>
+                        <circle cx="24" cy="24" r="5" fill="#c7d2fe"/>
+                    </svg>
+                </div>
+                <span class="wordmark">AURA</span>
+                <span class="badge">DEV</span>
+            </a>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Overview</div>
+                <ul class="sidebar-nav">
+                    <li><a href="index.html" class="active"><span class="icon">📊</span> Dashboard</a></li>
+                    <li><a href="#"><span class="icon">🔑</span> API Keys</a></li>
+                    <li><a href="#"><span class="icon">📈</span> Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Documentation</div>
+                <ul class="sidebar-nav">
+                    <li><a href="../docs/QUICKSTART.md"><span class="icon">🚀</span> Quickstart</a></li>
+                    <li><a href="../docs/protocol/PROTOCOL_SPECIFICATION.md"><span class="icon">📡</span> Protocol Spec</a></li>
+                    <li><a href="../docs/api/README.md"><span class="icon">⚡</span> API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">SDKs</div>
+                <ul class="sidebar-nav">
+                    <li><a href="../docs/scout/README.md"><span class="icon">🔍</span> Scout SDK</a></li>
+                    <li><a href="../docs/beacon/README.md"><span class="icon">💡</span> Beacon SDK</a></li>
+                    <li><a href="../schemas/"><span class="icon">📋</span> JSON Schemas</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Resources</div>
+                <ul class="sidebar-nav">
+                    <li><a href="../examples/"><span class="icon">💻</span> Examples</a></li>
+                    <li><a href="../docs/tutorials/"><span class="icon">📖</span> Tutorials</a></li>
+                    <li><a href="../CHANGELOG.md"><span class="icon">📝</span> Changelog</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-initials">--</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">Developer</div>
+                        <div class="user-plan">Free Tier</div>
+                    </div>
+                    <button class="logout-btn" id="logout-btn" title="Sign out">↪</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Developer Dashboard</h1>
+                <p>Welcome back! Here's an overview of your AURA integration.</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="label">API Calls (This Month)</div>
+                    <div class="value">0</div>
+                    <div class="sub">Sandbox environment</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Active Sessions</div>
+                    <div class="value">0</div>
+                    <div class="sub">Scout + Beacon combined</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Transactions</div>
+                    <div class="value">0</div>
+                    <div class="sub">Test transactions only</div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <a href="../docs/QUICKSTART.md" class="action-card">
+                    <div class="icon">🚀</div>
+                    <h3>Get Started</h3>
+                    <p>Follow the quickstart guide to build your first Scout or Beacon in 15 minutes.</p>
+                </a>
+                <a href="../examples/" class="action-card">
+                    <div class="icon">💻</div>
+                    <h3>Explore Examples</h3>
+                    <p>Browse working implementations and copy code snippets for common use cases.</p>
+                </a>
+            </div>
+
+            <div class="section-card">
+                <h2>API Keys</h2>
+                <div class="api-key-row">
+                    <span class="sandbox-badge">SANDBOX</span>
+                    <span class="api-key-label">API Key</span>
+                    <span class="api-key-value" id="sandbox-key">sk_test_xxxxxxxxxxxxxxxxxxxxxxxx</span>
+                    <div class="api-key-actions">
+                        <button onclick="copyKey('sandbox-key')">Copy</button>
+                        <button onclick="regenerateKey('sandbox')">Regenerate</button>
+                    </div>
+                </div>
+                <div class="api-key-row">
+                    <span class="production-badge">PRODUCTION</span>
+                    <span class="api-key-label">API Key</span>
+                    <span class="api-key-value">Request production access →</span>
+                    <div class="api-key-actions">
+                        <button disabled>Locked</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h2>Documentation</h2>
+                <div class="docs-grid">
+                    <a href="../docs/protocol/PROTOCOL_SPECIFICATION.md" class="doc-link">
+                        <span class="icon">📡</span>
+                        <span>Protocol Specification</span>
+                    </a>
+                    <a href="../docs/scout/README.md" class="doc-link">
+                        <span class="icon">🔍</span>
+                        <span>Scout SDK</span>
+                    </a>
+                    <a href="../docs/beacon/README.md" class="doc-link">
+                        <span class="icon">💡</span>
+                        <span>Beacon SDK</span>
+                    </a>
+                    <a href="../docs/api/README.md" class="doc-link">
+                        <span class="icon">⚡</span>
+                        <span>REST API</span>
+                    </a>
+                    <a href="../schemas/" class="doc-link">
+                        <span class="icon">📋</span>
+                        <span>JSON Schemas</span>
+                    </a>
+                    <a href="../docs/tutorials/" class="doc-link">
+                        <span class="icon">📖</span>
+                        <span>Tutorials</span>
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Check authentication (localStorage for demo - use real auth in production)
+        function checkAuth() {
+            const developer = localStorage.getItem('aura_developer');
+            if (developer) {
+                const data = JSON.parse(developer);
+                showPortal(data);
+            } else {
+                showAuthGate();
+            }
+        }
+
+        function showAuthGate() {
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('portal-content').style.display = 'none';
+        }
+
+        function showPortal(userData) {
+            document.getElementById('auth-gate').classList.add('hidden');
+            document.getElementById('portal-content').style.display = 'flex';
+
+            // Populate user info
+            if (userData.firstName && userData.lastName) {
+                const initials = userData.firstName[0] + userData.lastName[0];
+                document.getElementById('user-initials').textContent = initials.toUpperCase();
+                document.getElementById('user-name').textContent = `${userData.firstName} ${userData.lastName}`;
+            }
+
+            // Generate a demo sandbox key
+            const sandboxKey = 'sk_test_' + generateRandomKey(24);
+            document.getElementById('sandbox-key').textContent = sandboxKey;
+        }
+
+        function generateRandomKey(length) {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function copyKey(elementId) {
+            const keyElement = document.getElementById(elementId);
+            navigator.clipboard.writeText(keyElement.textContent).then(() => {
+                alert('API key copied to clipboard!');
+            });
+        }
+
+        function regenerateKey(type) {
+            if (confirm('Are you sure you want to regenerate this API key? The old key will stop working immediately.')) {
+                const newKey = 'sk_test_' + generateRandomKey(24);
+                document.getElementById('sandbox-key').textContent = newKey;
+                alert('New sandbox API key generated.');
+            }
+        }
+
+        // Logout handler
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            if (confirm('Sign out of developer portal?')) {
+                localStorage.removeItem('aura_developer');
+                window.location.href = '../developer-signup.html';
+            }
+        });
+
+        // Check auth on page load
+        checkAuth();
+    </script>
+</body>
+</html>

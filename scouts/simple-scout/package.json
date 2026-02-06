@@ -1,0 +1,20 @@
+{
+  "name": "@aura-labs/scout-sdk",
+  "version": "0.1.0",
+  "description": "AURA Scout SDK - Build buying agents for agentic commerce",
+  "main": "simple-scout.js",
+  "scripts": {
+    "start": "node simple-scout.js",
+    "example": "node simple-scout.js"
+  },
+  "keywords": ["aura", "scout", "buying-agent", "agentic-commerce"],
+  "author": "AURA Labs",
+  "license": "BUSL-1.1",
+  "dependencies": {
+    "uuid": "^9.0.0",
+    "ws": "^8.14.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

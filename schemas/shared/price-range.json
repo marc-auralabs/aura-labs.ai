@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aura-labs.ai/schemas/shared/price-range.json",
+  "title": "Price Range",
+  "description": "A price range with minimum and maximum values",
+  "type": "object",
+  "required": ["min", "max"],
+  "properties": {
+    "min": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Minimum price"
+    },
+    "max": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Maximum price"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "default": "USD",
+      "description": "ISO 4217 currency code"
+    }
+  },
+  "additionalProperties": false
+}
