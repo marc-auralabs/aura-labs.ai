@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aura-labs.ai/schemas/beacon/proposition.json",
+  "title": "Beacon Proposition",
+  "description": "A product or service offering from a Beacon",
+  "type": "object",
+  "required": ["propositionId", "name", "category", "available"],
+  "properties": {
+    "propositionId": {
+      "type": "string",
+      "description": "Unique identifier for this proposition (typically maps to SKU)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the product/service",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "category": {
+      "type": "string",
+      "description": "Product/service category"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description",
+      "maxLength": 5000
+    },
+    "priceRange": {
+      "$ref": "../shared/price-range.json",
+      "description": "Price range the Beacon is willing to negotiate within"
+    },
+    "available": {
+      "type": "boolean",
+      "description": "Whether this proposition is currently available"
+    },
+    "stock": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Available quantity (optional, for Beacon internal use)"
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Category-specific attributes (color, size, features, etc.)"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "alt": { "type": "string" }
+        },
+        "required": ["url"]
+      }
+    },
+    "fulfillment": {
+      "type": "object",
+      "properties": {
+        "shippingOptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "method": { "type": "string" },
+              "estimatedDays": { "type": "integer" },
+              "price": { "type": "number" }
+            }
+          }
+        },
+        "locations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Regions this proposition can be fulfilled to"
+        }
+      }
+    },
+    "validUntil": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this proposition expires"
+    }
+  },
+  "additionalProperties": false
+}

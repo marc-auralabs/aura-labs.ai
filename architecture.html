@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture - AURA</title>
+    <meta name="description" content="AURA's three-layer architecture: Scout frameworks for buyers, Beacon frameworks for sellers, and AURA Core as the neutral broker.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --text-muted: #7c7c99;
+            --bg-white: #ffffff;
+            --bg-cream: #fafaf8;
+            --bg-dark: #12121a;
+            --border: #e8e8ed;
+            --accent: #5046e5;
+            --accent-hover: #4338ca;
+            --accent-light: #7c73f7;
+            --accent-bg: #f0efff;
+            --scout-color: #2dd4b3;
+            --beacon-color: #f59e0b;
+            --core-color: #7c3aed;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-white);
+            color: var(--text-primary);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 0 2rem;
+        }
+
+        .nav-container {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .nav-logo .mark {
+            width: 36px;
+            height: 36px;
+        }
+
+        .nav-logo .wordmark {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.375rem;
+            letter-spacing: -0.03em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2.25rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--text-primary);
+        }
+
+        .nav-cta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6875rem 1.125rem;
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-primary);
+            background: var(--bg-cream);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Page Header */
+        .page-header {
+            padding: 8rem 2rem 4rem;
+            text-align: center;
+            background: var(--bg-cream);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 1rem;
+        }
+
+        .page-header p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Architecture Diagram */
+        .arch-section {
+            padding: 5rem 2rem;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+        }
+
+        .arch-diagram {
+            display: grid;
+            grid-template-columns: 1fr 120px 1fr 120px 1fr;
+            gap: 0;
+            align-items: center;
+            margin-bottom: 5rem;
+        }
+
+        .arch-layer {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .arch-layer:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+
+        .arch-layer.scout {
+            border-color: var(--scout-color);
+        }
+
+        .arch-layer.core {
+            border-color: var(--core-color);
+        }
+
+        .arch-layer.beacon {
+            border-color: var(--beacon-color);
+        }
+
+        .arch-layer .icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .arch-layer h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .arch-layer .subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .arch-layer p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.6;
+        }
+
+        .arch-connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .arch-connector .arrow {
+            font-size: 2rem;
+            color: var(--text-muted);
+        }
+
+        .arch-connector .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        /* Flow Section */
+        .flow-section {
+            background: var(--bg-dark);
+            padding: 5rem 2rem;
+            color: white;
+        }
+
+        .flow-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .flow-diagram {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .flow-step {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+            align-items: start;
+        }
+
+        .flow-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .flow-number {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .flow-content h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-content p {
+            color: #9ca3af;
+            line-height: 1.7;
+        }
+
+        .flow-content .actors {
+            margin-top: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .flow-content .actor {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-weight: 500;
+        }
+
+        .actor.scout {
+            background: rgba(45, 212, 179, 0.2);
+            color: var(--scout-color);
+        }
+
+        .actor.core {
+            background: rgba(124, 58, 237, 0.2);
+            color: #a78bfa;
+        }
+
+        .actor.beacon {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--beacon-color);
+        }
+
+        /* Principles */
+        .principles-section {
+            padding: 5rem 2rem;
+        }
+
+        .principles-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .principle-card {
+            padding: 2rem;
+            background: var(--bg-cream);
+            border-radius: 12px;
+        }
+
+        .principle-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .principle-card p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        footer a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .arch-diagram {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .arch-connector {
+                transform: rotate(90deg);
+                padding: 1rem 0;
+            }
+
+            .principles-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <div class="mark">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="22" fill="#3730a3"/>
+                        <circle cx="24" cy="24" r="16" fill="#5046e5"/>
+                        <circle cx="24" cy="24" r="10" fill="#818cf8"/>
+                        <circle cx="24" cy="24" r="5" fill="#c7d2fe"/>
+                    </svg>
+                </div>
+                <span class="wordmark">AURA Labs</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="architecture.html" class="active">Architecture</a>
+                <a href="how-it-works.html">How It Works</a>
+                <a href="developers.html">Developers</a>
+                <a href="https://marcmassar.substack.com" target="_blank">Blog</a>
+            </div>
+
+            <div class="nav-cta">
+                <a href="https://github.com/aura-labs" class="btn btn-ghost" target="_blank">GitHub</a>
+                <a href="developers.html" class="btn btn-primary">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="page-header">
+            <h1>Architecture</h1>
+            <p>AURA connects buyer intent to seller propositions through a three-layer system designed for trust, privacy, and autonomous negotiation.</p>
+        </section>
+
+        <section class="arch-section">
+            <div class="container">
+                <div class="arch-diagram">
+                    <!-- Scout -->
+                    <div class="arch-layer scout">
+                        <div class="icon">
+                            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="40" height="40" rx="12" fill="#2dd4b3"/>
+                                <path d="M14 16C14 13.5 16 11 20 11H32C35 11 37 13.5 37 17V25C37 28 35 31 32 33L22 37C18 38 14 34 14 30V16Z" fill="white"/>
+                                <path d="M20 19L28 23L22 30L20 19Z" fill="#2dd4b3"/>
+                            </svg>
+                        </div>
+                        <h3>Scout</h3>
+                        <div class="subtitle">Buyer Framework</div>
+                        <p>Buying agents that represent buyer intent. Integrate into shopping apps, procurement portals, or any system where users search for products.</p>
+                    </div>
+
+                    <div class="arch-connector">
+                        <div class="arrow">→</div>
+                        <div class="label">Intent<br>Registration</div>
+                    </div>
+
+                    <!-- AURA Core -->
+                    <div class="arch-layer core">
+                        <div class="icon">
+                            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M24 4L42 14V34L24 44L6 34V14L24 4Z" stroke="#7c3aed" stroke-width="2.5" fill="none"/>
+                                <path d="M24 4V24M6 34L24 24M42 34L24 24" stroke="#a78bfa" stroke-width="2.5" opacity="0.6"/>
+                                <path d="M24 24V44M6 14L24 24M42 14L24 24" stroke="#7c3aed" stroke-width="2.5"/>
+                                <circle cx="24" cy="24" r="2.5" fill="#7c3aed"/>
+                            </svg>
+                        </div>
+                        <h3>AURA Core</h3>
+                        <div class="subtitle">Neutral Broker</div>
+                        <p>The cloud platform where Scouts and Beacons register intent. Creates dynamic markets and ensures mutual benefit through protocol enforcement.</p>
+                    </div>
+
+                    <div class="arch-connector">
+                        <div class="arrow">←</div>
+                        <div class="label">Proposition<br>Registration</div>
+                    </div>
+
+                    <!-- Beacon -->
+                    <div class="arch-layer beacon">
+                        <div class="icon">
+                            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="40" height="40" rx="12" fill="#f59e0b"/>
+                                <path d="M20 38L18 26H30L28 38H20Z" fill="white"/>
+                                <rect x="17" y="20" width="14" height="6" rx="1" fill="white"/>
+                                <path d="M14 17L10 13" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M24 16V10" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M34 17L38 13" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Beacon</h3>
+                        <div class="subtitle">Seller Framework</div>
+                        <p>Selling agents that signal willingness to participate in markets. When matched with buyer intent, they present claims and propositions, without exposing underlying inventory or prices.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="flow-section">
+            <div class="container">
+                <h2>Transaction Flow</h2>
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <div class="flow-number">1</div>
+                        <div class="flow-content">
+                            <h3>Intent Registration</h3>
+                            <p>A Scout registers user intent with AURA Core: preferences, constraints, budget, and behavioral context. The user's identity remains abstracted; only the intent is shared.</p>
+                            <div class="actors">
+                                <span class="actor scout">Scout</span>
+                                <span class="actor core">AURA Core</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">2</div>
+                        <div class="flow-content">
+                            <h3>Market Matching</h3>
+                            <p>AURA Core matches the registered intent against Beacon propositions. Relevant sellers receive anonymized inquiries. They see the intent, not the identity.</p>
+                            <div class="actors">
+                                <span class="actor core">AURA Core</span>
+                                <span class="actor beacon">Beacon</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">3</div>
+                        <div class="flow-content">
+                            <h3>Autonomous Negotiation</h3>
+                            <p>Beacons respond with dynamic pricing based on inventory, demand, and behavioral signals. Scouts evaluate offers against user constraints and preferences, negotiating autonomously.</p>
+                            <div class="actors">
+                                <span class="actor scout">Scout</span>
+                                <span class="actor beacon">Beacon</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">4</div>
+                        <div class="flow-content">
+                            <h3>Consent & Transaction</h3>
+                            <p>Upon acceptance, identity is revealed only to the extent necessary for fulfillment. Payment coordination and delivery complete the exchange, all under explicit user consent.</p>
+                            <div class="actors">
+                                <span class="actor scout">Scout</span>
+                                <span class="actor core">AURA Core</span>
+                                <span class="actor beacon">Beacon</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="principles-section">
+            <div class="container">
+                <h2>Design Principles</h2>
+                <div class="principles-grid">
+                    <div class="principle-card">
+                        <h3>Identity Abstraction</h3>
+                        <p>Buyer identity remains hidden until the moment of transaction. Sellers see intent, not individuals, eliminating tracking and profiling.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3>Data Sovereignty</h3>
+                        <p>Both sides control their data. Buyers keep behavioral data private. Sellers keep inventory and pricing private. Neither side is forced to expose data to platforms.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3>Neutral Brokerage</h3>
+                        <p>AURA Core has no stake in transaction outcomes. It enforces protocol rules and ensures fair matching without favoring buyers or sellers.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3>Explicit Consent</h3>
+                        <p>Every action requires user approval. Agents negotiate, but humans decide. No dark patterns, no hidden automation.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3>Protocol Interoperability</h3>
+                        <p>Designed to work alongside MCP, A2A, and other emerging protocols. AURA focuses on pre-transaction and post-transaction phases.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3>Platform Independence</h3>
+                        <p>Today's platforms force sellers to expose inventory and pricing. AURA protects sellers from platform extraction. Agents negotiate without revealing underlying business data.</p>
+                    </div>
+                    <div class="principle-card">
+                        <h3>Framework-First</h3>
+                        <p>Scout and Beacon are integration frameworks, not standalone apps. They embed into existing systems, meeting users where they already are.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <a href="index.html">← Back to Home</a>
+    </footer>
+</body>
+</html>

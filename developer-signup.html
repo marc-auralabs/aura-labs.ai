@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Signup - AURA</title>
+    <meta name="description" content="Sign up for AURA developer access. Get API keys, SDKs, and full documentation access.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --text-muted: #7c7c99;
+            --bg-white: #ffffff;
+            --bg-cream: #fafaf8;
+            --bg-dark: #12121a;
+            --border: #e8e8ed;
+            --accent: #5046e5;
+            --accent-hover: #4338ca;
+            --accent-light: #7c73f7;
+            --accent-bg: #f0efff;
+            --error: #dc2626;
+            --error-bg: #fef2f2;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-cream);
+            color: var(--text-primary);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 0 2rem;
+        }
+
+        .nav-container {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .nav-logo .mark {
+            width: 36px;
+            height: 36px;
+        }
+
+        .nav-logo .wordmark {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.375rem;
+            letter-spacing: -0.03em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2.25rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Main Layout */
+        .signup-page {
+            display: flex;
+            min-height: 100vh;
+            padding-top: 72px;
+        }
+
+        .signup-left {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+        }
+
+        .signup-right {
+            flex: 1;
+            background: var(--bg-dark);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+        }
+
+        /* Form Side */
+        .form-container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .form-container h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-container .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9375rem;
+            transition: all 0.15s;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+
+        .form-group input.error {
+            border-color: var(--error);
+        }
+
+        .form-group .error-message {
+            font-size: 0.8125rem;
+            color: var(--error);
+            margin-top: 0.375rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            accent-color: var(--accent);
+        }
+
+        .checkbox-group label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .checkbox-group label a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .checkbox-group label a:hover {
+            text-decoration: underline;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .login-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Benefits Side */
+        .benefits-content {
+            max-width: 400px;
+        }
+
+        .benefits-content h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .benefit-item {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .benefit-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+        }
+
+        .benefit-text h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .benefit-text p {
+            font-size: 0.875rem;
+            color: #9ca3af;
+            line-height: 1.5;
+        }
+
+        .trusted-by {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .trusted-by p {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+
+        .trusted-logos {
+            display: flex;
+            gap: 1.5rem;
+            opacity: 0.5;
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+
+        /* Success State */
+        .success-state {
+            display: none;
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .success-state.active {
+            display: block;
+        }
+
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--accent-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+        }
+
+        .success-state h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .success-state p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .signup-page {
+                flex-direction: column;
+            }
+
+            .signup-right {
+                display: none;
+            }
+
+            .signup-left {
+                padding: 2rem 1.5rem 3rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <div class="mark">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="22" fill="#3730a3"/>
+                        <circle cx="24" cy="24" r="16" fill="#5046e5"/>
+                        <circle cx="24" cy="24" r="10" fill="#818cf8"/>
+                        <circle cx="24" cy="24" r="5" fill="#c7d2fe"/>
+                    </svg>
+                </div>
+                <span class="wordmark">AURA Labs</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="architecture.html">Architecture</a>
+                <a href="how-it-works.html">How It Works</a>
+                <a href="developers.html">Developers</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="signup-page">
+        <div class="signup-left">
+            <div class="form-container">
+                <!-- Registration Form -->
+                <div id="signup-form-container">
+                    <h1>Create Developer Account</h1>
+                    <p class="subtitle">Get access to SDKs, API documentation, and sandbox environment.</p>
+
+                    <form id="signup-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstName">First Name</label>
+                                <input type="text" id="firstName" name="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Last Name</label>
+                                <input type="text" id="lastName" name="lastName" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Work Email</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="company">Company / Organization</label>
+                            <input type="text" id="company" name="company" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="role">Your Role</label>
+                            <select id="role" name="role" required>
+                                <option value="">Select your role</option>
+                                <option value="developer">Developer / Engineer</option>
+                                <option value="architect">Solution Architect</option>
+                                <option value="product">Product Manager</option>
+                                <option value="technical-lead">Technical Lead</option>
+                                <option value="cto">CTO / VP Engineering</option>
+                                <option value="founder">Founder / Co-founder</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="useCase">Primary Use Case</label>
+                            <select id="useCase" name="useCase" required>
+                                <option value="">What will you build?</option>
+                                <option value="scout">Scout (buying agent)</option>
+                                <option value="beacon">Beacon (selling agent)</option>
+                                <option value="both">Both Scout and Beacon</option>
+                                <option value="integration">Integration / Platform</option>
+                                <option value="exploring">Just exploring</option>
+                            </select>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="terms" name="terms" required>
+                            <label for="terms">
+                                I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>, and acknowledge the <a href="LICENSE">Business Source License</a>.
+                            </label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="updates" name="updates">
+                            <label for="updates">
+                                Send me updates about AURA releases, documentation, and developer resources.
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                    </form>
+
+                    <div class="login-link">
+                        Already have an account? <a href="developer-login.html">Sign in</a>
+                    </div>
+                </div>
+
+                <!-- Success State -->
+                <div id="success-state" class="success-state">
+                    <div class="success-icon">✓</div>
+                    <h2>Welcome to AURA!</h2>
+                    <p>Check your email for a verification link. Once verified, you'll have full access to developer resources.</p>
+                    <a href="portal/index.html" class="btn btn-primary">Go to Developer Portal</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="signup-right">
+            <div class="benefits-content">
+                <h2>What you'll get</h2>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">🔑</div>
+                    <div class="benefit-text">
+                        <h3>API Keys</h3>
+                        <p>Sandbox and production API keys for authenticating with AURA Core.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">📚</div>
+                    <div class="benefit-text">
+                        <h3>Full Documentation</h3>
+                        <p>Complete protocol specification, SDK guides, and integration tutorials.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">💻</div>
+                    <div class="benefit-text">
+                        <h3>SDKs & Code Samples</h3>
+                        <p>Official SDKs for JavaScript, Python, and TypeScript with working examples.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">🧪</div>
+                    <div class="benefit-text">
+                        <h3>Sandbox Environment</h3>
+                        <p>Test your integrations with simulated Scouts, Beacons, and transactions.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">💬</div>
+                    <div class="benefit-text">
+                        <h3>Developer Community</h3>
+                        <p>Join other developers building the future of agentic commerce.</p>
+                    </div>
+                </div>
+
+                <div class="trusted-by">
+                    <p>Building with developers from</p>
+                    <div class="trusted-logos">
+                        <span>Startups</span>
+                        <span>E-commerce platforms</span>
+                        <span>AI companies</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple form handling (frontend only - wire up to your auth backend)
+        document.getElementById('signup-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // In production, this would POST to your authentication backend
+            // For now, just show success state
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+
+            console.log('Developer signup:', data);
+
+            // Store in localStorage for demo purposes
+            localStorage.setItem('aura_developer', JSON.stringify({
+                ...data,
+                signedUp: new Date().toISOString()
+            }));
+
+            // Show success state
+            document.getElementById('signup-form-container').style.display = 'none';
+            document.getElementById('success-state').classList.add('active');
+        });
+    </script>
+</body>
+</html>

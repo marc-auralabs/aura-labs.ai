@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developers - AURA</title>
+    <meta name="description" content="Build with AURA: documentation, SDKs, quickstart guides, and reference implementations for Scout and Beacon frameworks.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --text-muted: #7c7c99;
+            --bg-white: #ffffff;
+            --bg-cream: #fafaf8;
+            --bg-dark: #12121a;
+            --border: #e8e8ed;
+            --accent: #5046e5;
+            --accent-hover: #4338ca;
+            --accent-light: #7c73f7;
+            --accent-bg: #f0efff;
+            --scout-color: #2dd4b3;
+            --beacon-color: #f59e0b;
+            --core-color: #7c3aed;
+            --green: #059669;
+            --green-bg: #ecfdf5;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-white);
+            color: var(--text-primary);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 0 2rem;
+        }
+
+        .nav-container {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .nav-logo .mark {
+            width: 36px;
+            height: 36px;
+        }
+
+        .nav-logo .wordmark {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.375rem;
+            letter-spacing: -0.03em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2.25rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--text-primary);
+        }
+
+        .nav-cta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6875rem 1.125rem;
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-primary);
+            background: var(--bg-cream);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1.5px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-cream);
+        }
+
+        /* Page Header */
+        .page-header {
+            padding: 8rem 2rem 4rem;
+            text-align: center;
+            background: var(--bg-cream);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 1rem;
+        }
+
+        .page-header p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Quickstart Section */
+        .quickstart-section {
+            padding: 5rem 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .quickstart-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .quickstart-section > .container > p {
+            color: var(--text-secondary);
+            font-size: 1.0625rem;
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+        }
+
+        .quickstart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .quickstart-card {
+            background: var(--bg-cream);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .quickstart-card .label {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .quickstart-card.scout .label {
+            color: #0d9488;
+        }
+
+        .quickstart-card.beacon .label {
+            color: #b45309;
+        }
+
+        .quickstart-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.375rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .quickstart-card > p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background: var(--bg-dark);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.7;
+            color: #e2e8f0;
+            margin: 0;
+        }
+
+        .code-block .comment { color: #6b7280; }
+        .code-block .success { color: #34d399; }
+
+        .quickstart-card .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* SDKs Section */
+        .sdks-section {
+            padding: 5rem 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sdks-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .sdks-section > .container > p {
+            color: var(--text-secondary);
+            font-size: 1.0625rem;
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+        }
+
+        .sdk-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .sdk-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+            transition: all 0.2s;
+        }
+
+        .sdk-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 20px rgba(80, 70, 229, 0.1);
+        }
+
+        .sdk-card .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .sdk-card .icon {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-cream);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .sdk-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .sdk-card .tag {
+            font-size: 0.6875rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--accent-bg);
+            color: var(--accent);
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .sdk-card p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            margin-bottom: 1rem;
+        }
+
+        .sdk-card a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .sdk-card a:hover {
+            text-decoration: underline;
+        }
+
+        /* Docs Section */
+        .docs-section {
+            padding: 5rem 2rem;
+            background: var(--bg-cream);
+        }
+
+        .docs-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .doc-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .doc-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .doc-card .icon {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .doc-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .doc-card p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        /* Resources Section */
+        .resources-section {
+            padding: 5rem 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .resources-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        .resource-card {
+            padding: 1.5rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .resource-card:hover {
+            background: var(--bg-cream);
+            border-color: #d1d1db;
+        }
+
+        .resource-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.375rem;
+        }
+
+        .resource-card p {
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+        }
+
+        /* Community Section */
+        .community-section {
+            padding: 5rem 2rem;
+            background: var(--bg-dark);
+            color: white;
+        }
+
+        .community-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .community-section > .container > p {
+            color: #9ca3af;
+            font-size: 1.0625rem;
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+        }
+
+        .community-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .community-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .community-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .community-card .icon {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .community-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .community-card p {
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        footer a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .quickstart-grid,
+            .sdk-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .docs-grid,
+            .community-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .resources-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .docs-grid,
+            .community-grid,
+            .resources-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <div class="mark">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="24" cy="24" r="22" fill="#3730a3"/>
+                        <circle cx="24" cy="24" r="16" fill="#5046e5"/>
+                        <circle cx="24" cy="24" r="10" fill="#818cf8"/>
+                        <circle cx="24" cy="24" r="5" fill="#c7d2fe"/>
+                    </svg>
+                </div>
+                <span class="wordmark">AURA Labs</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="architecture.html">Architecture</a>
+                <a href="how-it-works.html">How It Works</a>
+                <a href="developers.html" class="active">Developers</a>
+                <a href="https://marcmassar.substack.com" target="_blank">Blog</a>
+            </div>
+
+            <div class="nav-cta">
+                <a href="developer-signup.html" class="btn btn-ghost">Sign Up</a>
+                <a href="portal/" class="btn btn-primary">Developer Portal</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="page-header">
+            <h1>Build with AURA</h1>
+            <p>Integrate agentic commerce into your applications. Get started with our open frameworks, then access full documentation and SDKs in the Developer Portal.</p>
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
+                <a href="developer-signup.html" class="btn btn-primary">Create Developer Account</a>
+                <a href="portal/" class="btn btn-outline">Sign In</a>
+            </div>
+        </section>
+
+        <section class="quickstart-section" id="quickstart">
+            <div class="container">
+                <h2>Quickstart</h2>
+                <p>Get a Scout or Beacon running in under 15 minutes. Choose your starting point based on whether you're building for buyers or sellers.</p>
+
+                <div class="quickstart-grid">
+                    <div class="quickstart-card scout">
+                        <div class="label">For Buyer Applications</div>
+                        <h3>Scout Framework</h3>
+                        <p>Integrate buying agent capabilities into shopping apps, procurement portals, or any system where users search for products.</p>
+                        <div class="code-block">
+                            <pre><span class="comment"># Clone the Scout reference implementation</span>
+git clone https://github.com/aura-labs/scout-sdk
+cd scout-sdk
+
+<span class="comment"># Install and configure</span>
+npm install
+cp .env.example .env
+
+<span class="comment"># Run the example Scout</span>
+npm run example
+
+<span class="success">✓ Scout connected to AURA Core</span>
+<span class="success">✓ Ready to register intent</span></pre>
+                        </div>
+                        <a href="docs/scout/README.md" class="btn btn-primary">Scout Documentation →</a>
+                    </div>
+
+                    <div class="quickstart-card beacon">
+                        <div class="label">For Seller Applications</div>
+                        <h3>Beacon Framework</h3>
+                        <p>Add selling agent capabilities to e-commerce backends, ERP systems, or any platform that manages inventory and pricing.</p>
+                        <div class="code-block">
+                            <pre><span class="comment"># Clone the Beacon reference implementation</span>
+git clone https://github.com/aura-labs/beacon-sdk
+cd beacon-sdk
+
+<span class="comment"># Install and configure</span>
+npm install
+cp .env.example .env
+
+<span class="comment"># Run the example Beacon</span>
+npm run example
+
+<span class="success">✓ Beacon registered with AURA Core</span>
+<span class="success">✓ Ready to receive inquiries</span></pre>
+                        </div>
+                        <a href="docs/beacon/README.md" class="btn btn-primary">Beacon Documentation →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="sdks-section">
+            <div class="container">
+                <h2>SDKs & Libraries</h2>
+                <p>Official SDKs and community-contributed libraries for integrating with AURA. <a href="developer-signup.html" style="color: var(--accent);">Sign up</a> for full access and API keys.</p>
+
+                <div class="sdk-grid">
+                    <div class="sdk-card">
+                        <div class="header">
+                            <div class="icon">📦</div>
+                            <div>
+                                <h3>JavaScript / Node.js</h3>
+                                <span class="tag">Official</span>
+                            </div>
+                        </div>
+                        <p>Full-featured SDK for both Scout and Beacon implementations. Works in Node.js and modern browsers.</p>
+                        <a href="https://github.com/aura-labs/aura-js">View on GitHub →</a>
+                    </div>
+
+                    <div class="sdk-card">
+                        <div class="header">
+                            <div class="icon">🐍</div>
+                            <div>
+                                <h3>Python</h3>
+                                <span class="tag">Official</span>
+                            </div>
+                        </div>
+                        <p>Python SDK for server-side Scout and Beacon implementations. Async-first design with type hints.</p>
+                        <a href="https://github.com/aura-labs/aura-python">View on GitHub →</a>
+                    </div>
+
+                    <div class="sdk-card">
+                        <div class="header">
+                            <div class="icon">🔷</div>
+                            <div>
+                                <h3>TypeScript Types</h3>
+                                <span class="tag">Official</span>
+                            </div>
+                        </div>
+                        <p>Complete TypeScript definitions for all AURA protocol messages and schemas.</p>
+                        <a href="https://github.com/aura-labs/aura-types">View on GitHub →</a>
+                    </div>
+
+                    <div class="sdk-card">
+                        <div class="header">
+                            <div class="icon">⚡</div>
+                            <div>
+                                <h3>REST API</h3>
+                                <span class="tag">Any Language</span>
+                            </div>
+                        </div>
+                        <p>Language-agnostic REST API for integrations where WebSocket is not practical.</p>
+                        <a href="docs/api/README.md">API Reference →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="docs-section">
+            <div class="container">
+                <h2>Documentation</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Public overview documentation is available below. Full protocol specifications, API reference, and implementation guides are available in the <a href="portal/" style="color: var(--accent);">Developer Portal</a>.</p>
+                <div class="docs-grid">
+                    <a href="docs/QUICKSTART.md" class="doc-card">
+                        <div class="icon">🚀</div>
+                        <h3>Quickstart Guide</h3>
+                        <p>Get up and running with your first Scout or Beacon in 15 minutes.</p>
+                    </a>
+
+                    <a href="architecture.html" class="doc-card">
+                        <div class="icon">🏗️</div>
+                        <h3>Architecture Overview</h3>
+                        <p>Understand the three-layer system: Scout, AURA Core, and Beacon.</p>
+                    </a>
+
+                    <a href="docs/protocol/README.md" class="doc-card">
+                        <div class="icon">📡</div>
+                        <h3>Protocol Specification</h3>
+                        <p>Complete WebSocket and REST API documentation for AURA Core.</p>
+                    </a>
+
+                    <a href="docs/scout/README.md" class="doc-card">
+                        <div class="icon">🔍</div>
+                        <h3>Scout SDK Guide</h3>
+                        <p>Deep dive into building buying agents with the Scout framework.</p>
+                    </a>
+
+                    <a href="docs/beacon/README.md" class="doc-card">
+                        <div class="icon">💡</div>
+                        <h3>Beacon SDK Guide</h3>
+                        <p>Learn how to build selling agents that respond to market intent.</p>
+                    </a>
+
+                    <a href="schemas/" class="doc-card">
+                        <div class="icon">📋</div>
+                        <h3>JSON Schemas</h3>
+                        <p>Validated message formats for all protocol interactions.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="resources-section">
+            <div class="container">
+                <h2>Resources</h2>
+                <div class="resources-grid">
+                    <a href="examples/" class="resource-card">
+                        <h3>Example Projects</h3>
+                        <p>Working implementations and demos</p>
+                    </a>
+                    <a href="docs/tutorials/" class="resource-card">
+                        <h3>Tutorials</h3>
+                        <p>Step-by-step integration guides</p>
+                    </a>
+                    <a href="docs/faq.md" class="resource-card">
+                        <h3>FAQ</h3>
+                        <p>Common questions answered</p>
+                    </a>
+                    <a href="CHANGELOG.md" class="resource-card">
+                        <h3>Changelog</h3>
+                        <p>Release notes and updates</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="community-section">
+            <div class="container">
+                <h2>Community</h2>
+                <p>Join the growing community of developers building the future of agentic commerce.</p>
+
+                <div class="community-grid">
+                    <a href="https://github.com/aura-labs" class="community-card" target="_blank">
+                        <div class="icon">💻</div>
+                        <h3>GitHub</h3>
+                        <p>Star the repos, open issues, contribute code, and track development.</p>
+                    </a>
+
+                    <a href="https://marcmassar.substack.com" class="community-card" target="_blank">
+                        <div class="icon">📝</div>
+                        <h3>Blog</h3>
+                        <p>Technical deep-dives, updates, and thoughts on agentic commerce.</p>
+                    </a>
+
+                    <a href="CONTRIBUTING.md" class="community-card">
+                        <div class="icon">🤝</div>
+                        <h3>Contributing</h3>
+                        <p>Guidelines for contributing to AURA's open source projects.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <a href="index.html">← Back to Home</a>
+    </footer>
+</body>
+</html>

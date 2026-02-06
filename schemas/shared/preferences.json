@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aura-labs.ai/schemas/shared/preferences.json",
+  "title": "User Preferences",
+  "description": "User preferences that guide Scout behavior",
+  "type": "object",
+  "properties": {
+    "negotiationStyle": {
+      "type": "string",
+      "enum": ["aggressive", "balanced", "conservative"],
+      "default": "balanced",
+      "description": "How aggressively to negotiate on price"
+    },
+    "prioritize": {
+      "type": "string",
+      "enum": ["price", "speed", "quality", "sustainability"],
+      "description": "Primary factor to optimize for"
+    },
+    "brandPreferences": {
+      "type": "object",
+      "properties": {
+        "preferred": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Preferred brands"
+        },
+        "excluded": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Brands to exclude"
+        }
+      }
+    },
+    "sustainabilityPreferences": {
+      "type": "object",
+      "properties": {
+        "ecoFriendly": {
+          "type": "boolean",
+          "description": "Prefer eco-friendly products"
+        },
+        "localFirst": {
+          "type": "boolean",
+          "description": "Prefer local sellers"
+        },
+        "certifications": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Required certifications (organic, fair-trade, etc.)"
+        }
+      }
+    },
+    "communicationPreferences": {
+      "type": "object",
+      "properties": {
+        "notifyOnMatch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notify when matches are found"
+        },
+        "autoNegotiate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow autonomous negotiation within constraints"
+        },
+        "requireApproval": {
+          "type": "string",
+          "enum": ["always", "above_threshold", "never"],
+          "default": "always",
+          "description": "When to require explicit user approval"
+        },
+        "approvalThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Amount above which approval is required"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
