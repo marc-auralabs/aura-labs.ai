@@ -1,7 +1,4 @@
-.scout-domain:nth-child(4) {
-            border-left-color: #10b981;
-            background: rgba(16, 185, 129, 0.1);
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -14,17 +11,23 @@
             box-sizing: border-box;
         }
         
+        html {
+            scroll-behavior: smooth;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: white;
             min-height: 100vh;
             padding: 20px;
+            overflow-x: hidden;
         }
         
         .container {
             max-width: 1400px;
             margin: 0 auto;
+            width: 100%;
         }
         
         .header {
@@ -33,19 +36,21 @@
         }
         
         .title {
-            font-size: 2.5em;
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
             font-weight: 800;
             background: linear-gradient(135deg, #60a5fa, #34d399);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 10px;
+            line-height: 1.2;
         }
         
         .subtitle {
-            font-size: 1.1em;
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
             color: #94a3b8;
             margin-bottom: 30px;
+            line-height: 1.4;
         }
         
         .architecture-diagram {
@@ -69,7 +74,7 @@
         }
         
         .scout-title {
-            font-size: 1.4em;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
             font-weight: 700;
             color: #93c5fd;
             margin-bottom: 15px;
@@ -77,7 +82,7 @@
         }
         
         .scout-description {
-            font-size: 0.9em;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
             color: #cbd5e1;
             margin-bottom: 20px;
             text-align: center;
@@ -95,6 +100,12 @@
             padding: 12px;
             border-radius: 10px;
             border-left: 3px solid #60a5fa;
+            transition: all 0.3s ease;
+        }
+        
+        .scout-domain:hover {
+            background: rgba(147, 197, 253, 0.2);
+            transform: translateX(5px);
         }
         
         .scout-domain:first-child {
@@ -102,15 +113,20 @@
             background: rgba(251, 191, 36, 0.1);
         }
         
+        .scout-domain:nth-child(4) {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
         .domain-title {
-            font-size: 0.9em;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
             font-weight: 700;
             color: #f1f5f9;
             margin-bottom: 4px;
         }
         
         .domain-subtitle {
-            font-size: 0.75em;
+            font-size: clamp(0.7rem, 1.8vw, 0.75rem);
             color: #cbd5e1;
         }
         
@@ -123,8 +139,51 @@
             padding: 8px 12px;
             border-radius: 8px;
             margin-bottom: 8px;
-            font-size: 0.85em;
+            font-size: clamp(0.75rem, 1.8vw, 0.85rem);
             border-left: 3px solid #60a5fa;
+        }
+        
+        /* Flow Arrows */
+        .flow-arrows {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;
+        }
+        
+        .arrow-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .flow-label {
+            color: #94a3b8;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            font-weight: 600;
+        }
+        
+        .arrow {
+            width: 2px;
+            height: 60px;
+            background: linear-gradient(180deg, #3b82f6, #a855f7);
+            position: relative;
+        }
+        
+        .arrow::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 10px solid #a855f7;
         }
         
         /* AURA Core Section */
@@ -140,7 +199,7 @@
         }
         
         .aura-title {
-            font-size: 2em;
+            font-size: clamp(1.5rem, 4vw, 2rem);
             font-weight: 800;
             color: white;
             text-align: center;
@@ -160,24 +219,30 @@
             border-radius: 12px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .aura-domain:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.02);
         }
         
         .aura-domain .domain-title {
-            font-size: 1em;
+            font-size: clamp(0.9rem, 2.2vw, 1rem);
             font-weight: 700;
             color: white;
             margin-bottom: 8px;
         }
         
         .domain-capabilities {
-            font-size: 0.8em;
+            font-size: clamp(0.75rem, 1.8vw, 0.8rem);
             color: #e2e8f0;
             line-height: 1.4;
         }
         
         .aura-capabilities {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 12px;
             margin-bottom: 20px;
         }
@@ -187,48 +252,65 @@
             padding: 10px;
             border-radius: 10px;
             text-align: center;
-            font-size: 0.8em;
+            font-size: clamp(0.75rem, 1.8vw, 0.8rem);
             font-weight: 600;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .aura-capability:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
         }
         
         .aura-behavioral {
             background: rgba(34, 197, 94, 0.2);
             border-radius: 15px;
             padding: 15px;
-            border: 2px solid #22c55e;
-            margin-top: 15px;
+            border: 1px solid rgba(34, 197, 94, 0.4);
         }
         
         .behavioral-title {
-            font-size: 1em;
-            font-weight: 700;
-            color: #86efac;
-            margin-bottom: 10px;
             text-align: center;
+            font-weight: 700;
+            font-size: clamp(0.9rem, 2.2vw, 1rem);
+            color: #86efac;
+            margin-bottom: 12px;
         }
         
         .behavioral-items {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
         }
         
         .behavioral-item {
-            font-size: 0.75em;
-            color: #dcfce7;
-            background: rgba(34, 197, 94, 0.2);
-            padding: 6px 8px;
-            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
             text-align: center;
+            font-size: clamp(0.75rem, 1.8vw, 0.8rem);
+            font-weight: 600;
+            color: #d1fae5;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        /* Bottom Flow Arrows */
+        .bottom-flows {
+            grid-column: 2;
+            grid-row: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;
         }
         
         /* Beacon Section */
         .beacon-section {
             grid-column: 3;
             grid-row: 1 / -1;
-            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            background: linear-gradient(135deg, #dc2626, #991b1b);
             border-radius: 20px;
             padding: 25px;
             border: 2px solid #ef4444;
@@ -236,7 +318,7 @@
         }
         
         .beacon-title {
-            font-size: 1.4em;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
             font-weight: 700;
             color: #fca5a5;
             margin-bottom: 15px;
@@ -244,8 +326,8 @@
         }
         
         .beacon-description {
-            font-size: 0.9em;
-            color: #cbd5e1;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            color: #fecaca;
             margin-bottom: 20px;
             text-align: center;
             line-height: 1.4;
@@ -262,144 +344,91 @@
             padding: 12px;
             border-radius: 10px;
             border-left: 3px solid #f87171;
+            transition: all 0.3s ease;
         }
         
-        .beacon-domain .domain-title {
-            font-size: 0.9em;
-            font-weight: 700;
-            color: #f1f5f9;
-            margin-bottom: 4px;
-        }
-        
-        .beacon-domain .domain-subtitle {
-            font-size: 0.75em;
-            color: #cbd5e1;
-        }
-        
-        .beacon-capabilities {
-            list-style: none;
-        }
-        
-        .beacon-capabilities li {
-            background: rgba(252, 165, 165, 0.1);
-            padding: 8px 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            font-size: 0.85em;
-            border-left: 3px solid #f87171;
-        }
-        
-        /* Flow Arrows */
-        .flow-arrows {
-            grid-column: 2;
-            grid-row: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .arrow-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .arrow {
-            width: 80px;
-            height: 3px;
-            background: linear-gradient(90deg, #60a5fa, #8b5cf6);
-            position: relative;
-            border-radius: 2px;
-        }
-        
-        .arrow::after {
-            content: '';
-            position: absolute;
-            right: -8px;
-            top: -4px;
-            width: 0;
-            height: 0;
-            border-left: 10px solid #8b5cf6;
-            border-top: 5px solid transparent;
-            border-bottom: 5px solid transparent;
-        }
-        
-        .flow-label {
-            font-size: 0.9em;
-            color: #cbd5e1;
-            font-weight: 600;
-        }
-        
-        .bottom-flows {
-            grid-column: 2;
-            grid-row: 3;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
+        .beacon-domain:hover {
+            background: rgba(252, 165, 165, 0.2);
+            transform: translateX(-5px);
         }
         
         /* Platform Overview */
         .platform-overview {
-            background: linear-gradient(135deg, #1f2937, #374151);
-            border-radius: 20px;
-            padding: 30px;
-            border: 2px solid #4b5563;
-            margin-bottom: 30px;
+            margin-top: 60px;
         }
         
         .overview-title {
-            font-size: 1.6em;
-            font-weight: 700;
-            color: #f3f4f6;
-            margin-bottom: 20px;
             text-align: center;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            font-weight: 700;
+            margin-bottom: 40px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .overview-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
         }
         
         .overview-card {
-            background: rgba(75, 85, 99, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #6b7280;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .overview-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(139, 92, 246, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(139, 92, 246, 0.2);
         }
         
         .card-title {
-            font-size: 1.1em;
-            font-weight: 600;
-            color: #e5e7eb;
-            margin-bottom: 10px;
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            font-weight: 700;
+            color: #93c5fd;
+            margin-bottom: 12px;
         }
         
         .card-description {
-            font-size: 0.9em;
-            color: #d1d5db;
-            line-height: 1.5;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+            color: #cbd5e1;
+            line-height: 1.6;
         }
         
-        /* Hover Effects */
-        .scout-section:hover,
-        .beacon-section:hover,
-        .aura-core:hover {
-            transform: translateY(-5px);
-            transition: transform 0.3s ease;
-        }
-        
-        .aura-capability:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transition: background 0.2s ease;
-        }
-        
+        /* Responsive Design */
         @media (max-width: 1200px) {
             .architecture-diagram {
+                grid-template-columns: 250px 1fr 250px;
+                gap: 20px;
+            }
+            
+            .scout-section,
+            .beacon-section {
+                padding: 20px;
+            }
+            
+            .aura-core {
+                padding: 25px;
+            }
+        }
+        
+        @media (max-width: 968px) {
+            body {
+                padding: 15px;
+            }
+            
+            .architecture-diagram {
                 grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto;
+                grid-template-rows: auto;
+                gap: 25px;
             }
             
             .scout-section {
@@ -407,19 +436,83 @@
                 grid-row: 1;
             }
             
-            .aura-core {
+            .flow-arrows {
                 grid-column: 1;
                 grid-row: 2;
             }
             
-            .beacon-section {
+            .aura-core {
                 grid-column: 1;
                 grid-row: 3;
+            }
+            
+            .bottom-flows {
+                grid-column: 1;
+                grid-row: 4;
+            }
+            
+            .beacon-section {
+                grid-column: 1;
+                grid-row: 5;
+            }
+            
+            .overview-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header {
+                margin-bottom: 30px;
+            }
+            
+            .scout-section,
+            .beacon-section,
+            .aura-core {
+                padding: 20px 15px;
+            }
+            
+            .aura-capabilities {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 8px;
+            }
+            
+            .behavioral-items {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 8px;
+            }
+            
+            .overview-card {
+                padding: 20px;
             }
             
             .flow-arrows,
             .bottom-flows {
                 display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .scout-domain,
+            .beacon-domain {
+                padding: 10px;
+            }
+            
+            .aura-domain {
+                padding: 12px;
+            }
+            
+            .aura-capabilities {
+                grid-template-columns: 1fr;
+            }
+            
+            .behavioral-items {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -428,7 +521,7 @@
     <div class="container">
         <div class="header">
             <h1 class="title">AURA Framework Architecture</h1>
-            <p class="subtitle">Agent-Unified Resource Architecture for Commerce Intelligence</p>
+            <p class="subtitle">Agentic Universal Request/Response Architecture</p>
         </div>
         
         <div class="architecture-diagram">
@@ -449,7 +542,7 @@
                     
                     <div class="scout-domain">
                         <div class="domain-title">🧠 Learning & Adaptation</div>
-                        <div class="domain-subtitle">Preferences, context, intent</div>
+                        <div class="domain-subtitle">Preferences, context, intent, behavioral profiles</div>
                     </div>
                     
                     <div class="scout-domain">
@@ -495,7 +588,7 @@
                 <div class="aura-domains">
                     <div class="aura-domain">
                         <div class="domain-title">🔗 Client Integration & Management</div>
-                        <div class="domain-capabilities">Agent Discovery & Registration • Identity • Preferences • Payment • Shipping • Language • Risk • Trust • Reliability</div>
+                        <div class="domain-capabilities">Agent Discovery & Registration • Multi-dimensional Reputation • Identity • Preferences • Payment • Shipping • Language • Risk • Trust • Reliability</div>
                     </div>
                     
                     <div class="aura-domain">
@@ -523,6 +616,9 @@
                         <div class="behavioral-item">Brand Loyalty</div>
                         <div class="behavioral-item">Research Depth</div>
                         <div class="behavioral-item">Social Influence</div>
+                        <div class="behavioral-item">Economic Profiles</div>
+                        <div class="behavioral-item">Compatibility Scoring</div>
+                        <div class="behavioral-item">Network Health</div>
                         <div class="behavioral-item">Channel Preferences</div>
                         <div class="behavioral-item">Urgency Levels</div>
                     </div>
@@ -604,8 +700,13 @@
                 </div>
                 
                 <div class="overview-card">
-                    <h3 class="card-title">Behavioral Intelligence</h3>
-                    <p class="card-description">The system adapts to individual decision-making patterns, timing preferences, and contextual factors to optimize engagement moments.</p>
+                    <h3 class="card-title">Behavioral Intelligence & Market Design</h3>
+                    <p class="card-description">AURA uses behavioral economics and game theory to match Scout profiles with compatible Beacon strategies, creating cooperative commerce markets where 'nice' agents outperform purely rational optimization through trust-based relationships and reputation scoring.</p>
+                </div>
+                
+                <div class="overview-card">
+                    <h3 class="card-title">Identity Abstraction & Privacy</h3>
+                    <p class="card-description">Beacons can make personalized offers based on purchasing patterns without accessing consumer identity until transaction completion. This enables sophisticated dynamic pricing while protecting user privacy and preventing data exploitation.</p>
                 </div>
             </div>
         </div>

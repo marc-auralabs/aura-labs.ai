@@ -3,1213 +3,395 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA - Infrastructure for Agentic Commerce</title>
-    <meta name="description" content="AURA provides open frameworks for building agentic commerce into any application. Scout and Beacon frameworks connect through AURA Core, enabling autonomous discovery, negotiation, and transactions.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Aura Labs - The Future of Agentic Commerce</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
-        :root {
-            --text-primary: #1a1a2e;
-            --text-secondary: #4a4a68;
-            --text-muted: #7c7c99;
-            --bg-white: #ffffff;
-            --bg-cream: #fafaf8;
-            --bg-dark: #12121a;
-            --border: #e8e8ed;
-            --accent: #5046e5;
-            --accent-hover: #4338ca;
-            --accent-light: #7c73f7;
-            --accent-bg: #f0efff;
-            --green: #059669;
-            --green-bg: #ecfdf5;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            scroll-padding-top: 90px;
-        }
-
+        
         body {
-            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-white);
-            color: var(--text-primary);
-            line-height: 1.65;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            background: #0a0e27;
+            color: #ffffff;
+            overflow-x: hidden;
         }
-
-        /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border);
-            z-index: 1000;
-            padding: 0 2rem;
-        }
-
-        .nav-container {
-            max-width: 1140px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 72px;
-        }
-
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.625rem;
-            text-decoration: none;
-            color: var(--text-primary);
-        }
-
-        .nav-logo .mark {
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .nav-logo .mark svg {
-            width: 36px;
-            height: 36px;
-        }
-
-        .nav-logo .wordmark {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
-            font-size: 1.375rem;
-            letter-spacing: -0.03em;
-        }
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 2.25rem;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: var(--text-secondary);
-            font-size: 0.9375rem;
-            font-weight: 500;
-            letter-spacing: -0.01em;
-            transition: color 0.15s;
-        }
-
-        .nav-links a:hover {
-            color: var(--text-primary);
-        }
-
-        .nav-cta {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.6875rem 1.125rem;
-            border-radius: 8px;
-            font-size: 0.9375rem;
-            font-weight: 500;
-            letter-spacing: -0.01em;
-            text-decoration: none;
-            transition: all 0.15s;
-            cursor: pointer;
-            border: none;
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-secondary);
-        }
-
-        .btn-ghost:hover {
-            color: var(--text-primary);
-            background: var(--bg-cream);
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--text-primary);
-            border: 1.5px solid var(--border);
-        }
-
-        .btn-outline:hover {
-            background: var(--bg-cream);
-            border-color: #d1d1db;
-        }
-
-        /* Hero Section */
+        
         .hero {
-            padding: 11rem 2rem 7rem;
-            text-align: center;
-            max-width: 860px;
-            margin: 0 auto;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.4375rem 1rem 0.4375rem 0.75rem;
-            background: var(--accent-bg);
-            color: var(--accent);
-            border-radius: 100px;
-            font-size: 0.8125rem;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-            margin-bottom: 1.75rem;
-        }
-
-        .hero h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 3.75rem;
-            font-weight: 700;
-            letter-spacing: -0.04em;
-            line-height: 1.05;
-            margin-bottom: 1.5rem;
-            color: var(--text-primary);
-        }
-
-        .hero-subtitle {
-            font-size: 1.1875rem;
-            color: var(--text-secondary);
-            max-width: 580px;
-            margin: 0 auto 2.75rem;
-            line-height: 1.7;
-            letter-spacing: -0.01em;
-        }
-
-        .hero-cta {
-            display: flex;
-            gap: 0.875rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .hero-cta .btn {
-            padding: 0.875rem 1.5rem;
-            font-size: 0.9375rem;
-        }
-
-        /* Code Preview */
-        .code-preview {
-            margin: 4.5rem auto 0;
-            max-width: 640px;
-            background: var(--bg-dark);
-            border-radius: 14px;
-            overflow: hidden;
-            text-align: left;
-            box-shadow:
-                0 0 0 1px rgba(0,0,0,0.08),
-                0 20px 50px -10px rgba(0, 0, 0, 0.3),
-                0 0 100px -20px rgba(80, 70, 229, 0.15);
-        }
-
-        .code-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 1rem 1.25rem;
-            background: rgba(255, 255, 255, 0.04);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .code-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            opacity: 0.8;
-        }
-
-        .code-dot.red { background: #ff5f57; }
-        .code-dot.yellow { background: #febc2e; }
-        .code-dot.green { background: #28c840; }
-
-        .code-title {
-            margin-left: auto;
-            color: rgba(255,255,255,0.4);
-            font-size: 0.8125rem;
-            font-family: 'IBM Plex Mono', monospace;
-        }
-
-        .code-body {
-            padding: 1.375rem 1.5rem;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.8125rem;
-            line-height: 1.75;
-            color: #e2e4e8;
-            overflow-x: auto;
-        }
-
-        .code-body .comment { color: #6b7280; }
-        .code-body .keyword { color: #c084fc; }
-        .code-body .string { color: #86efac; }
-        .code-body .function { color: #60a5fa; }
-        .code-body .property { color: #fcd34d; }
-
-        /* Section styling */
-        .section-cream {
-            background: var(--bg-cream);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .container {
-            max-width: 1140px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .section-header h2 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 700;
-            letter-spacing: -0.035em;
-            margin-bottom: 0.875rem;
-            color: var(--text-primary);
-        }
-
-        .section-header p {
-            font-size: 1.0625rem;
-            color: var(--text-secondary);
-            max-width: 520px;
-            margin: 0 auto;
-            letter-spacing: -0.01em;
-        }
-
-        /* What is AURA Section */
-        .what-section {
-            padding: 6.5rem 0;
-        }
-
-        .definition-box {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 2.25rem 2.5rem;
-            max-width: 760px;
-            margin: 0 auto 4.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .definition-box blockquote {
-            font-size: 1.0625rem;
-            color: var(--text-secondary);
-            font-style: italic;
-            line-height: 1.85;
-            border-left: 3px solid var(--accent);
-            padding-left: 1.5rem;
-            letter-spacing: -0.01em;
-        }
-
-        /* Architecture Grid */
-        .arch-grid {
-            display: grid;
-            grid-template-columns: 1fr 60px 1fr 60px 1fr;
-            gap: 0;
-            align-items: start;
-        }
-
-        .arch-card {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 2rem;
-            transition: all 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .arch-card:hover {
-            border-color: var(--accent);
-            box-shadow: 0 4px 20px rgba(80, 70, 229, 0.12);
-        }
-
-        .arch-card h3 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.1875rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.375rem;
-            display: flex;
-            align-items: center;
-            gap: 0.625rem;
-            flex-wrap: wrap;
-        }
-
-        .arch-card .badge {
-            font-family: 'IBM Plex Sans', sans-serif;
-            font-size: 0.625rem;
-            padding: 0.25rem 0.5rem;
-            background: var(--accent-bg);
-            color: var(--accent);
-            border-radius: 4px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        .arch-card .subtitle {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            margin-bottom: 1rem;
-            letter-spacing: -0.01em;
-        }
-
-        .arch-card p {
-            color: var(--text-secondary);
-            font-size: 0.9375rem;
-            margin-bottom: 1.25rem;
-            letter-spacing: -0.01em;
-        }
-
-        .arch-card ul {
-            list-style: none;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .arch-card ul li {
-            padding: 0.375rem 0;
-            padding-left: 1.25rem;
-            position: relative;
-            letter-spacing: -0.01em;
-        }
-
-        .arch-card ul li::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0.75rem;
-            width: 5px;
-            height: 5px;
-            background: var(--accent);
-            border-radius: 50%;
-        }
-
-        .arch-connector {
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding-top: 3.5rem;
-        }
-
-        .arch-connector .line {
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, var(--border) 0%, var(--accent) 50%, var(--border) 100%);
             position: relative;
-        }
-
-        .arch-connector span {
-            font-size: 0.6875rem;
-            color: var(--text-muted);
-            margin-top: 0.625rem;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 500;
-        }
-
-        /* How It Works */
-        .how-section {
-            padding: 6.5rem 0;
-        }
-
-        .flow-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2rem;
-        }
-
-        .flow-step {
-            text-align: center;
-        }
-
-        .flow-number {
-            width: 52px;
-            height: 52px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-            color: white;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
-            font-size: 1.375rem;
-            margin: 0 auto 1.125rem;
-        }
-
-        .flow-step h3 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.0625rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.625rem;
-        }
-
-        .flow-step p {
-            font-size: 0.9375rem;
-            color: var(--text-secondary);
-            letter-spacing: -0.01em;
-            line-height: 1.6;
-        }
-
-        /* Integration Section */
-        .integration-section {
-            padding: 6.5rem 0;
-            background: var(--bg-dark);
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .integration-section::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 800px;
-            height: 400px;
-            background: radial-gradient(ellipse at center, rgba(80, 70, 229, 0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .integration-section .section-header h2 {
-            color: white;
-        }
-
-        .integration-section .section-header p {
-            color: #9ca3af;
-        }
-
-        .integration-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            position: relative;
-        }
-
-        .integration-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
             padding: 2rem;
-            transition: all 0.2s;
         }
-
-        .integration-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.12);
+        
+        .glow-orb {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 179, 237, 0.4) 0%, rgba(139, 92, 246, 0.3) 40%, transparent 70%);
+            filter: blur(60px);
+            animation: pulse 4s ease-in-out infinite;
+            z-index: 0;
         }
-
-        .integration-card .label {
-            font-size: 0.6875rem;
-            color: var(--accent-light);
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .logo {
+            width: 360px;
+            height: auto;
+            max-height: 360px;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+            animation: fadeInDown 1s ease-out;
+            object-fit: contain;
+            display: block;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .hero-content {
+            text-align: center;
+            max-width: 900px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        h1 {
+            font-size: 4.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #63b3ed, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out 0.2s both;
+            line-height: 1.2;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .tagline {
+            font-size: 1.8rem;
+            color: #94a3b8;
+            margin-bottom: 3rem;
+            font-weight: 300;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            font-size: 1.2rem;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.75rem;
-        }
-
-        .integration-card h3 {
-            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 50px;
             color: white;
-            font-size: 1.125rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.625rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            animation: fadeInUp 1s ease-out 0.6s both;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3);
         }
-
-        .integration-card p {
-            color: #9ca3af;
-            font-size: 0.9375rem;
-            margin-bottom: 0.875rem;
-            letter-spacing: -0.01em;
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px rgba(59, 130, 246, 0.5);
+        }
+        
+        .stats-section {
+            padding: 6rem 2rem;
+            background: linear-gradient(180deg, #0a0e27 0%, #1e1b4b 100%);
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 4rem;
+            background: linear-gradient(135deg, #63b3ed, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+        
+        .stat-number {
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #63b3ed, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-label {
+            font-size: 1.3rem;
+            color: #e2e8f0;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-description {
+            font-size: 1rem;
+            color: #94a3b8;
             line-height: 1.6;
         }
-
-        .integration-card .examples {
-            font-size: 0.8125rem;
-            color: #6b7280;
-            letter-spacing: -0.01em;
+        
+        .conversion-section {
+            padding: 6rem 2rem;
+            background: #0a0e27;
         }
-
-        .integration-card .examples strong {
-            color: #9ca3af;
-        }
-
-        /* Developers Section */
-        .dev-section {
-            padding: 6.5rem 0;
-        }
-
-        .dev-grid {
+        
+        .comparison-container {
+            max-width: 1200px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4.5rem;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 3rem;
             align-items: center;
         }
-
-        .dev-content h2 {
-            font-family: 'Space Grotesk', sans-serif;
+        
+        .comparison-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            text-align: center;
+            border: 2px solid;
+            transition: all 0.3s ease;
+        }
+        
+        .old-way {
+            border-color: rgba(239, 68, 68, 0.5);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+        }
+        
+        .new-way {
+            border-color: rgba(34, 197, 94, 0.5);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05));
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(34, 197, 94, 0.5); }
+        }
+        
+        .comparison-label {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        
+        .old-way .comparison-label {
+            color: #ef4444;
+        }
+        
+        .new-way .comparison-label {
+            color: #22c55e;
+        }
+        
+        .comparison-rate {
+            font-size: 4rem;
+            font-weight: 900;
+            margin: 1rem 0;
+        }
+        
+        .old-way .comparison-rate {
+            color: #ef4444;
+        }
+        
+        .new-way .comparison-rate {
+            color: #22c55e;
+        }
+        
+        .comparison-desc {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+        
+        .vs-divider {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+            padding: 1.5rem 2rem;
+            border-radius: 50%;
+            border: 3px solid rgba(139, 92, 246, 0.3);
+        }
+        
+        .multiplier {
+            text-align: center;
+            margin-top: 4rem;
             font-size: 2.5rem;
             font-weight: 700;
-            letter-spacing: -0.035em;
-            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #63b3ed, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
-        .dev-content > p {
-            color: var(--text-secondary);
-            font-size: 1.0625rem;
-            margin-bottom: 2rem;
-            letter-spacing: -0.01em;
+        
+        .footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            background: linear-gradient(180deg, #0a0e27 0%, #1e1b4b 100%);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        .dev-features {
-            list-style: none;
-            margin-bottom: 2.25rem;
-        }
-
-        .dev-features li {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.875rem;
-            padding: 0.6875rem 0;
-        }
-
-        .dev-features .check {
-            width: 22px;
-            height: 22px;
-            background: var(--green-bg);
-            color: var(--green);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        .dev-features span {
-            color: var(--text-secondary);
-            letter-spacing: -0.01em;
-        }
-
-        .dev-features span strong {
-            color: var(--text-primary);
-        }
-
-        .dev-links {
-            display: flex;
-            gap: 0.875rem;
-            flex-wrap: wrap;
-        }
-
-        .dev-code {
-            background: var(--bg-cream);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 1.75rem 2rem;
-        }
-
-        .dev-code pre {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.8125rem;
-            line-height: 1.8;
-            overflow-x: auto;
-            color: var(--text-secondary);
-        }
-
-        .dev-code .comment { color: var(--text-muted); }
-        .dev-code .success { color: var(--green); }
-
-        /* Footer */
-        footer {
-            padding: 4.5rem 0;
-            border-top: 1px solid var(--border);
-        }
-
-        .footer-container {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            gap: 4rem;
-        }
-
-        .footer-brand {
-            max-width: 260px;
-        }
-
-        .footer-brand .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .footer-brand .logo .mark {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .footer-brand .logo .mark svg {
-            width: 28px;
-            height: 28px;
-        }
-
-        .footer-brand .logo span {
-            font-family: 'Space Grotesk', sans-serif;
+        
+        .footer-logo {
+            font-size: 2rem;
             font-weight: 700;
-            font-size: 1.125rem;
-            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #63b3ed, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
-        .footer-brand p {
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            line-height: 1.65;
-            letter-spacing: -0.01em;
+        
+        .footer-text {
+            color: #64748b;
+            font-size: 0.9rem;
         }
-
-        .footer-column h4 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-muted);
-            margin-bottom: 1.125rem;
-        }
-
-        .footer-column ul {
-            list-style: none;
-        }
-
-        .footer-column a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9375rem;
-            display: block;
-            padding: 0.375rem 0;
-            transition: color 0.15s;
-            letter-spacing: -0.01em;
-        }
-
-        .footer-column a:hover {
-            color: var(--text-primary);
-        }
-
-        .footer-bottom {
-            margin-top: 3.5rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            letter-spacing: -0.01em;
-        }
-
-        .footer-bottom a {
-            color: var(--text-muted);
-            text-decoration: none;
-        }
-
-        .footer-bottom a:hover {
-            color: var(--text-secondary);
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .arch-grid {
-                grid-template-columns: 1fr;
-                gap: 1.25rem;
-            }
-
-            .arch-connector {
-                display: none;
-            }
-
-            .integration-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .dev-grid {
-                grid-template-columns: 1fr;
-                gap: 3rem;
-            }
-
-            .footer-container {
-                grid-template-columns: 1fr 1fr;
-                gap: 2.5rem;
-            }
-        }
-
+        
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hero {
-                padding: 9rem 1.5rem 5rem;
-            }
-
-            .hero h1 {
+            h1 {
                 font-size: 2.5rem;
             }
-
-            .hero-subtitle {
-                font-size: 1.0625rem;
+            
+            .tagline {
+                font-size: 1.3rem;
             }
-
-            .hero-cta {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .section-header h2 {
-                font-size: 2rem;
-            }
-
-            .flow-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1.5rem;
-            }
-
-            .footer-container {
+            
+            .comparison-container {
                 grid-template-columns: 1fr;
+                gap: 2rem;
             }
-
-            .footer-bottom {
-                flex-direction: column;
-                gap: 0.875rem;
-                text-align: center;
+            
+            .vs-divider {
+                transform: rotate(90deg);
+            }
+            
+            .stat-number {
+                font-size: 3rem;
             }
         }
     </style>
 </head>
 <body>
-    <nav>
-        <div class="nav-container">
-            <a href="index.html" class="nav-logo">
-                <div class="mark">
-                    <!-- AURA Labs: Concentric circles -->
-                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="24" cy="24" r="22" fill="#3730a3"/>
-                        <circle cx="24" cy="24" r="16" fill="#5046e5"/>
-                        <circle cx="24" cy="24" r="10" fill="#818cf8"/>
-                        <circle cx="24" cy="24" r="5" fill="#c7d2fe"/>
-                    </svg>
-                </div>
-                <span class="wordmark">AURA Labs</span>
-            </a>
-
-            <div class="nav-links">
-                <a href="architecture.html">Architecture</a>
-                <a href="how-it-works.html">How It Works</a>
-                <a href="developers.html">Developers</a>
-                <a href="https://marcmassar.substack.com" target="_blank">Blog</a>
+    <section class="hero">
+        <div class="glow-orb"></div>
+        
+        <img class="logo" src="auratransparentfinal.png" alt="Aura Labs Logo" />
+        
+        <div class="hero-content">
+            <h1>The Future of Commerce is Agentic</h1>
+            <p class="tagline">Empowering AI agents to discover, engage, and transact on behalf of everyone</p>
+            <a href="#learn-more" class="cta-button">Discover the Revolution</a>
+        </div>
+    </section>
+    
+    <section id="learn-more" class="stats-section">
+        <h2 class="section-title">The Shift is Happening Now</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">33%</div>
+                <div class="stat-label">of Gen Z prefer AI platforms</div>
+                <div class="stat-description">for product research versus traditional search engines</div>
             </div>
-
-            <div class="nav-cta">
-                <a href="https://github.com/aura-labs" class="btn btn-ghost" target="_blank">GitHub</a>
-                <a href="developers.html" class="btn btn-primary">Get Started</a>
+            
+            <div class="stat-card">
+                <div class="stat-number">27%</div>
+                <div class="stat-label">of Millennials trust AI</div>
+                <div class="stat-description">over human shopping recommendations</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number">71%</div>
+                <div class="stat-label">of consumers want AI</div>
+                <div class="stat-description">integrated into their shopping experience</div>
             </div>
         </div>
-    </nav>
-
-    <main>
-        <!-- Hero -->
-        <section class="hero">
-            <h1>Infrastructure for<br>Agentic Commerce</h1>
-
-            <p class="hero-subtitle">
-                Open frameworks for building autonomous commerce into any application.
-                Enable AI agents to participate in commerce with explicit trust, consent, privacy, and data sovereignty, for buyers and sellers.
-            </p>
-
-            <div class="hero-cta">
-                <a href="#developers" class="btn btn-primary">
-                    Read the Docs
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                </a>
-                <a href="https://github.com/aura-labs" class="btn btn-outline" target="_blank">
-                    <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                    </svg>
-                    View on GitHub
-                </a>
+    </section>
+    
+    <section class="conversion-section">
+        <h2 class="section-title">The Conversion Revolution</h2>
+        <div class="comparison-container">
+            <div class="comparison-card old-way">
+                <div class="comparison-label">Traditional Search</div>
+                <div class="comparison-rate">0.05%</div>
+                <div class="comparison-desc">Conversion Rate<br><strong>99.95% waste</strong></div>
             </div>
-
-            <!-- Code Preview -->
-            <div class="code-preview">
-                <div class="code-header">
-                    <span class="code-dot red"></span>
-                    <span class="code-dot yellow"></span>
-                    <span class="code-dot green"></span>
-                    <span class="code-title">simple-beacon.js</span>
-                </div>
-                <div class="code-body">
-<span class="comment">// Initialize a Beacon to signal market participation</span>
-<span class="keyword">const</span> beacon = <span class="keyword">new</span> <span class="function">SimpleBeacon</span>({
-  <span class="property">beaconId</span>: <span class="string">'my-store-beacon'</span>,
-  <span class="property">auraCore</span>: <span class="string">'wss://api.aura-labs.ai'</span>
-});
-
-<span class="comment">// Handle Scout inquiries with dynamic pricing</span>
-beacon.<span class="function">on</span>(<span class="string">'inquiry'</span>, <span class="keyword">async</span> (inquiry) => {
-  <span class="keyword">const</span> matches = <span class="keyword">await</span> beacon.<span class="function">searchInventory</span>(inquiry.intent);
-  <span class="keyword">return</span> beacon.<span class="function">createPropositions</span>(matches, inquiry.behavioralData);
-});
-
-beacon.<span class="function">connect</span>();
-                </div>
-            </div>
-        </section>
-
-        <!-- What is AURA -->
-        <section class="what-section section-cream" id="architecture">
-            <div class="container">
-                <div class="section-header">
-                    <h2>What is Agentic Commerce?</h2>
-                    <p>A paradigm where AI agents autonomously handle commerce on behalf of humans</p>
-                </div>
-
-                <div class="definition-box">
-                    <blockquote>
-                        "Agentic commerce is the orchestration of digital exchange through autonomous systems that interpret intent,
-                        align with declared or inferred values and constraints, and execute decisions under explicit frameworks of consent and trust."
-                    </blockquote>
-                </div>
-
-                <!-- Architecture -->
-                <div class="arch-grid">
-                    <div class="arch-card">
-                        <h3>
-                            Scout Framework
-                            <span class="badge">Integration</span>
-                        </h3>
-                        <p class="subtitle">User-sovereign discovery agent</p>
-                        <p>
-                            A buying agent framework you integrate into buyer-facing applications. Scouts represent user intent
-                            and negotiate on their behalf, without revealing identity until transaction.
-                        </p>
-                        <ul>
-                            <li>Shopping apps</li>
-                            <li>Enterprise procurement portals</li>
-                            <li>Warehouse management systems</li>
-                            <li>Any platform where users search for products</li>
-                        </ul>
-                    </div>
-
-                    <div class="arch-connector">
-                        <div class="line"></div>
-                        <span>Intent</span>
-                    </div>
-
-                    <div class="arch-card">
-                        <h3>
-                            AURA Core
-                            <span class="badge">Platform</span>
-                        </h3>
-                        <p class="subtitle">Neutral broker &amp; marketplace</p>
-                        <p>
-                            The cloud platform where Scouts and Beacons register intent, creating dynamic markets.
-                            AURA Core acts as the neutral referee ensuring mutual benefit.
-                        </p>
-                        <ul>
-                            <li>Intent-based market creation</li>
-                            <li>Trust &amp; reputation management</li>
-                            <li>Identity abstraction layer</li>
-                            <li>Protocol enforcement</li>
-                        </ul>
-                    </div>
-
-                    <div class="arch-connector">
-                        <div class="line"></div>
-                        <span>Proposition</span>
-                    </div>
-
-                    <div class="arch-card">
-                        <h3>
-                            Beacon Framework
-                            <span class="badge">Integration</span>
-                        </h3>
-                        <p class="subtitle">Selling agent engine</p>
-                        <p>
-                            A selling agent framework you integrate into seller systems. Beacons signal market participation
-                            and present claims to buyers, without exposing underlying inventory or prices.
-                        </p>
-                        <ul>
-                            <li>ERP and supply chain systems</li>
-                            <li>Inventory management platforms</li>
-                            <li>E-commerce backends</li>
-                            <li>Product catalog services</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- How It Works -->
-        <section class="how-section" id="how-it-works">
-            <div class="container">
-                <div class="section-header">
-                    <h2>How It Works</h2>
-                    <p>From intent to transaction in four steps</p>
-                </div>
-
-                <div class="flow-grid">
-                    <div class="flow-step">
-                        <div class="flow-number">1</div>
-                        <h3>Intent Registration</h3>
-                        <p>Scout registers user intent with AURA Core: preferences, constraints, and behavioral context. Identity remains abstracted.</p>
-                    </div>
-
-                    <div class="flow-step">
-                        <div class="flow-number">2</div>
-                        <h3>Discovery</h3>
-                        <p>AURA Core matches intent against registered Beacon propositions. Relevant sellers receive anonymized inquiries.</p>
-                    </div>
-
-                    <div class="flow-step">
-                        <div class="flow-number">3</div>
-                        <h3>Negotiation</h3>
-                        <p>Beacons respond with dynamic pricing based on behavioral data. Scouts evaluate offers against user constraints.</p>
-                    </div>
-
-                    <div class="flow-step">
-                        <div class="flow-number">4</div>
-                        <h3>Transaction</h3>
-                        <p>Upon acceptance, identity is revealed only for fulfillment. Payment and delivery coordination completes the exchange.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Integration Examples -->
-        <section class="integration-section">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Built for Integration</h2>
-                    <p>Scout and Beacon frameworks connect to your existing systems</p>
-                </div>
-
-                <div class="integration-grid">
-                    <div class="integration-card">
-                        <div class="label">Scout Framework</div>
-                        <h3>Buyer Applications</h3>
-                        <p>
-                            Embed Scout into any application where users express purchase intent.
-                            The framework handles discovery, negotiation, and consent management.
-                        </p>
-                        <p class="examples">
-                            <strong>Examples:</strong> Shopping apps, price comparison tools, personal assistant apps,
-                            browser extensions, voice commerce interfaces
-                        </p>
-                    </div>
-
-                    <div class="integration-card">
-                        <div class="label">Scout Framework</div>
-                        <h3>Enterprise Procurement</h3>
-                        <p>
-                            Connect Scout to procurement workflows. Automate supplier discovery and
-                            negotiation while maintaining compliance and approval chains.
-                        </p>
-                        <p class="examples">
-                            <strong>Examples:</strong> Procurement portals, warehouse management,
-                            inventory replenishment systems, vendor management platforms
-                        </p>
-                    </div>
-
-                    <div class="integration-card">
-                        <div class="label">Beacon Framework</div>
-                        <h3>E-commerce &amp; Retail</h3>
-                        <p>
-                            Signal market participation to buying agents. Define dynamic pricing rules
-                            based on internal inventory state, demand, and behavioral patterns.
-                        </p>
-                        <p class="examples">
-                            <strong>Examples:</strong> Shopify/WooCommerce plugins, custom e-commerce backends,
-                            marketplace integrations, dropshipping platforms
-                        </p>
-                    </div>
-
-                    <div class="integration-card">
-                        <div class="label">Beacon Framework</div>
-                        <h3>Enterprise Systems</h3>
-                        <p>
-                            Connect your ERP, inventory, and supply chain systems. Enable real-time
-                            availability and pricing that reflects actual business state.
-                        </p>
-                        <p class="examples">
-                            <strong>Examples:</strong> SAP, Oracle, NetSuite integrations,
-                            custom inventory APIs, supply chain management systems
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Developers -->
-        <section class="dev-section" id="developers">
-            <div class="container">
-                <div class="dev-grid">
-                    <div class="dev-content">
-                        <h2>Start Building Today</h2>
-                        <p>
-                            Everything you need to add agentic commerce to your applications.
-                            Reference implementations, comprehensive documentation, and JSON schemas.
-                        </p>
-
-                        <ul class="dev-features">
-                            <li>
-                                <span class="check">✓</span>
-                                <span><strong>Protocol Specification</strong>: Complete WebSocket and REST API documentation</span>
-                            </li>
-                            <li>
-                                <span class="check">✓</span>
-                                <span><strong>Reference Implementations</strong>: Working Beacon in JavaScript/Node.js</span>
-                            </li>
-                            <li>
-                                <span class="check">✓</span>
-                                <span><strong>JSON Schemas</strong>: Validated message formats for all interactions</span>
-                            </li>
-                            <li>
-                                <span class="check">✓</span>
-                                <span><strong>Quickstart Guide</strong>: Get a Beacon running in 15 minutes</span>
-                            </li>
-                        </ul>
-
-                        <div class="dev-links">
-                            <a href="docs/QUICKSTART.md" class="btn btn-primary">Quickstart Guide</a>
-                            <a href="docs/ARCHITECTURE.md" class="btn btn-outline">Architecture</a>
-                            <a href="docs/protocol/README.md" class="btn btn-outline">Protocol</a>
-                        </div>
-                    </div>
-
-                    <div class="dev-code">
-                        <pre><span class="comment"># Clone and run the reference Beacon</span>
-git clone https://github.com/aura-labs/aura-framework
-cd aura-framework/beacons/simple-beacon
-
-<span class="comment"># Install dependencies</span>
-npm install
-
-<span class="comment"># Configure your Beacon</span>
-cp .env.example .env
-
-<span class="comment"># Start the Beacon</span>
-npm start
-
-<span class="success">✓ Beacon registered with AURA Core</span>
-<span class="success">✓ Ready to receive Scout inquiries</span></pre>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <div class="footer-container">
-                <div class="footer-brand">
-                    <div class="logo">
-                        <div class="mark">
-                            <!-- AURA Labs: Concentric circles -->
-                            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="24" cy="24" r="22" fill="#3730a3"/>
-                                <circle cx="24" cy="24" r="16" fill="#5046e5"/>
-                                <circle cx="24" cy="24" r="10" fill="#818cf8"/>
-                                <circle cx="24" cy="24" r="5" fill="#c7d2fe"/>
-                            </svg>
-                        </div>
-                        <span>AURA Labs</span>
-                    </div>
-                    <p>
-                        Building open infrastructure for the next era of commerce.
-                        Where AI agents transact on behalf of humans, under explicit consent.
-                    </p>
-                </div>
-
-                <div class="footer-column">
-                    <h4>Documentation</h4>
-                    <ul>
-                        <li><a href="docs/QUICKSTART.md">Quickstart</a></li>
-                        <li><a href="docs/ARCHITECTURE.md">Architecture</a></li>
-                        <li><a href="docs/protocol/README.md">Protocol Spec</a></li>
-                        <li><a href="docs/api/README.md">API Reference</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-column">
-                    <h4>Frameworks</h4>
-                    <ul>
-                        <li><a href="docs/scout/README.md">Scout SDK</a></li>
-                        <li><a href="docs/beacon/README.md">Beacon SDK</a></li>
-                        <li><a href="examples/">Examples</a></li>
-                        <li><a href="schemas/">JSON Schemas</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-column">
-                    <h4>Community</h4>
-                    <ul>
-                        <li><a href="https://github.com/aura-labs" target="_blank">GitHub</a></li>
-                        <li><a href="https://marcmassar.substack.com" target="_blank">Blog</a></li>
-                        <li><a href="CONTRIBUTING.md">Contributing</a></li>
-                        <li><a href="mailto:hello@aura-labs.ai">Contact</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="footer-bottom">
-                <span>© 2026 AURA Labs. Open source under MIT License.</span>
-                <a href="https://github.com/aura-labs/aura-framework" target="_blank">github.com/aura-labs</a>
+            
+            <div class="vs-divider">VS</div>
+            
+            <div class="comparison-card new-way">
+                <div class="comparison-label">Agent Engagement</div>
+                <div class="comparison-rate">~75%</div>
+                <div class="comparison-desc">Conversion Potential<br><strong>Pre-qualified intent</strong></div>
             </div>
         </div>
+        
+        <div class="multiplier">1,500x higher conversion when agents are engaged</div>
+    </section>
+    
+    <footer class="footer">
+        <div class="footer-logo">aura labs</div>
+        <p class="footer-text">Paving the way for the future of agentic commerce</p>
+        <p class="footer-text" style="margin-top: 1rem; font-size: 0.8rem;">Sources: Commerce/Future Commerce 2024, Capgemini Research Institute 2025, Mintel 2024</p>
+        <p class="footer-text">Copyright 2025 Aura Labs</p>
     </footer>
 </body>
 </html>

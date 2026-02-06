@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA Labs - Pitch Deck</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            background: #0a0e27;
+            color: #ffffff;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+        
+        /* Slide Container */
+        .slide-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .slide {
+            display: none;
+            width: 100%;
+            height: 100%;
+            padding: 4rem 6rem;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+        
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        /* Allow content to scroll on all devices */
+        @media (max-height: 900px) {
+            .slide.active {
+                justify-content: flex-start;
+                min-height: 100vh;
+                height: auto;
+                padding-top: 2rem;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Background Orb Effect */
+        .glow-orb {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 179, 237, 0.3) 0%, rgba(139, 92, 246, 0.2) 40%, transparent 70%);
+            filter: blur(80px);
+            animation: pulse 6s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+        
+        /* Typography */
+        .slide-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            padding-bottom: 3rem;
+        }
+        
+        .slide-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #63b3ed, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+        
+        .slide-subtitle {
+            font-size: 1.6rem;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+        
+        .slide h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #e2e8f0;
+        }
+        
+        .slide h3 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #cbd5e1;
+        }
+        
+        .slide p {
+            font-size: 1.3rem;
+            line-height: 1.7;
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Logo */
+        .logo {
+            width: 300px;
+            height: auto;
+            margin: 0 auto 1rem;
+            display: block;
+        }
+        
+        .logo-small {
+            width: 100px;
+            height: auto;
+            position: absolute;
+            top: 1.5rem;
+            left: 2.5rem;
+        }
+        
+        /* Add top padding to slides with logo-small to prevent overlap */
+        .slide:not(:first-child) .slide-content {
+            padding-top: 1rem;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #63b3ed, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-label {
+            font-size: 1.2rem;
+            color: #e2e8f0;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-description {
+            font-size: 1rem;
+            color: #94a3b8;
+        }
+        
+        /* Comparison Layout */
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 3rem;
+            align-items: center;
+            margin: 3rem 0;
+        }
+        
+        .comparison-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            text-align: center;
+            border: 2px solid;
+        }
+        
+        .old-way {
+            border-color: rgba(239, 68, 68, 0.5);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+        }
+        
+        .new-way {
+            border-color: rgba(34, 197, 94, 0.5);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05));
+        }
+        
+        .comparison-label {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .old-way .comparison-label {
+            color: #ef4444;
+        }
+        
+        .new-way .comparison-label {
+            color: #22c55e;
+        }
+        
+        .comparison-rate {
+            font-size: 3rem;
+            font-weight: 900;
+            margin: 1rem 0;
+        }
+        
+        .old-way .comparison-rate {
+            color: #ef4444;
+        }
+        
+        .new-way .comparison-rate {
+            color: #22c55e;
+        }
+        
+        .comparison-desc {
+            font-size: 1rem;
+            color: #94a3b8;
+        }
+        
+        .vs-text {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+            padding: 1rem 1.5rem;
+            border-radius: 50%;
+            border: 3px solid rgba(139, 92, 246, 0.3);
+        }
+        
+        /* Quote Block */
+        .quote-block {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid #8b5cf6;
+            padding: 2rem 3rem;
+            margin: 2rem 0;
+            border-radius: 10px;
+        }
+        
+        .quote-text {
+            font-size: 1.5rem;
+            font-style: italic;
+            color: #e2e8f0;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        .quote-source {
+            font-size: 1rem;
+            color: #94a3b8;
+            text-align: right;
+        }
+        
+        .quote-highlight {
+            color: #63b3ed;
+            font-weight: 700;
+        }
+        
+        /* Call to Action */
+        .cta-text {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 2rem 0;
+            background: linear-gradient(135deg, #63b3ed, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Three Column Layout */
+        .three-col {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .col-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .col-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #63b3ed;
+        }
+        
+        .col-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .col-card li {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .col-card li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+            font-weight: bold;
+        }
+        
+        /* Architecture Diagram */
+        .architecture-box {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 0.8rem 0;
+            border: 2px solid rgba(99, 179, 237, 0.3);
+        }
+        
+        .architecture-box h3 {
+            color: #63b3ed;
+            font-size: 1.3rem;
+            margin-bottom: 0.8rem;
+        }
+        
+        .architecture-box ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .architecture-box li {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            margin-bottom: 0.4rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .architecture-box li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #63b3ed;
+        }
+        
+        .arrow-down {
+            text-align: center;
+            color: #8b5cf6;
+            font-size: 2rem;
+            margin: 1rem 0;
+        }
+        
+        /* Navigation */
+        .slide-number {
+            position: absolute;
+            bottom: 2rem;
+            right: 3rem;
+            font-size: 1rem;
+            color: #64748b;
+            z-index: 10;
+        }
+        
+        .nav-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 3rem;
+            font-size: 0.9rem;
+            color: #475569;
+            z-index: 10;
+        }
+        
+        /* Source Citation */
+        .source {
+            font-size: 0.9rem;
+            color: #64748b;
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        /* Centered Content */
+        .centered {
+            text-align: center;
+        }
+        
+        /* Contact Info */
+        .contact-info {
+            text-align: center;
+            margin-top: 3rem;
+        }
+        
+        .contact-info p {
+            font-size: 1.2rem;
+            color: #cbd5e1;
+            margin: 0.5rem 0;
+        }
+        
+        /* ===== RESPONSIVE DESIGN ===== */
+        
+        /* Universal mobile fix - enable scrolling on all smaller screens */
+        @media (max-width: 1200px), (max-height: 900px) {
+            body {
+                overflow: visible !important;
+            }
+            
+            .slide {
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+            
+            .slide.active {
+                height: auto !important;
+                min-height: 100vh !important;
+                justify-content: flex-start !important;
+                padding-top: 2rem !important;
+            }
+            
+            /* Ensure content clears the logo on slides with logo-small */
+            .slide:not(:first-child) .slide-content {
+                padding-top: 5rem !important;
+                margin-top: 0 !important;
+            }
+            
+            /* First slide (title slide) needs less padding */
+            .slide:first-child .slide-content {
+                padding-top: 2rem !important;
+            }
+        }
+        
+        /* Tablets (iPad, landscape) */
+        @media (max-width: 1024px) {
+            body {
+                overflow: auto;
+            }
+            
+            .slide {
+                padding: 3rem 4rem;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            
+            .slide.active {
+                display: block;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .slide-content {
+                padding-bottom: 4rem; /* Extra space at bottom for scroll */
+            }
+            .slide {
+                padding: 3rem 4rem;
+            }
+            
+            .slide-title {
+                font-size: 2.8rem;
+            }
+            
+            .slide-subtitle {
+                font-size: 1.3rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.8rem;
+            }
+            
+            .slide h3 {
+                font-size: 1.4rem;
+            }
+            
+            .slide p {
+                font-size: 1.1rem;
+            }
+            
+            .logo {
+                width: 220px;
+            }
+            
+            .logo-small {
+                width: 70px;
+                top: 1.5rem;
+                left: 2rem;
+            }
+            
+            .stat-number {
+                font-size: 2.8rem;
+            }
+            
+            .stat-label {
+                font-size: 1rem;
+            }
+            
+            .comparison-rate {
+                font-size: 2.5rem;
+            }
+            
+            .cta-text {
+                font-size: 1.6rem;
+            }
+            
+            .quote-text {
+                font-size: 1.3rem;
+            }
+            
+            .col-card li {
+                font-size: 0.95rem;
+            }
+        }
+        
+        /* Tablets (iPad portrait) and larger phones */
+        @media (max-width: 768px) {
+            body {
+                overflow: auto;
+            }
+            
+            .slide {
+                padding: 2rem 2rem;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            
+            .slide.active {
+                display: block;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .slide-content {
+                padding-bottom: 3rem;
+            }
+            .slide {
+                padding: 2rem 2rem;
+            }
+            
+            .slide-title {
+                font-size: 2.2rem;
+            }
+            
+            .slide-subtitle {
+                font-size: 1.1rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+            }
+            
+            .slide h3 {
+                font-size: 1.2rem;
+            }
+            
+            .slide p {
+                font-size: 0.95rem;
+                margin-bottom: 1rem;
+            }
+            
+            .logo {
+                width: 180px;
+                margin-bottom: 1.5rem;
+            }
+            
+            .logo-small {
+                width: 60px;
+                top: 1rem;
+                left: 1rem;
+            }
+            
+            /* Stack grids vertically */
+            .stats-grid,
+            .three-col {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin: 2rem 0;
+            }
+            
+            .stat-card {
+                padding: 1.5rem;
+            }
+            
+            .stat-number {
+                font-size: 2.5rem;
+            }
+            
+            .stat-label {
+                font-size: 0.95rem;
+            }
+            
+            .stat-description {
+                font-size: 0.85rem;
+            }
+            
+            /* Comparison layout */
+            .comparison-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .comparison-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .comparison-rate {
+                font-size: 2.2rem;
+            }
+            
+            .vs-text {
+                font-size: 1.5rem;
+                padding: 0.8rem 1.2rem;
+                display: inline-block;
+                margin: 0 auto;
+            }
+            
+            .cta-text {
+                font-size: 1.3rem;
+                margin: 1.5rem 0;
+            }
+            
+            .quote-block {
+                padding: 1.5rem 1.5rem;
+                margin: 1.5rem 0;
+            }
+            
+            .quote-text {
+                font-size: 1.1rem;
+            }
+            
+            .col-card {
+                padding: 1.5rem;
+            }
+            
+            .col-card h3 {
+                font-size: 1.2rem;
+            }
+            
+            .col-card li {
+                font-size: 0.9rem;
+            }
+            
+            .architecture-box {
+                padding: 1.2rem;
+                margin: 0.6rem 0;
+            }
+            
+            .architecture-box h3 {
+                font-size: 1.1rem;
+            }
+            
+            .architecture-box li {
+                font-size: 0.85rem;
+            }
+            
+            .slide-number {
+                bottom: 1rem;
+                right: 1.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .nav-hint {
+                bottom: 1rem;
+                left: 1.5rem;
+                font-size: 0.8rem;
+            }
+            
+            .source {
+                font-size: 0.75rem;
+                margin-top: 1rem;
+            }
+            
+            /* Make comparison label and description smaller */
+            .comparison-label {
+                font-size: 1.1rem;
+            }
+            
+            .comparison-desc {
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* Mobile phones (portrait) */
+        @media (max-width: 480px) {
+            body {
+                overflow: auto;
+            }
+            
+            .slide {
+                padding: 1.5rem 1.5rem;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            
+            .slide.active {
+                display: block;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .slide-content {
+                padding-bottom: 3rem;
+            }
+            .slide {
+                padding: 1.5rem 1.5rem;
+            }
+            
+            .slide-title {
+                font-size: 1.8rem;
+                margin-bottom: 1rem;
+            }
+            
+            .slide-subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 1rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.3rem;
+                margin-bottom: 0.8rem;
+            }
+            
+            .slide h3 {
+                font-size: 1rem;
+            }
+            
+            .slide p {
+                font-size: 0.85rem;
+            }
+            
+            .logo {
+                width: 140px;
+                margin-bottom: 1rem;
+            }
+            
+            .logo-small {
+                width: 50px;
+                top: 0.8rem;
+                left: 0.8rem;
+            }
+            
+            .stat-card {
+                padding: 1.2rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .stat-label {
+                font-size: 0.85rem;
+            }
+            
+            .stat-description {
+                font-size: 0.75rem;
+            }
+            
+            .comparison-card {
+                padding: 1.5rem 1rem;
+            }
+            
+            .comparison-rate {
+                font-size: 1.8rem;
+            }
+            
+            .comparison-label {
+                font-size: 1rem;
+            }
+            
+            .comparison-desc {
+                font-size: 0.8rem;
+            }
+            
+            .vs-text {
+                font-size: 1.2rem;
+                padding: 0.6rem 1rem;
+            }
+            
+            .cta-text {
+                font-size: 1.1rem;
+                margin: 1rem 0;
+            }
+            
+            .quote-block {
+                padding: 1rem 1rem;
+                margin: 1rem 0;
+            }
+            
+            .quote-text {
+                font-size: 0.95rem;
+            }
+            
+            .quote-source {
+                font-size: 0.8rem;
+            }
+            
+            .col-card {
+                padding: 1.2rem;
+            }
+            
+            .col-card h3 {
+                font-size: 1rem;
+                margin-bottom: 0.8rem;
+            }
+            
+            .col-card li {
+                font-size: 0.8rem;
+                margin-bottom: 0.6rem;
+            }
+            
+            .architecture-box {
+                padding: 1rem;
+            }
+            
+            .architecture-box h3 {
+                font-size: 0.95rem;
+            }
+            
+            .architecture-box li {
+                font-size: 0.75rem;
+            }
+            
+            .slide-number {
+                bottom: 0.8rem;
+                right: 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .nav-hint {
+                display: none; /* Hide on small screens to save space */
+            }
+            
+            .source {
+                font-size: 0.7rem;
+            }
+            
+            .contact-info p {
+                font-size: 0.95rem;
+            }
+            
+            /* Reduce glow orb size on mobile */
+            .glow-orb {
+                width: 400px;
+                height: 400px;
+            }
+        }
+        
+        /* Landscape orientation adjustments for phones */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                overflow: auto;
+            }
+            
+            .slide {
+                padding: 1rem 2rem;
+                justify-content: flex-start;
+                overflow-y: auto;
+                overflow-x: hidden;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .slide.active {
+                display: block;
+            }
+            
+            .logo {
+                width: 100px;
+            }
+            
+            .logo-small {
+                width: 40px;
+            }
+            
+            .slide-title {
+                font-size: 1.5rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .slide-subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 0.8rem;
+            }
+            
+            .slide h2 {
+                font-size: 1.2rem;
+            }
+            
+            .stat-number {
+                font-size: 1.8rem;
+            }
+            
+            .stats-grid,
+            .three-col {
+                gap: 1rem;
+                margin: 1rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <div class="glow-orb" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+            <div class="slide-content centered">
+                <img src="./auratransparentfinal_noname.png" class="logo" alt="AURA Labs Logo">
+                <h1 class="slide-title" style="font-size: 3.5rem; margin-bottom: 1.5rem;">AURA LABS</h1>
+                <p class="slide-subtitle" style="font-size: 1.6rem; margin-bottom: 2rem;">Building the Operating System for Agentic Commerce</p>
+                <div style="margin-top: 3rem;">
+                    <p style="font-size: 1.2rem; color: #94a3b8;">Marc Massar</p>
+                    <p style="font-size: 1rem; color: #64748b;">Founder & CEO</p>
+                </div>
+            </div>
+            <div class="slide-number">1 / 20</div>
+            <div class="nav-hint">Use arrow keys to navigate →</div>
+        </div>
+
+        <!-- Slide 2: The Opening Hook -->
+        <div class="slide">
+            <div class="glow-orb" style="right: -200px; top: -200px;"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2>The Product Doesn't Exist Yet</h2>
+                <div class="quote-block">
+                    <p class="quote-text">
+                        "AI agents—autonomous systems that perceive, reason, and act on behalf of human principals—are poised to transform digital markets by dramatically reducing transaction costs... While we cannot hope to describe the precise design, <span class="quote-highlight">this product/service does not yet exist, at least in the form being imagined.</span>"
+                    </p>
+                    <p class="quote-source">— MIT, Harvard & BU Economists, NBER 2025</p>
+                </div>
+                <p class="cta-text">We're building it.</p>
+            </div>
+            <div class="slide-number">2 / 20</div>
+        </div>
+
+        <!-- Slide 3: The Market Reality -->
+        <div class="slide">
+            <div class="glow-orb" style="left: -200px; bottom: -200px;"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2 style="font-size: 1.9rem; margin-bottom: 1rem;">Commerce is Broken for AI Agents</h2>
+                <div class="stats-grid" style="gap: 1.5rem; margin: 1.5rem 0;">
+                    <div class="stat-card" style="padding: 1.5rem;">
+                        <div class="stat-number" style="font-size: 3rem; margin-bottom: 0.8rem;">33%</div>
+                        <div class="stat-label" style="font-size: 1.1rem; margin-bottom: 0.4rem;">of Gen Z prefer AI platforms</div>
+                        <div class="stat-description" style="font-size: 0.9rem;">for product research</div>
+                    </div>
+                    <div class="stat-card" style="padding: 1.5rem;">
+                        <div class="stat-number" style="font-size: 3rem; margin-bottom: 0.8rem;">27%</div>
+                        <div class="stat-label" style="font-size: 1.1rem; margin-bottom: 0.4rem;">of Millennials trust AI</div>
+                        <div class="stat-description" style="font-size: 0.9rem;">over human shopping recommendations</div>
+                    </div>
+                    <div class="stat-card" style="padding: 1.5rem;">
+                        <div class="stat-number" style="font-size: 3rem; margin-bottom: 0.8rem;">71%</div>
+                        <div class="stat-label" style="font-size: 1.1rem; margin-bottom: 0.4rem;">of consumers want AI</div>
+                        <div class="stat-description" style="font-size: 0.9rem;">integrated into shopping</div>
+                    </div>
+                </div>
+                <div class="comparison-container" style="gap: 2rem; margin: 1.5rem 0;">
+                    <div class="comparison-card old-way" style="padding: 2rem 1.5rem;">
+                        <div class="comparison-label" style="font-size: 1.2rem;">Traditional Search</div>
+                        <div class="comparison-rate" style="font-size: 2.5rem;">0.05%</div>
+                        <div class="comparison-desc" style="font-size: 0.95rem;">Conversion Rate<br><strong>99.95% waste</strong></div>
+                    </div>
+                    <div class="vs-text" style="font-size: 1.8rem; padding: 1rem 1.3rem;">VS</div>
+                    <div class="comparison-card new-way" style="padding: 2rem 1.5rem;">
+                        <div class="comparison-label" style="font-size: 1.2rem;">Agent Engagement</div>
+                        <div class="comparison-rate" style="font-size: 2.5rem;">~75%</div>
+                        <div class="comparison-desc" style="font-size: 0.95rem;">Conversion Potential<br><strong>Pre-qualified intent</strong></div>
+                    </div>
+                </div>
+                <p class="cta-text" style="font-size: 1.6rem; margin: 1rem 0;">1,500x higher conversion when agents are engaged</p>
+                <p class="source" style="font-size: 0.85rem; margin-top: 1rem;">Sources: Commerce/Future Commerce 2024, Capgemini Research Institute 2025, Mintel 2024</p>
+            </div>
+            <div class="slide-number">3 / 20</div>
+        </div>
+
+        <!-- Slide 4: The Fundamental Problem -->
+        <div class="slide">
+            <div class="glow-orb" style="right: -300px; top: 50%; transform: translateY(-50%);"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2>Agents Can Pay, But They Can't Shop</h2>
+                <div class="three-col">
+                    <div class="col-card">
+                        <h3>Current Focus ✓</h3>
+                        <ul>
+                            <li>Payment processing</li>
+                            <li>Transaction execution</li>
+                            <li>Checkout automation</li>
+                        </ul>
+                    </div>
+                    <div class="col-card">
+                        <h3>Missing Infrastructure ✗</h3>
+                        <ul>
+                            <li>Discovery protocols</li>
+                            <li>Evaluation frameworks</li>
+                            <li>Negotiation systems</li>
+                            <li>Trust infrastructure</li>
+                        </ul>
+                    </div>
+                    <div class="col-card">
+                        <h3>The Result</h3>
+                        <ul>
+                            <li>No agent catalogs</li>
+                            <li>No semantic matching</li>
+                            <li>No neutral brokers</li>
+                            <li>No backend integration</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="cta-text" style="margin-top: 3rem;">That infrastructure doesn't exist. That's what AURA is.</p>
+            </div>
+            <div class="slide-number">4 / 20</div>
+        </div>
+
+        <!-- Slide 5: Why This Is Hard -->
+        <div class="slide">
+            <div class="glow-orb" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2>Understanding vs. Efficiency</h2>
+                <div class="quote-block">
+                    <p class="quote-text">
+                        "Frictionless systems do not ask <em>why</em>. They move data, not meaning. The search algorithm, the recommendation engine, and the one-click checkout each perform with precision, but they do so in ignorance of the human rationale behind the request."
+                    </p>
+                </div>
+                <div class="three-col" style="margin-top: 3rem;">
+                    <div class="col-card">
+                        <h3>Current Systems</h3>
+                        <ul>
+                            <li>Optimize for speed</li>
+                            <li>Pattern matching</li>
+                            <li>More interactions</li>
+                        </ul>
+                    </div>
+                    <div class="col-card" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05)); border-color: rgba(34, 197, 94, 0.5);">
+                        <h3 style="color: #22c55e;">Agents Need</h3>
+                        <ul>
+                            <li>Understand why</li>
+                            <li>Semantic reasoning</li>
+                            <li>Aligned outcomes</li>
+                        </ul>
+                    </div>
+                    <div class="col-card">
+                        <h3>The Shift</h3>
+                        <ul>
+                            <li>From clicks to intent</li>
+                            <li>From speed to quality</li>
+                            <li>From data to meaning</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">5 / 20</div>
+        </div>
+
+        <!-- Slide 6: The AURA Solution -->
+        <div class="slide">
+            <div class="glow-orb" style="right: -200px; bottom: -200px;"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2 style="font-size: 1.8rem; margin-bottom: 1rem;">Three-Layer Architecture for Agentic Commerce</h2>
+                <div class="architecture-box" style="padding: 1rem; margin: 0.5rem 0;">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">SCOUT (User Agent)</h3>
+                    <ul style="font-size: 0.85rem;">
+                        <li>Learns user values, constraints, preferences</li>
+                        <li>Represents intent without exposing identity</li>
+                        <li>Negotiates on behalf of principal</li>
+                        <li>Maintains continuity across interactions</li>
+                    </ul>
+                </div>
+                <div class="arrow-down" style="font-size: 1.2rem; margin: 0.3rem 0;">↓</div>
+                <div class="architecture-box" style="border-color: rgba(139, 92, 246, 0.5); padding: 1rem; margin: 0.5rem 0;">
+                    <h3 style="color: #8b5cf6; font-size: 1.1rem; margin-bottom: 0.5rem;">AURA CORE (Broker/Protocol)</h3>
+                    <ul style="font-size: 0.85rem;">
+                        <li>Discovery coordination (matching Scouts/Beacons)</li>
+                        <li>Trust infrastructure (identity, reputation)</li>
+                        <li>Transaction orchestration (negotiation protocols)</li>
+                        <li>Market navigation (semantic taxonomy)</li>
+                    </ul>
+                </div>
+                <div class="arrow-down" style="font-size: 1.2rem; margin: 0.3rem 0;">↓</div>
+                <div class="architecture-box" style="padding: 1rem; margin: 0.5rem 0;">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">BEACON (Seller Agent)</h3>
+                    <ul style="font-size: 0.85rem;">
+                        <li>Broadcasts offerings with rich metadata</li>
+                        <li>Responds to agent queries</li>
+                        <li>Negotiates terms dynamically</li>
+                        <li>Integrates with backend systems</li>
+                    </ul>
+                </div>
+                <p class="cta-text" style="margin-top: 0.8rem; font-size: 1.2rem;">Neutral coordination layer enables trust without platform bias</p>
+            </div>
+            <div class="slide-number">6 / 20</div>
+        </div>
+
+        <!-- Slide 7: The Secret Sauce -->
+        <div class="slide">
+            <div class="glow-orb" style="left: -200px; top: -200px;"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2>The Constraint Engine</h2>
+                <p class="slide-subtitle">From 1,000 Options to 5 Perfect Matches</p>
+                <div class="three-col">
+                    <div class="col-card">
+                        <h3>The Problem</h3>
+                        <p style="color: #ef4444;">The Paradox of Choice</p>
+                        <ul>
+                            <li>More options = Lower conversion</li>
+                            <li>Unconstrained agents = Choice paralysis</li>
+                            <li>Traditional filtering = Misses nuance</li>
+                        </ul>
+                    </div>
+                    <div class="col-card" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05)); border-color: rgba(34, 197, 94, 0.5);">
+                        <h3 style="color: #22c55e;">Our Solution</h3>
+                        <p style="color: #22c55e;">Intelligent Constraint Management</p>
+                        <ul>
+                            <li>Multi-criteria weighted scoring</li>
+                            <li>Hard & soft constraints</li>
+                            <li>Intelligent break rules</li>
+                        </ul>
+                    </div>
+                    <div class="col-card">
+                        <h3>The Result</h3>
+                        <p style="color: #63b3ed;">75% Conversion</p>
+                        <ul>
+                            <li>Reduces cognitive load</li>
+                            <li>Maintains high relevance</li>
+                            <li>Enables confident decisions</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="cta-text" style="margin-top: 3rem;">This is patentable IP grounded in behavioral economics</p>
+            </div>
+            <div class="slide-number">7 / 20</div>
+        </div>
+
+        <!-- Slide 8: Product Strategy - Three Layers -->
+        <div class="slide">
+            <div class="glow-orb" style="right: -300px; top: 50%; transform: translateY(-50%);"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2 style="font-size: 1.8rem; margin-bottom: 1rem;">Scout It! → Enterprise → Infrastructure</h2>
+                <div class="architecture-box" style="padding: 1.2rem; margin: 0.6rem 0;">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 0.6rem;">Layer 1: SCOUT IT! (Consumer Application)</h3>
+                    <ul style="font-size: 0.85rem;">
+                        <li>iOS shopping app powered by AURA</li>
+                        <li>Proof-of-concept with real users</li>
+                        <li>Validates conversion claims</li>
+                        <li>Creates demand for seller integration</li>
+                    </ul>
+                    <p style="margin-top: 0.6rem; color: #63b3ed; font-weight: 600; font-size: 0.85rem;">Outcome: Market validation + consumer brand</p>
+                </div>
+                <div class="architecture-box" style="border-color: rgba(139, 92, 246, 0.5); padding: 1.2rem; margin: 0.6rem 0;">
+                    <h3 style="color: #8b5cf6; font-size: 1.2rem; margin-bottom: 0.6rem;">Layer 2: REFERENCE ARCHITECTURE (Enterprise)</h3>
+                    <ul style="font-size: 0.85rem;">
+                        <li>White-label Scout It! technology</li>
+                        <li>Documented architecture & UX patterns</li>
+                        <li>Integration playbooks</li>
+                        <li>Enables enterprise deployment</li>
+                    </ul>
+                    <p style="margin-top: 0.6rem; color: #8b5cf6; font-weight: 600; font-size: 0.85rem;">Outcome: Licensing revenue + category adoption</p>
+                </div>
+                <div class="architecture-box" style="border-color: rgba(236, 72, 153, 0.5); padding: 1.2rem; margin: 0.6rem 0;">
+                    <h3 style="color: #ec4899; font-size: 1.2rem; margin-bottom: 0.6rem;">Layer 3: B2B INFRASTRUCTURE (The Moat)</h3>
+                    <ul style="font-size: 0.85rem;">
+                        <li>ERP/WMS/fulfillment connectors</li>
+                        <li>Order orchestration engine</li>
+                        <li>Real-time inventory synchronization</li>
+                        <li>Supply chain integration layer</li>
+                    </ul>
+                    <p style="margin-top: 0.6rem; color: #ec4899; font-weight: 600; font-size: 0.85rem;">Outcome: Sticky contracts + infrastructure lock-in</p>
+                </div>
+            </div>
+            <div class="slide-number">8 / 20</div>
+        </div>
+
+        <!-- Slide 9: Business Model -->
+        <div class="slide">
+            <div class="glow-orb" style="left: -200px; top: -200px;"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2 style="font-size: 2rem; margin-bottom: 1.5rem;">Multiple Revenue Streams, Compounding Value</h2>
+                <div class="three-col" style="gap: 1.5rem;">
+                    <div class="col-card" style="background: linear-gradient(135deg, rgba(99, 179, 237, 0.1), rgba(99, 179, 237, 0.05)); border-color: rgba(99, 179, 237, 0.3);">
+                        <h3 style="color: #63b3ed; font-size: 1.3rem;">Consumer (Scout It!)</h3>
+                        <div style="margin: 1.5rem 0;">
+                            <div style="font-size: 2.5rem; font-weight: 900; color: #63b3ed;">$9.99<span style="font-size: 1rem; color: #94a3b8;">/mo</span></div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-top: 0.3rem;">Premium tier</div>
+                        </div>
+                        <ul style="font-size: 0.95rem; margin-bottom: 1rem;">
+                            <li>Freemium base (unlimited)</li>
+                            <li>Premium: Priority + analytics</li>
+                            <li>Affiliate: 3-5% of GMV</li>
+                        </ul>
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.85rem; color: #94a3b8;">Target ARPU</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #63b3ed;">$35-40/year</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05)); border-color: rgba(139, 92, 246, 0.3);">
+                        <h3 style="color: #8b5cf6; font-size: 1.3rem;">Enterprise Licensing</h3>
+                        <div style="margin: 1.5rem 0;">
+                            <div style="font-size: 2.5rem; font-weight: 900; color: #8b5cf6;">$50K-1M<span style="font-size: 1rem; color: #94a3b8;">/yr</span></div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-top: 0.3rem;">Annual contract</div>
+                        </div>
+                        <ul style="font-size: 0.95rem; margin-bottom: 1rem;">
+                            <li>White-label Scout technology</li>
+                            <li>Reference architecture</li>
+                            <li>Implementation services</li>
+                        </ul>
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.85rem; color: #94a3b8;">Pricing by tier</div>
+                            <div style="font-size: 1.1rem; font-weight: 600; color: #8b5cf6;">SMB: $50K | Mid: $200K | Enterprise: $500K+</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-card" style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.05)); border-color: rgba(236, 72, 153, 0.3);">
+                        <h3 style="color: #ec4899; font-size: 1.3rem;">B2B Infrastructure</h3>
+                        <div style="margin: 1.5rem 0;">
+                            <div style="font-size: 2.5rem; font-weight: 900; color: #ec4899;">0.5-1%<span style="font-size: 1rem; color: #94a3b8;"> of GMV</span></div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-top: 0.3rem;">+ integration fees</div>
+                        </div>
+                        <ul style="font-size: 0.95rem; margin-bottom: 1rem;">
+                            <li>Supply chain API access</li>
+                            <li>Fulfillment network</li>
+                            <li>Data marketplace licensing</li>
+                        </ul>
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.85rem; color: #94a3b8;">Integration setup</div>
+                            <div style="font-size: 1.1rem; font-weight: 600; color: #ec4899;">$100K-500K + annual license</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-card" style="margin-top: 2rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.15);">
+                    <h3 style="color: #e2e8f0; text-align: center; margin-bottom: 1rem;">Unit Economics</h3>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; text-align: center;">
+                        <div>
+                            <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.3rem;">Consumer CAC</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #63b3ed;">$15-30</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.3rem;">Consumer LTV</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #63b3ed;">$180-400</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.3rem;">LTV/CAC Ratio</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #22c55e;">6-12x</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.3rem;">Enterprise Margins</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #8b5cf6;">75-85%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="cta-text" style="margin-top: 1.5rem; font-size: 1.4rem;">Infrastructure play, not transaction fees</p>
+            </div>
+            <div class="slide-number">9 / 20</div>
+        </div>
+
+        <!-- Slide 10: Three-Track Go-to-Market -->
+        <div class="slide">
+            <div class="glow-orb" style="right: -200px; bottom: -200px;"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2 style="font-size: 2rem; margin-bottom: 1.5rem;">Three-Track Go-to-Market</h2>
+                <p class="slide-subtitle" style="font-size: 1.3rem; margin-bottom: 2rem;">Sequenced for maximum proof and network effects</p>
+                
+                <div class="architecture-box" style="background: linear-gradient(135deg, rgba(99, 179, 237, 0.1), rgba(99, 179, 237, 0.05)); border-color: rgba(99, 179, 237, 0.5);">
+                    <h3 style="color: #63b3ed;">Track 1: Consumer (Scout It!) - Months 0-12</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.5rem;">Acquisition Channels:</div>
+                            <ul style="font-size: 0.9rem;">
+                                <li>App Store optimization (iOS launch)</li>
+                                <li>Product Hunt / tech community</li>
+                                <li>Content marketing (agent commerce thought leadership)</li>
+                                <li>Strategic partnerships (Claude, ChatGPT users)</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.5rem;">Milestones:</div>
+                            <ul style="font-size: 0.9rem;">
+                                <li>Month 3: 10K users, 50% conversion on intent</li>
+                                <li>Month 6: 50K users, case studies published</li>
+                                <li>Month 12: 100K users, proof-of-concept complete</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="architecture-box" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05)); border-color: rgba(139, 92, 246, 0.5); margin-top: 1rem;">
+                    <h3 style="color: #8b5cf6;">Track 2: Enterprise - Months 6-24</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.5rem;">Target Customers:</div>
+                            <ul style="font-size: 0.9rem;">
+                                <li>DTC brands (Warby Parker, Allbirds)</li>
+                                <li>Progressive retailers (Best Buy, Target)</li>
+                                <li>Shopify Plus merchants</li>
+                                <li>Vertical SaaS platforms</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.5rem;">Sales Motion:</div>
+                            <ul style="font-size: 0.9rem;">
+                                <li>Scout It! conversion data as proof</li>
+                                <li>Pilot programs (3-6 months)</li>
+                                <li>Direct sales team (hire Month 6)</li>
+                                <li>Annual contracts, land-and-expand</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="architecture-box" style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.05)); border-color: rgba(236, 72, 153, 0.5); margin-top: 1rem;">
+                    <h3 style="color: #ec4899;">Track 3: B2B Infrastructure - Months 18-36</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.5rem;">Entry Point:</div>
+                            <ul style="font-size: 0.9rem;">
+                                <li>Follows enterprise adoption (pull, not push)</li>
+                                <li>Start with top 5 enterprise clients</li>
+                                <li>ERP/WMS integrations as first product</li>
+                                <li>Expand to fulfillment and data products</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.5rem;">Value Proposition:</div>
+                            <ul style="font-size: 0.9rem;">
+                                <li>"Make your Scout integration 10x easier"</li>
+                                <li>Real-time inventory + pricing sync</li>
+                                <li>Lower operational costs</li>
+                                <li>Higher conversion through data insights</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="cta-text" style="margin-top: 1.5rem; font-size: 1.3rem;">Consumer proves it works → Enterprise scales it → B2B locks it in</p>
+            </div>
+            <div class="slide-number">10 / 20</div>
+        </div>
+
+        <!-- Slide 11: Founder/Team -->
+        <div class="slide">
+            <div class="glow-orb" style="left: -200px; bottom: -200px;"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2 style="font-size: 2rem; margin-bottom: 2rem;">The Team</h2>
+                
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 3rem; align-items: start;">
+                    <!-- Founder Profile -->
+                    <div class="col-card" style="padding: 2rem; text-align: center;">
+                        <div style="width: 200px; height: 200px; margin: 0 auto 1.5rem; background: linear-gradient(135deg, rgba(99, 179, 237, 0.2), rgba(139, 92, 246, 0.2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(139, 92, 246, 0.3);">
+                            <div style="font-size: 4rem; color: #8b5cf6;">👤</div>
+                        </div>
+                        <h3 style="font-size: 1.5rem; color: #63b3ed; margin-bottom: 0.5rem;">Marc Massar</h3>
+                        <div style="font-size: 1rem; color: #94a3b8; margin-bottom: 1rem;">Founder & CEO</div>
+                        <div style="font-size: 0.85rem; color: #64748b; font-style: italic;">Senior Product and Technology Leader</div>
+                        <div style="font-size: 0.85rem; color: #64748b; font-style: italic;">20+ years of building scalable commerce platforms</div>
+                    </div>
+                    
+                    <!-- Background & Why You -->
+                    <div>
+                        <div class="col-card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+                            <h3 style="color: #63b3ed; font-size: 1.3rem; margin-bottom: 1rem;">Background</h3>
+                            <ul style="font-size: 1rem;">
+                                <li>CPO, CTO, CIO across multiple financial services leaders - HSBC, Worldpay, JP Morgan, and others</li>
+                                <li>Survived the Dot-Com boom and bust</li>
+                                <li>Managed, built, launched dozens and dozens of scaled commerce platforms</li>
+                                <li>Trillions and Trillions of $ processed across Marc's platforms</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-card" style="padding: 1.5rem; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05)); border-color: rgba(139, 92, 246, 0.3);">
+                            <h3 style="color: #8b5cf6; font-size: 1.3rem; margin-bottom: 1rem;">Why I'm Uniquely Positioned</h3>
+                            <ul style="font-size: 1rem;">
+                                <li>Been building platforms in this space since 1999</li>
+                                <li>Intensive study of the problem area</li>
+                                <li>Recognised payments expert</li>
+                                <li>25 years experience building and scaling teams in technology and product</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Advisors/Key Hires (Optional) -->
+                <div class="col-card" style="margin-top: 2rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.03);">
+                    <h3 style="color: #e2e8f0; font-size: 1.2rem; margin-bottom: 1rem;">Advisors & Key Hires</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.3rem;">Technical Advisor</div>
+                            <div style="font-size: 1rem; color: #e2e8f0; font-weight: 600;">S. Welland</div>
+                            <div style="font-size: 0.85rem; color: #64748b;">Expert in generative development and payment systems</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.3rem;">Industry Advisor</div>
+                            <div style="font-size: 1rem; color: #e2e8f0; font-weight: 600;">Shane Happach</div>
+                            <div style="font-size: 0.85rem; color: #64748b;">CEO, Coda, ex Worldpay, ex Mollie</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.3rem;">First Hire</div>
+                            <div style="font-size: 1rem; color: #e2e8f0; font-weight: 600;">CTO / Head of Eng</div>
+                            <div style="font-size: 0.85rem; color: #64748b;">Hiring with seed funding</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">11 / 20</div>
+        </div>
+
+        <!-- Slide 12: Market Size (E-Commerce Analogue) - MOVED FROM SLIDE 9 -->
+        <div class="slide">
+            <div class="glow-orb" style="right: -200px; bottom: -200px;"></div>
+            <img src="./auratransparentfinal_noname.png" class="logo-small" alt="AURA Labs Logo">
+            <div class="slide-content">
+                <h2>Following the E-Commerce Playbook</h2>
+                <p class="slide-subtitle">Infrastructure providers grew 2-3x faster than the markets they enabled</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0;">
+                    <div class="col-card">
+                        <h3 style="color: #64748b; font-size: 1.4rem; margin-bottom: 1.5rem;">Historical: E-Commerce (1999-2009)</h3>
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="font-size: 1rem; color: #94a3b8; margin-bottom: 0.5rem;">1999 Market Size</div>
+                            <div style="font-size: 2.5rem; font-weight: 900; color: #63b3ed;">$15B</div>
+                            <div style="font-size: 0.9rem; color: #64748b;">(0.2% of retail)</div>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="font-size: 1rem; color: #94a3b8; margin-bottom: 0.5rem;">Market Growth</div>
+                            <div style="font-size: 2.5rem; font-weight: 900; color: #8b5cf6;">25% CAGR</div>
+                            <div style="font-size: 0.9rem; color: #64748b;">$15B → $145B (10 years)</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1rem; color: #94a3b8; margin-bottom: 0.5rem;">Infrastructure Providers</div>
+                            <div style="font-size: 2rem; font-weight: 900; color: #ec4899;">60-80% CAGR</div>
+                            <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">Shopify: 70% | Stripe: 110% | AWS: 75%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-card" style="border: 2px solid rgba(139, 92, 246, 0.5); background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05));">
+                        <h3 style="color: #8b5cf6; font-size: 1.4rem; margin-bottom: 1.5rem;">AURA Projection (2025-2035)</h3>
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="font-size: 1rem; color: #94a3b8; margin-bottom: 0.5rem;">2025 Market Size</div>
+                            <div style="font-size: 2.5rem; font-weight: 900; color: #63b3ed;">~$0</div>
+                            <div style="font-size: 0.9rem; color: #64748b;">(0% of e-commerce)</div>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="font-size: 1rem; color: #94a3b8; margin-bottom: 0.5rem;">Expected Market Growth</div>
+                            <div style="font-size: 2.5rem; font-weight: 900; color: #8b5cf6;">40% CAGR</div>
+                            <div style="font-size: 0.9rem; color: #64748b;">$0 → $165B (10 years)</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1rem; color: #94a3b8; margin-bottom: 0.5rem;">AURA (Infrastructure Play)</div>
+                            <div style="font-size: 2rem; font-weight: 900; color: #22c55e;">82% CAGR</div>
+                            <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">$2M → $1.5B (10 years)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-card" style="margin-top: 2rem; padding: 2rem; background: rgba(255, 255, 255, 0.03);">
+                    <div style="display: grid; grid-template-columns: 140px 1fr 1fr; gap: 1.5rem; align-items: center; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div style="font-size: 1.2rem; color: #8b5cf6; font-weight: 700;">Years 1-2</div>
+                        <div style="font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #63b3ed, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$2M → $10M</div>
+                        <div style="font-size: 1rem; color: #94a3b8;"><strong>Prove It:</strong> Scout It! launch + Enterprise pilots</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 140px 1fr 1fr; gap: 1.5rem; align-items: center; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div style="font-size: 1.2rem; color: #8b5cf6; font-weight: 700;">Years 3-5</div>
+                        <div style="font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #63b3ed, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$10M → $250M</div>
+                        <div style="font-size: 1rem; color: #94a3b8;"><strong>Scale It:</strong> Enterprise + B2B | 165% CAGR</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 140px 1fr 1fr; gap: 1.5rem; align-items: center;">
+                        <div style="font-size: 1.2rem; color: #8b5cf6; font-weight: 700;">Years 5-10</div>
+                        <div style="font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #63b3ed, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">$250M → $1.5B</div>
+                        <div style="font-size: 1rem; color: #94a3b8;"><strong>Lead It:</strong> Category-defining infrastructure | 43% CAGR</div>
+                    </div>
+                </div>
+                
+                <p class="cta-text" style="margin-top: 2rem; font-size: 1.6rem;">We're at the "1999 moment" for agentic commerce</p>
+                <p class="source">Historical data: US Census Bureau, Shopify/Stripe/AWS financial disclosures</p>
+            </div>
+            <div class="slide-number">12 / 20</div>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + slides.length) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                showSlide(currentSlide + 1);
+            } else if (e.key === 'ArrowLeft') {
+                showSlide(currentSlide - 1);
+            } else if (e.key === 'Home') {
+                showSlide(0);
+            } else if (e.key === 'End') {
+                showSlide(slides.length - 1);
+            }
+        });
+        
+        // Touch support for mobile
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            let touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) {
+                showSlide(currentSlide + 1);
+            } else if (touchEndX - touchStartX > 50) {
+                showSlide(currentSlide - 1);
+            }
+        });
+    </script>
+</body>
+</html>
