@@ -290,36 +290,107 @@
         <a href="index.html" class="back-link">← Back to home</a>
     </div>
 
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        document.getElementById('login-form').addEventListener('submit', function(e) {
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://umoukcmojqnsgwfywovk.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Check if already logged in
+        async function checkExistingSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                window.location.href = 'portal/';
+            }
+        }
+        checkExistingSession();
+
+        // Login form handler
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('error-message');
+            const submitBtn = this.querySelector('button[type="submit"]');
 
-            // Check if user exists in localStorage (demo purposes)
-            const developer = localStorage.getItem('aura_developer');
+            // Hide previous error
+            errorEl.classList.remove('active');
+            submitBtn.textContent = 'Signing In...';
+            submitBtn.disabled = true;
 
-            if (developer) {
-                const data = JSON.parse(developer);
-                if (data.email === email) {
-                    // "Login" successful - redirect to portal
-                    window.location.href = 'portal/';
-                    return;
+            try {
+                // Attempt Supabase login
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    throw error;
                 }
+
+                // Fetch user profile
+                const { data: profile } = await supabase
+                    .from('developer_profiles')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .single();
+
+                // Store in localStorage for portal
+                localStorage.setItem('aura_developer', JSON.stringify({
+                    id: data.user.id,
+                    email: data.user.email,
+                    firstName: profile?.first_name || data.user.email.split('@')[0],
+                    lastName: profile?.last_name || '',
+                    company: profile?.company || '',
+                    signedUp: profile?.created_at || new Date().toISOString()
+                }));
+
+                // Redirect to portal
+                window.location.href = 'portal/';
+
+            } catch (error) {
+                console.error('Login error:', error);
+
+                // Show appropriate error message
+                if (error.message.includes('Invalid login')) {
+                    errorEl.textContent = 'Invalid email or password. Please try again.';
+                } else if (error.message.includes('Email not confirmed')) {
+                    errorEl.textContent = 'Please verify your email before signing in. Check your inbox.';
+                } else {
+                    errorEl.textContent = error.message || 'An error occurred. Please try again.';
+                }
+                errorEl.classList.add('active');
+
+                submitBtn.textContent = 'Sign In';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Magic Link / Passwordless option
+        async function sendMagicLink() {
+            const email = document.getElementById('email').value;
+            if (!email) {
+                alert('Please enter your email address first.');
+                return;
             }
 
-            // For demo: also accept any email/password and create a session
-            // In production, this would validate against your auth backend
-            const demoUser = {
+            const { error } = await supabase.auth.signInWithOtp({
                 email: email,
-                firstName: email.split('@')[0],
-                lastName: 'Developer',
-                signedUp: new Date().toISOString()
-            };
-            localStorage.setItem('aura_developer', JSON.stringify(demoUser));
-            window.location.href = 'portal/';
-        });
+                options: {
+                    emailRedirectTo: window.location.origin + '/portal/'
+                }
+            });
+
+            if (error) {
+                alert('Error sending magic link: ' + error.message);
+            } else {
+                alert('Magic link sent! Check your email to sign in.');
+            }
+        }
     </script>
 </body>
 </html>

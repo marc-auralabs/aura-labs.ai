@@ -566,28 +566,108 @@
         </div>
     </div>
 
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Simple form handling (frontend only - wire up to your auth backend)
-        document.getElementById('signup-form').addEventListener('submit', function(e) {
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://umoukcmojqnsgwfywovk.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Form handling with Supabase Auth
+        document.getElementById('signup-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // In production, this would POST to your authentication backend
-            // For now, just show success state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Creating Account...';
+            submitBtn.disabled = true;
+
+            // Gather form data
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
 
-            console.log('Developer signup:', data);
+            try {
+                // 1. Create auth user with Supabase
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: data.email,
+                    password: generateTempPassword(), // User will set via email verification
+                    options: {
+                        emailRedirectTo: window.location.origin + '/portal/',
+                        data: {
+                            first_name: data.firstName,
+                            last_name: data.lastName,
+                            company: data.company
+                        }
+                    }
+                });
 
-            // Store in localStorage for demo purposes
-            localStorage.setItem('aura_developer', JSON.stringify({
-                ...data,
-                signedUp: new Date().toISOString()
-            }));
+                if (authError) {
+                    throw authError;
+                }
 
-            // Show success state
-            document.getElementById('signup-form-container').style.display = 'none';
-            document.getElementById('success-state').classList.add('active');
+                // 2. Create developer profile in database
+                if (authData.user) {
+                    const { error: profileError } = await supabase
+                        .from('developer_profiles')
+                        .insert({
+                            id: authData.user.id,
+                            first_name: data.firstName,
+                            last_name: data.lastName,
+                            company: data.company,
+                            role: data.role,
+                            use_case: data.useCase,
+                            email_updates: data.updates === 'on'
+                        });
+
+                    if (profileError) {
+                        console.error('Profile creation error:', profileError);
+                        // Profile will be created on first login if this fails
+                    }
+                }
+
+                // 3. Also store in localStorage for immediate portal access
+                localStorage.setItem('aura_developer', JSON.stringify({
+                    id: authData.user?.id,
+                    email: data.email,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    company: data.company,
+                    role: data.role,
+                    useCase: data.useCase,
+                    signedUp: new Date().toISOString()
+                }));
+
+                // Show success state
+                document.getElementById('signup-form-container').style.display = 'none';
+                document.getElementById('success-state').classList.add('active');
+
+            } catch (error) {
+                console.error('Signup error:', error);
+
+                // Show error message
+                let errorMessage = 'An error occurred during signup. Please try again.';
+                if (error.message.includes('already registered')) {
+                    errorMessage = 'This email is already registered. Please sign in instead.';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+
+                alert(errorMessage);
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
         });
+
+        // Generate a secure temporary password (user will reset via email)
+        function generateTempPassword() {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let password = '';
+            for (let i = 0; i < 16; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
     </script>
 </body>
 </html>
