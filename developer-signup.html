@@ -572,7 +572,7 @@
         // Initialize Supabase client
         const SUPABASE_URL = 'https://umoukcmojqnsgwfywovk.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Form handling with Supabase Auth
         document.getElementById('signup-form').addEventListener('submit', async function(e) {
@@ -589,7 +589,7 @@
 
             try {
                 // 1. Create auth user with Supabase
-                const { data: authData, error: authError } = await supabase.auth.signUp({
+                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
                     email: data.email,
                     password: generateTempPassword(), // User will set via email verification
                     options: {
@@ -608,7 +608,7 @@
 
                 // 2. Create developer profile in database
                 if (authData.user) {
-                    const { error: profileError } = await supabase
+                    const { error: profileError } = await supabaseClient
                         .from('developer_profiles')
                         .insert({
                             id: authData.user.id,

@@ -694,7 +694,7 @@
         // Initialize Supabase client
         const SUPABASE_URL = 'https://umoukcmojqnsgwfywovk.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Global state
         let currentUser = null;
@@ -704,7 +704,7 @@
         async function checkAuth() {
             try {
                 // Check Supabase session
-                const { data: { session }, error } = await supabase.auth.getSession();
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
 
                 if (session?.user) {
                     currentUser = session.user;
@@ -733,14 +733,14 @@
         async function loadUserData(user) {
             try {
                 // Fetch profile
-                const { data: profile } = await supabase
+                const { data: profile } = await supabaseClient
                     .from('developer_profiles')
                     .select('*')
                     .eq('id', user.id)
                     .single();
 
                 // Fetch API keys
-                const { data: apiKeys } = await supabase
+                const { data: apiKeys } = await supabaseClient
                     .from('api_keys')
                     .select('*')
                     .eq('user_id', user.id)
@@ -748,7 +748,7 @@
 
                 // Fetch usage stats
                 const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
-                const { data: usage } = await supabase
+                const { data: usage } = await supabaseClient
                     .from('usage_stats')
                     .select('*')
                     .eq('user_id', user.id)
@@ -858,7 +858,7 @@
 
             try {
                 // Call Supabase function to regenerate key
-                const { data, error } = await supabase.rpc('regenerate_api_key', {
+                const { data, error } = await supabaseClient.rpc('regenerate_api_key', {
                     key_id: currentApiKey.id
                 });
 
@@ -879,7 +879,7 @@
         document.getElementById('logout-btn').addEventListener('click', async function() {
             if (confirm('Sign out of developer portal?')) {
                 try {
-                    await supabase.auth.signOut();
+                    await supabaseClient.auth.signOut();
                 } catch (e) {
                     console.error('Logout error:', e);
                 }
@@ -889,7 +889,7 @@
         });
 
         // Listen for auth state changes
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_OUT') {
                 showAuthGate();
             } else if (event === 'SIGNED_IN' && session) {
