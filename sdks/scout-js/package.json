@@ -1,0 +1,44 @@
+{
+  "name": "@aura-labs/scout",
+  "version": "0.1.0",
+  "description": "Scout SDK for AURA - Build buying agents that participate in agentic commerce",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "bin": {
+    "scout-cli": "./bin/scout-cli.js",
+    "aura-scout": "./bin/scout-cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "types": "./src/index.d.ts"
+    }
+  },
+  "scripts": {
+    "test": "node --test src/**/*.test.js",
+    "cli": "node bin/scout-cli.js",
+    "example": "node examples/basic-purchase.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "aura",
+    "agentic-commerce",
+    "ai-agent",
+    "shopping-agent",
+    "scout"
+  ],
+  "author": "AURA Labs",
+  "license": "BSL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aura-labs-ai/aura-labs"
+  },
+  "homepage": "https://aura-labs.ai/docs/scout"
+}
