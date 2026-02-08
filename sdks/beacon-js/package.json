@@ -1,0 +1,44 @@
+{
+  "name": "@aura-labs/beacon",
+  "version": "0.1.0",
+  "description": "Beacon SDK for AURA - Build selling agents that participate in agentic commerce",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "bin": {
+    "beacon-cli": "./bin/beacon-cli.js",
+    "aura-beacon": "./bin/beacon-cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "types": "./src/index.d.ts"
+    }
+  },
+  "scripts": {
+    "test": "node --test src/**/*.test.js",
+    "cli": "node bin/beacon-cli.js",
+    "example:widget": "node examples/widget-supplier.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "aura",
+    "agentic-commerce",
+    "ai-agent",
+    "seller-agent",
+    "beacon"
+  ],
+  "author": "AURA Labs",
+  "license": "BSL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aura-labs-ai/aura-labs"
+  },
+  "homepage": "https://aura-labs.ai/docs/beacon"
+}
