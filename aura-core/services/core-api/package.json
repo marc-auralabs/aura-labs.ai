@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "node --test src/**/*.test.js"
+    "test": "node --test src/**/*.test.js",
+    "migrate": "node ../../database/migrate.js"
   },
   "dependencies": {
     "fastify": "^4.26.0",
