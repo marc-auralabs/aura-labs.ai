@@ -138,41 +138,7 @@ async function runMigrations() {
     // Always run migrations incrementally - they use IF NOT EXISTS
     console.log('📦 Running database migrations...');
 
-    // Helper to check if column exists
-    const columnExists = async (table, column) => {
-      const result = await db.query(`
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2
-      `, [table, column]);
-      return result.rows.length > 0;
-    };
-
-    // Add missing columns to existing tables
-    if (!(await columnExists('beacons', 'capabilities'))) {
-      console.log('   Adding capabilities column to beacons...');
-      await db.query('ALTER TABLE beacons ADD COLUMN IF NOT EXISTS capabilities JSONB DEFAULT \'{}\'');
-    }
-
-    // Make endpoint_url nullable (old schema had it as NOT NULL)
-    await db.query('ALTER TABLE beacons ALTER COLUMN endpoint_url DROP NOT NULL').catch(() => {});
-    if (!(await columnExists('sessions', 'raw_intent'))) {
-      console.log('   Adding raw_intent column to sessions...');
-      await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS raw_intent TEXT');
-      await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS parsed_intent JSONB DEFAULT \'{}\'');
-      await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS constraints JSONB DEFAULT \'{}\'');
-    }
-
-    // Add missing columns to transactions (old schema didn't have these)
-    if (!(await columnExists('transactions', 'offer_id'))) {
-      console.log('   Adding offer_id column to transactions...');
-      await db.query('ALTER TABLE transactions ADD COLUMN IF NOT EXISTS offer_id UUID');
-    }
-    if (!(await columnExists('transactions', 'scout_id'))) {
-      console.log('   Adding scout_id column to transactions...');
-      await db.query('ALTER TABLE transactions ADD COLUMN IF NOT EXISTS scout_id UUID');
-    }
-
-    // Create extension and tables (IF NOT EXISTS makes these safe to re-run)
+    // Create extension and tables FIRST (IF NOT EXISTS makes these safe to re-run)
     await db.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
     await db.query(`
