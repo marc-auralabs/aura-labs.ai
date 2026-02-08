@@ -6,7 +6,7 @@ Common questions about the AURA Framework.
 
 ### What is AURA?
 
-AURA (Agent Universal Resource Access) is an open framework that enables AI agents to discover, negotiate, and transact with sellers on behalf of buyers. It provides the infrastructure for "agentic commerce" where autonomous agents handle commerce while humans retain control over decisions.
+AURA (Agent Universal Resource Architecture) is the infrastructure for agentic commerce — enabling AI agents to discover, negotiate, and transact directly with each other using native protocols. AURA provides the resource architecture that agents use, while humans retain control over decisions through explicit consent frameworks.
 
 ### How is AURA different from existing e-commerce?
 

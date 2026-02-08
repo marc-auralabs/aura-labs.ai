@@ -1,6 +1,6 @@
 # AURA Core
 
-Backend services for the AURA (Agent Universal Resource Access) commerce protocol.
+Backend services for the AURA (Agent Universal Resource Architecture) platform — Infrastructure for Agentic Commerce.
 
 ## Architecture
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AURA (Agent Universal Resource Access) framework enables **agentic commerce** - a new paradigm where AI agents negotiate and transact on behalf of consumers and merchants. This document describes the architectural design, component interactions, and key design principles.
+The AURA (Agent Universal Resource Architecture) framework enables **agentic commerce** — a new paradigm where AI agents negotiate and transact on behalf of consumers and merchants. This document describes the architectural design, component interactions, and key design principles.
 
 ## Architecture Principles
 

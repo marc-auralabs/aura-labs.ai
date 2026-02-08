@@ -310,7 +310,7 @@ app.get('/', async (request, reply) => {
   return {
     name: 'AURA Core API',
     version: '0.1.0',
-    description: 'Agent Universal Resource Access - Commerce Protocol',
+    description: 'Agent Universal Resource Architecture — Infrastructure for Agentic Commerce',
     _links: {
       self: { href: '/' },
       health: { href: '/health' },

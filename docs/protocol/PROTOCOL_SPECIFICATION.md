@@ -1,6 +1,6 @@
 # AURA Protocol Specification v1.0
 
-**Agentic Universal Request/Response Architecture**
+**Agent Universal Resource Architecture**
 
 **Status:** Draft  
 **Version:** 1.0.0  
@@ -11,7 +11,7 @@
 
 ## Abstract
 
-This specification defines the communication protocols for the AURA (Agentic Universal Request/Response Architecture) platform, a neutral broker system enabling agent-mediated commerce. The protocol enables Scout agents (representing buyers) to express needs in natural language, which AURA Core interprets and routes to qualified Beacon agents (representing sellers) for contextual offer generation, all while preserving buyer privacy until transaction commitment.
+This specification defines the communication protocols for the AURA (Agent Universal Resource Architecture) platform, a neutral broker system enabling agent-mediated commerce. The protocol enables Scout agents (representing buyers) to express needs in natural language, which AURA Core interprets and routes to qualified Beacon agents (representing sellers) for contextual offer generation, all while preserving buyer privacy until transaction commitment.
 
 This document provides complete API endpoint definitions, message schemas, authentication flows, and implementation guidance sufficient for developers to build compliant Scout agents, Beacon agents, or AURA Core implementations.
 
@@ -1975,7 +1975,7 @@ Community SDKs welcome under Apache 2.0 license.
 | Term | Definition |
 |------|------------|
 | **Agent** | An autonomous software entity acting on behalf of a principal |
-| **AURA** | Agentic Universal Request/Response Architecture |
+| **AURA** | Agent Universal Resource Architecture |
 | **Beacon** | Seller-side agent representing merchant interests |
 | **CWR** | Compatibility-Weighted Reputation - ranking algorithm |
 | **Hard Constraint** | Requirement that must be satisfied (filters out non-matches) |
