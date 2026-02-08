@@ -46,15 +46,71 @@ beacon.onSession(async (session) => {
 await beacon.startPolling();
 ```
 
-## Test Beacon
+## Test Beacons (Stubs)
 
-Run the included Widget Supplier test beacon:
+The SDK includes several test beacons simulating different vendor types:
+
+| Beacon | Description | Responds To |
+|--------|-------------|-------------|
+| `widgets` | Acme Widget Co. | widget, industrial |
+| `electronics` | TechMart Electronics | laptop, computer, monitor, keyboard |
+| `office` | OfficeMax Pro | desk, chair, paper, printer, office |
+| `cloud` | Nimbus Cloud Services | server, vm, cloud, database, storage, gpu |
+| `travel` | Wanderlust Travel | flight, hotel, travel, vacation |
+
+### Running Individual Beacons
 
 ```bash
-node examples/widget-supplier.js
+# Using npm scripts
+npm run demo:widgets
+npm run demo:electronics
+npm run demo:office
+npm run demo:cloud
+npm run demo:travel
 
-# Or with custom Core URL
-AURA_CORE_URL=http://localhost:3000 node examples/widget-supplier.js
+# Or run files directly
+node examples/widget-supplier.js
+node examples/electronics-vendor.js
+node examples/office-supplies.js
+node examples/cloud-services.js
+node examples/travel-agent.js
+```
+
+### Running All Beacons (Marketplace Demo)
+
+Run all beacons simultaneously for a full marketplace simulation:
+
+```bash
+npm run demo
+# or
+node examples/run-all-beacons.js
+```
+
+### Beacon CLI
+
+```bash
+# List available beacons
+npx beacon-cli list
+
+# Run a specific beacon
+npx beacon-cli run widgets
+npx beacon-cli run electronics
+
+# Run all beacons
+npx beacon-cli run all
+
+# Show connection info
+npx beacon-cli info
+```
+
+### Environment Variables
+
+```bash
+# Custom Core URL
+AURA_CORE_URL=http://localhost:3000 npm run demo
+
+# Custom polling interval (ms)
+POLL_INTERVAL=5000 npm run demo:widgets
 ```
 
 ## API Reference
