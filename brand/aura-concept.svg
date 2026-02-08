@@ -1,0 +1,70 @@
+<svg viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="400" fill="#fafaf8"/>
+
+  <!-- Left side: Old way (crossed out) -->
+  <text x="200" y="40" font-family="Space Grotesk, system-ui, sans-serif" font-weight="600" font-size="18" fill="#9ca3af" text-anchor="middle">Today</text>
+
+  <!-- Agent -->
+  <circle cx="100" cy="150" r="35" fill="#e5e7eb"/>
+  <text x="100" y="155" font-family="system-ui, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">Agent</text>
+
+  <!-- Arrow to website -->
+  <line x1="140" y1="150" x2="180" y2="150" stroke="#d1d5db" stroke-width="2"/>
+  <polygon points="185,150 175,145 175,155" fill="#d1d5db"/>
+
+  <!-- Website box -->
+  <rect x="190" y="115" width="80" height="70" rx="8" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2"/>
+  <text x="230" y="145" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">Website</text>
+  <text x="230" y="160" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="middle">(Human UI)</text>
+
+  <!-- Arrow to seller -->
+  <line x1="275" y1="150" x2="315" y2="150" stroke="#d1d5db" stroke-width="2"/>
+  <polygon points="320,150 310,145 310,155" fill="#d1d5db"/>
+
+  <!-- Seller -->
+  <circle cx="355" cy="150" r="35" fill="#e5e7eb"/>
+  <text x="355" y="155" font-family="system-ui, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">Seller</text>
+
+  <!-- X through the old way -->
+  <line x1="70" y1="100" x2="390" y2="200" stroke="#ef4444" stroke-width="3" opacity="0.6"/>
+  <line x1="70" y1="200" x2="390" y2="100" stroke="#ef4444" stroke-width="3" opacity="0.6"/>
+
+  <!-- Divider -->
+  <line x1="430" y1="60" x2="430" y2="340" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="8,8"/>
+
+  <!-- Right side: AURA way -->
+  <text x="615" y="40" font-family="Space Grotesk, system-ui, sans-serif" font-weight="600" font-size="18" fill="#5046e5" text-anchor="middle">AURA</text>
+
+  <!-- Scout -->
+  <circle cx="490" cy="150" r="40" fill="#2dd4b3" opacity="0.2" stroke="#2dd4b3" stroke-width="2"/>
+  <text x="490" y="145" font-family="Space Grotesk, system-ui, sans-serif" font-weight="600" font-size="13" fill="#0d9488" text-anchor="middle">Scout</text>
+  <text x="490" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#0d9488" text-anchor="middle">(Buyer Agent)</text>
+
+  <!-- Arrow to Core -->
+  <line x1="535" y1="150" x2="570" y2="150" stroke="#5046e5" stroke-width="2"/>
+  <polygon points="575,150 565,145 565,155" fill="#5046e5"/>
+
+  <!-- AURA Core -->
+  <circle cx="615" cy="150" r="45" fill="#5046e5"/>
+  <circle cx="615" cy="150" r="32" fill="#7c73f7"/>
+  <circle cx="615" cy="150" r="20" fill="#a5a0fa"/>
+  <circle cx="615" cy="150" r="10" fill="#c7d2fe"/>
+  <text x="615" y="215" font-family="Space Grotesk, system-ui, sans-serif" font-weight="600" font-size="12" fill="#5046e5" text-anchor="middle">Core</text>
+
+  <!-- Arrow to Beacon -->
+  <line x1="665" y1="150" x2="695" y2="150" stroke="#5046e5" stroke-width="2"/>
+  <polygon points="700,150 690,145 690,155" fill="#5046e5"/>
+
+  <!-- Beacon -->
+  <circle cx="740" cy="150" r="40" fill="#f59e0b" opacity="0.2" stroke="#f59e0b" stroke-width="2"/>
+  <text x="740" y="145" font-family="Space Grotesk, system-ui, sans-serif" font-weight="600" font-size="13" fill="#b45309" text-anchor="middle">Beacon</text>
+  <text x="740" y="162" font-family="system-ui, sans-serif" font-size="10" fill="#b45309" text-anchor="middle">(Seller Agent)</text>
+
+  <!-- Bottom labels -->
+  <text x="200" y="280" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af" text-anchor="middle">Agents using human interfaces</text>
+  <text x="615" y="280" font-family="system-ui, sans-serif" font-size="14" fill="#5046e5" text-anchor="middle">Native agent-to-agent protocol</text>
+
+  <!-- Tagline -->
+  <text x="400" y="360" font-family="Space Grotesk, system-ui, sans-serif" font-weight="700" font-size="20" fill="#1a1a2e" text-anchor="middle">AURA Labs — Infrastructure for Agentic Commerce</text>
+</svg>
