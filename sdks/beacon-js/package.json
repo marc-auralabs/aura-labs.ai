@@ -18,7 +18,12 @@
   "scripts": {
     "test": "node --test src/**/*.test.js",
     "cli": "node bin/beacon-cli.js",
-    "example:widget": "node examples/widget-supplier.js"
+    "demo": "node examples/run-all-beacons.js",
+    "demo:widgets": "node examples/widget-supplier.js",
+    "demo:electronics": "node examples/electronics-vendor.js",
+    "demo:office": "node examples/office-supplies.js",
+    "demo:cloud": "node examples/cloud-services.js",
+    "demo:travel": "node examples/travel-agent.js"
   },
   "dependencies": {},
   "devDependencies": {
