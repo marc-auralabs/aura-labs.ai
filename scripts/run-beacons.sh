@@ -23,9 +23,16 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Track registered beacons and seen sessions
-declare -A BEACON_IDS
-declare -A SEEN_SESSIONS
+# Beacon IDs (set after registration)
+BEACON_ID_WIDGETS=""
+BEACON_ID_ELECTRONICS=""
+BEACON_ID_OFFICE=""
+BEACON_ID_CLOUD=""
+BEACON_ID_TRAVEL=""
+
+# Seen sessions (stored in temp file for bash 3.x compatibility)
+SEEN_FILE=$(mktemp)
+trap "rm -f $SEEN_FILE" EXIT
 
 # Helper: JSON value extraction
 json_val() {
@@ -47,6 +54,16 @@ print(d.isoformat())
 "
 }
 
+# Check if session was already seen
+is_seen() {
+  grep -q "^$1$" "$SEEN_FILE" 2>/dev/null
+}
+
+# Mark session as seen
+mark_seen() {
+  echo "$1" >> "$SEEN_FILE"
+}
+
 # Register a beacon
 register_beacon() {
   local external_id=$1
@@ -64,12 +81,10 @@ register_beacon() {
   local beacon_id=$(json_val "$response" "beaconId")
 
   if [ -n "$beacon_id" ]; then
-    BEACON_IDS[$external_id]=$beacon_id
-    echo -e "${GREEN}✅ Registered:${NC} $name ($beacon_id)"
+    echo "$beacon_id"
     return 0
   else
-    echo -e "${RED}❌ Failed to register:${NC} $name"
-    echo "$response"
+    echo ""
     return 1
   fi
 }
@@ -85,7 +100,7 @@ submit_offer() {
   local delivery_days=$7
 
   local delivery_date=$(get_delivery_date $delivery_days)
-  local total_price=$(echo "$unit_price * $quantity" | bc)
+  local total_price=$(python3 -c "print($unit_price * $quantity)")
 
   local response=$(curl -s -X POST "${CORE_URL}/sessions/${session_id}/offers" \
     -H "Content-Type: application/json" \
@@ -114,9 +129,13 @@ submit_offer() {
 process_widgets() {
   local session_id=$1
   local intent=$2
-  local beacon_id=${BEACON_IDS["acme-widgets-001"]}
+  local beacon_id=$BEACON_ID_WIDGETS
 
-  if [[ "${intent,,}" == *"widget"* ]]; then
+  [ -z "$beacon_id" ] && return 1
+
+  local lower=$(echo "$intent" | tr '[:upper:]' '[:lower:]')
+
+  if [[ "$lower" == *"widget"* ]]; then
     # Extract quantity or default to 500
     local qty=$(echo "$intent" | grep -oE '[0-9]+' | head -1)
     qty=${qty:-500}
@@ -134,8 +153,11 @@ process_widgets() {
 process_electronics() {
   local session_id=$1
   local intent=$2
-  local beacon_id=${BEACON_IDS["techmart-electronics-001"]}
-  local lower="${intent,,}"
+  local beacon_id=$BEACON_ID_ELECTRONICS
+
+  [ -z "$beacon_id" ] && return 1
+
+  local lower=$(echo "$intent" | tr '[:upper:]' '[:lower:]')
 
   if [[ "$lower" == *"laptop"* ]] || [[ "$lower" == *"computer"* ]]; then
     echo -e "${CYAN}💻 TechMart${NC} responding to: \"${intent:0:50}...\""
@@ -157,8 +179,11 @@ process_electronics() {
 process_office() {
   local session_id=$1
   local intent=$2
-  local beacon_id=${BEACON_IDS["officemax-pro-001"]}
-  local lower="${intent,,}"
+  local beacon_id=$BEACON_ID_OFFICE
+
+  [ -z "$beacon_id" ] && return 1
+
+  local lower=$(echo "$intent" | tr '[:upper:]' '[:lower:]')
 
   if [[ "$lower" == *"desk"* ]]; then
     echo -e "${BLUE}📎 OfficeMax${NC} responding to: \"${intent:0:50}...\""
@@ -180,8 +205,11 @@ process_office() {
 process_cloud() {
   local session_id=$1
   local intent=$2
-  local beacon_id=${BEACON_IDS["nimbus-cloud-001"]}
-  local lower="${intent,,}"
+  local beacon_id=$BEACON_ID_CLOUD
+
+  [ -z "$beacon_id" ] && return 1
+
+  local lower=$(echo "$intent" | tr '[:upper:]' '[:lower:]')
 
   if [[ "$lower" == *"gpu"* ]] || [[ "$lower" == *"ml"* ]] || [[ "$lower" == *"ai"* ]]; then
     echo -e "${GREEN}☁️  Nimbus Cloud${NC} responding to: \"${intent:0:50}...\""
@@ -203,8 +231,11 @@ process_cloud() {
 process_travel() {
   local session_id=$1
   local intent=$2
-  local beacon_id=${BEACON_IDS["wanderlust-travel-001"]}
-  local lower="${intent,,}"
+  local beacon_id=$BEACON_ID_TRAVEL
+
+  [ -z "$beacon_id" ] && return 1
+
+  local lower=$(echo "$intent" | tr '[:upper:]' '[:lower:]')
 
   if [[ "$lower" == *"flight"* ]] || [[ "$lower" == *"fly"* ]]; then
     echo -e "${RED}✈️  Wanderlust${NC} responding to: \"${intent:0:50}...\""
@@ -224,44 +255,38 @@ process_travel() {
 
 # Poll for sessions and process them
 poll_sessions() {
-  local active_beacons=("$@")
-
   local response=$(curl -s "${CORE_URL}/beacons/sessions")
 
   # Parse sessions
-  local sessions=$(echo "$response" | python3 -c "
+  echo "$response" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
     for s in d.get('sessions', []):
-        print(s.get('sessionId', '') + '|' + (s.get('intent', {}).get('raw', '') or ''))
+        sid = s.get('sessionId', '')
+        intent = (s.get('intent', {}).get('raw', '') or '').replace('|', ' ')
+        if sid:
+            print(sid + '|' + intent)
 except:
     pass
-" 2>/dev/null)
-
-  while IFS='|' read -r session_id intent; do
+" 2>/dev/null | while IFS='|' read -r session_id intent; do
     [ -z "$session_id" ] && continue
 
     # Skip already-seen sessions
-    if [ -n "${SEEN_SESSIONS[$session_id]}" ]; then
+    if is_seen "$session_id"; then
       continue
     fi
-    SEEN_SESSIONS[$session_id]=1
+    mark_seen "$session_id"
 
     echo ""
 
     # Try each active beacon
-    for beacon_type in "${active_beacons[@]}"; do
-      case $beacon_type in
-        widgets) process_widgets "$session_id" "$intent" ;;
-        electronics) process_electronics "$session_id" "$intent" ;;
-        office) process_office "$session_id" "$intent" ;;
-        cloud) process_cloud "$session_id" "$intent" ;;
-        travel) process_travel "$session_id" "$intent" ;;
-      esac
-    done
-
-  done <<< "$sessions"
+    process_widgets "$session_id" "$intent"
+    process_electronics "$session_id" "$intent"
+    process_office "$session_id" "$intent"
+    process_cloud "$session_id" "$intent"
+    process_travel "$session_id" "$intent"
+  done
 }
 
 # List available beacons
@@ -303,38 +328,85 @@ main() {
   echo ""
 
   # Determine which beacons to run
-  local beacons_to_run=()
+  local run_widgets=false
+  local run_electronics=false
+  local run_office=false
+  local run_cloud=false
+  local run_travel=false
 
   if [ -z "$beacon_arg" ]; then
     # Run all beacons
-    beacons_to_run=(widgets electronics office cloud travel)
+    run_widgets=true
+    run_electronics=true
+    run_office=true
+    run_cloud=true
+    run_travel=true
+    echo "Starting all beacons..."
   else
     # Run specified beacons
-    beacons_to_run=("$@")
+    for arg in "$@"; do
+      case $arg in
+        widgets) run_widgets=true ;;
+        electronics) run_electronics=true ;;
+        office) run_office=true ;;
+        cloud) run_cloud=true ;;
+        travel) run_travel=true ;;
+        *)
+          echo -e "${RED}Unknown beacon: $arg${NC}"
+          list_beacons
+          exit 1 ;;
+      esac
+    done
+    echo "Starting beacons: $@"
   fi
 
-  echo "Starting beacons: ${beacons_to_run[*]}"
   echo ""
 
   # Register beacons
-  for beacon_type in "${beacons_to_run[@]}"; do
-    case $beacon_type in
-      widgets)
-        register_beacon "acme-widgets-001" "Acme Widget Co." "Industrial widgets" ;;
-      electronics)
-        register_beacon "techmart-electronics-001" "TechMart Electronics" "Laptops, monitors, accessories" ;;
-      office)
-        register_beacon "officemax-pro-001" "OfficeMax Pro" "Office furniture and supplies" ;;
-      cloud)
-        register_beacon "nimbus-cloud-001" "Nimbus Cloud Services" "Cloud infrastructure" ;;
-      travel)
-        register_beacon "wanderlust-travel-001" "Wanderlust Travel" "Flights, hotels, packages" ;;
-      *)
-        echo -e "${RED}Unknown beacon: $beacon_type${NC}"
-        list_beacons
-        exit 1 ;;
-    esac
-  done
+  if [ "$run_widgets" = true ]; then
+    BEACON_ID_WIDGETS=$(register_beacon "acme-widgets-001" "Acme Widget Co." "Industrial widgets")
+    if [ -n "$BEACON_ID_WIDGETS" ]; then
+      echo -e "${GREEN}✅ Registered:${NC} Acme Widget Co. ($BEACON_ID_WIDGETS)"
+    else
+      echo -e "${RED}❌ Failed to register:${NC} Acme Widget Co."
+    fi
+  fi
+
+  if [ "$run_electronics" = true ]; then
+    BEACON_ID_ELECTRONICS=$(register_beacon "techmart-electronics-001" "TechMart Electronics" "Laptops, monitors, accessories")
+    if [ -n "$BEACON_ID_ELECTRONICS" ]; then
+      echo -e "${GREEN}✅ Registered:${NC} TechMart Electronics ($BEACON_ID_ELECTRONICS)"
+    else
+      echo -e "${RED}❌ Failed to register:${NC} TechMart Electronics"
+    fi
+  fi
+
+  if [ "$run_office" = true ]; then
+    BEACON_ID_OFFICE=$(register_beacon "officemax-pro-001" "OfficeMax Pro" "Office furniture and supplies")
+    if [ -n "$BEACON_ID_OFFICE" ]; then
+      echo -e "${GREEN}✅ Registered:${NC} OfficeMax Pro ($BEACON_ID_OFFICE)"
+    else
+      echo -e "${RED}❌ Failed to register:${NC} OfficeMax Pro"
+    fi
+  fi
+
+  if [ "$run_cloud" = true ]; then
+    BEACON_ID_CLOUD=$(register_beacon "nimbus-cloud-001" "Nimbus Cloud Services" "Cloud infrastructure")
+    if [ -n "$BEACON_ID_CLOUD" ]; then
+      echo -e "${GREEN}✅ Registered:${NC} Nimbus Cloud Services ($BEACON_ID_CLOUD)"
+    else
+      echo -e "${RED}❌ Failed to register:${NC} Nimbus Cloud Services"
+    fi
+  fi
+
+  if [ "$run_travel" = true ]; then
+    BEACON_ID_TRAVEL=$(register_beacon "wanderlust-travel-001" "Wanderlust Travel" "Flights, hotels, packages")
+    if [ -n "$BEACON_ID_TRAVEL" ]; then
+      echo -e "${GREEN}✅ Registered:${NC} Wanderlust Travel ($BEACON_ID_TRAVEL)"
+    else
+      echo -e "${RED}❌ Failed to register:${NC} Wanderlust Travel"
+    fi
+  fi
 
   echo ""
   echo "─────────────────────────────────────────────────────────────────────────────"
@@ -355,7 +427,7 @@ main() {
   trap 'echo -e "\n\n🛑 Shutting down..."; exit 0' INT
 
   while true; do
-    poll_sessions "${beacons_to_run[@]}"
+    poll_sessions
     sleep $POLL_INTERVAL
   done
 }
