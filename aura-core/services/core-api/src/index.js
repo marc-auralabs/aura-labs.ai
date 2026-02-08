@@ -84,6 +84,45 @@ async function checkRedis() {
 }
 
 // =============================================================================
+// Admin: Reset Database (one-time use, remove after)
+// =============================================================================
+
+app.post('/admin/reset-database', async (request, reply) => {
+  if (!db) {
+    reply.code(503);
+    return { error: 'database_unavailable' };
+  }
+
+  const { confirm } = request.body || {};
+  if (confirm !== 'yes-delete-everything') {
+    reply.code(400);
+    return { error: 'confirmation_required', message: 'Send {"confirm":"yes-delete-everything"} to proceed' };
+  }
+
+  try {
+    console.log('🗑️  Dropping all tables...');
+    await db.query(`
+      DROP TABLE IF EXISTS transactions CASCADE;
+      DROP TABLE IF EXISTS offers CASCADE;
+      DROP TABLE IF EXISTS negotiations CASCADE;
+      DROP TABLE IF EXISTS intents CASCADE;
+      DROP TABLE IF EXISTS sessions CASCADE;
+      DROP TABLE IF EXISTS beacons CASCADE;
+      DROP TABLE IF EXISTS scouts CASCADE;
+      DROP TABLE IF EXISTS audit_log CASCADE;
+    `);
+
+    console.log('📦 Recreating schema...');
+    await runMigrations();
+
+    return { success: true, message: 'Database reset complete' };
+  } catch (error) {
+    reply.code(500);
+    return { error: 'reset_failed', message: error.message };
+  }
+});
+
+// =============================================================================
 // Auto-Migration
 // =============================================================================
 
@@ -123,10 +162,14 @@ async function runMigrations() {
       await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS constraints JSONB DEFAULT \'{}\'');
     }
 
-    // Add offer_id to transactions if missing (old schema didn't have it)
+    // Add missing columns to transactions (old schema didn't have these)
     if (!(await columnExists('transactions', 'offer_id'))) {
       console.log('   Adding offer_id column to transactions...');
       await db.query('ALTER TABLE transactions ADD COLUMN IF NOT EXISTS offer_id UUID');
+    }
+    if (!(await columnExists('transactions', 'scout_id'))) {
+      console.log('   Adding scout_id column to transactions...');
+      await db.query('ALTER TABLE transactions ADD COLUMN IF NOT EXISTS scout_id UUID');
     }
 
     // Create extension and tables (IF NOT EXISTS makes these safe to re-run)
