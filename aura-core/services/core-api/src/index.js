@@ -123,6 +123,12 @@ async function runMigrations() {
       await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS constraints JSONB DEFAULT \'{}\'');
     }
 
+    // Add offer_id to transactions if missing (old schema didn't have it)
+    if (!(await columnExists('transactions', 'offer_id'))) {
+      console.log('   Adding offer_id column to transactions...');
+      await db.query('ALTER TABLE transactions ADD COLUMN IF NOT EXISTS offer_id UUID');
+    }
+
     // Create extension and tables (IF NOT EXISTS makes these safe to re-run)
     await db.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
