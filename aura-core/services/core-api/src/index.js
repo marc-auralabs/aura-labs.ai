@@ -96,22 +96,34 @@ async function runMigrations() {
   console.log('🔍 Checking database schema...');
 
   try {
-    // Check if scouts table exists (new table we're adding)
-    const result = await db.query(`
-      SELECT table_name FROM information_schema.tables
-      WHERE table_schema = 'public' AND table_name = 'scouts'
-    `);
-
-    if (result.rows.length > 0) {
-      console.log('✅ Database schema already exists');
-      return;
-    }
-
+    // Always run migrations incrementally - they use IF NOT EXISTS
     console.log('📦 Running database migrations...');
 
-    await db.query(`
-      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    // Helper to check if column exists
+    const columnExists = async (table, column) => {
+      const result = await db.query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2
+      `, [table, column]);
+      return result.rows.length > 0;
+    };
 
+    // Add missing columns to existing tables
+    if (!(await columnExists('beacons', 'capabilities'))) {
+      console.log('   Adding capabilities column to beacons...');
+      await db.query('ALTER TABLE beacons ADD COLUMN IF NOT EXISTS capabilities JSONB DEFAULT \'{}\'');
+    }
+    if (!(await columnExists('sessions', 'raw_intent'))) {
+      console.log('   Adding raw_intent column to sessions...');
+      await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS raw_intent TEXT');
+      await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS parsed_intent JSONB DEFAULT \'{}\'');
+      await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS constraints JSONB DEFAULT \'{}\'');
+    }
+
+    // Create extension and tables (IF NOT EXISTS makes these safe to re-run)
+    await db.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+
+    await db.query(`
       -- SCOUTS (Buyer Agents)
       CREATE TABLE IF NOT EXISTS scouts (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
