@@ -946,7 +946,7 @@ This registry is organized into:
 
 ## APPENDIX B: Acronyms & Definitions
 
-**AURA:** Agentic Universal Request/Response Architecture  
+**AURA:** Agent Universal Resource Architecture
 **Scout:** Buyer-side agent representing buyer interests  
 **Beacon:** Seller-side agent representing seller interests  
 **CWR:** Compatibility-Weighted Reputation  
