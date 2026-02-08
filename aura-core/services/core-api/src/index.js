@@ -113,6 +113,9 @@ async function runMigrations() {
       console.log('   Adding capabilities column to beacons...');
       await db.query('ALTER TABLE beacons ADD COLUMN IF NOT EXISTS capabilities JSONB DEFAULT \'{}\'');
     }
+
+    // Make endpoint_url nullable (old schema had it as NOT NULL)
+    await db.query('ALTER TABLE beacons ALTER COLUMN endpoint_url DROP NOT NULL').catch(() => {});
     if (!(await columnExists('sessions', 'raw_intent'))) {
       console.log('   Adding raw_intent column to sessions...');
       await db.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS raw_intent TEXT');
