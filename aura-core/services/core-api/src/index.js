@@ -409,7 +409,7 @@ app.get('/beacons/:beaconId', async (request, reply) => {
   }
 
   try {
-    const result = await db.query('SELECT * FROM beacons WHERE id = $1 OR external_id = $1', [beaconId]);
+    const result = await db.query('SELECT * FROM beacons WHERE id::text = $1 OR external_id = $1', [beaconId]);
     if (result.rows.length === 0) {
       reply.code(404);
       return { error: 'not_found', message: 'Beacon not found' };
@@ -616,7 +616,7 @@ app.post('/sessions/:sessionId/offers', async (request, reply) => {
     }
 
     // Verify beacon exists
-    const beaconResult = await db.query('SELECT * FROM beacons WHERE id = $1 OR external_id = $1', [beaconId]);
+    const beaconResult = await db.query('SELECT * FROM beacons WHERE id::text = $1 OR external_id = $1', [beaconId]);
     if (beaconResult.rows.length === 0) {
       reply.code(404);
       return { error: 'beacon_not_found' };
