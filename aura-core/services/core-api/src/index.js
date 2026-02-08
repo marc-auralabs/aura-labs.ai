@@ -100,6 +100,25 @@ async function checkRedis() {
 }
 
 // =============================================================================
+// Coming Soon Response Helper
+// =============================================================================
+
+function comingSoon(request, reply, feature) {
+  reply.code(200); // 200 instead of 404 - it's a valid endpoint, just not ready
+  return {
+    status: 'coming_soon',
+    feature,
+    message: `This endpoint is under active development and will be available soon.`,
+    timestamp: new Date().toISOString(),
+    _links: {
+      home: { href: '/' },
+      health: { href: '/health' },
+      docs: { href: 'https://aura-labs.ai/developers' },
+    },
+  };
+}
+
+// =============================================================================
 // API Root - HATEOAS Entry Point
 // =============================================================================
 
@@ -287,6 +306,53 @@ app.get('/ws/beacon', { websocket: true }, (connection, req) => {
       registerOfferings: { action: 'register_offerings' },
     },
   }));
+});
+
+// =============================================================================
+// Coming Soon Endpoints
+// =============================================================================
+
+// Scout endpoints - coming soon
+app.get('/scouts', async (request, reply) => {
+  return comingSoon(request, reply, 'List Scouts');
+});
+
+app.get('/scouts/:scoutId', async (request, reply) => {
+  return comingSoon(request, reply, 'Scout Details');
+});
+
+// Beacon endpoints - coming soon
+app.get('/beacons', async (request, reply) => {
+  return comingSoon(request, reply, 'List Beacons');
+});
+
+app.get('/beacons/:beaconId', async (request, reply) => {
+  return comingSoon(request, reply, 'Beacon Details');
+});
+
+app.put('/beacons/:beaconId/capabilities', async (request, reply) => {
+  return comingSoon(request, reply, 'Update Beacon Capabilities');
+});
+
+// Session endpoints - coming soon
+app.get('/sessions', async (request, reply) => {
+  return comingSoon(request, reply, 'List Sessions');
+});
+
+app.get('/sessions/:sessionId/status', async (request, reply) => {
+  return comingSoon(request, reply, 'Session Status');
+});
+
+app.post('/sessions/:sessionId/cancel', async (request, reply) => {
+  return comingSoon(request, reply, 'Cancel Session');
+});
+
+app.get('/sessions/:sessionId/offers', async (request, reply) => {
+  return comingSoon(request, reply, 'Session Offers');
+});
+
+app.post('/sessions/:sessionId/commit', async (request, reply) => {
+  return comingSoon(request, reply, 'Commit to Offer');
 });
 
 // =============================================================================
