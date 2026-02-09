@@ -12,7 +12,8 @@
 #   AURA_CORE_URL=http://localhost:3000 ./scripts/security-tests.sh
 #
 
-set -euo pipefail
+set -uo pipefail
+# Note: not using -e so tests can fail without stopping the script
 
 CORE_URL="${AURA_CORE_URL:-https://aura-labsai-production.up.railway.app}"
 QUICK_MODE="${1:-}"
@@ -80,13 +81,12 @@ assert_status() {
   if [ "$actual" -eq "$expected" ]; then
     echo -e "  ${GREEN}✅ PASS${NC}: $test_name"
     ((PASSED++))
-    return 0
   else
     echo -e "  ${RED}❌ FAIL${NC}: $test_name (expected $expected, got $actual)"
     ((FAILED++))
     FAILURES+=("$test_name: expected status $expected, got $actual")
-    return 1
   fi
+  return 0  # Always continue
 }
 
 assert_status_one_of() {
@@ -106,7 +106,7 @@ assert_status_one_of() {
   echo -e "  ${RED}❌ FAIL${NC}: $test_name (got $actual, expected one of: ${expected[*]})"
   ((FAILED++))
   FAILURES+=("$test_name: got $actual, expected one of: ${expected[*]}")
-  return 1
+  return 0  # Always continue
 }
 
 assert_not_status() {
@@ -117,13 +117,12 @@ assert_not_status() {
   if [ "$actual" -ne "$unexpected" ]; then
     echo -e "  ${GREEN}✅ PASS${NC}: $test_name"
     ((PASSED++))
-    return 0
   else
     echo -e "  ${RED}❌ FAIL${NC}: $test_name (should NOT be $unexpected)"
     ((FAILED++))
     FAILURES+=("$test_name: should not be $unexpected")
-    return 1
   fi
+  return 0  # Always return success to continue tests
 }
 
 assert_body_not_contains() {
@@ -134,13 +133,12 @@ assert_body_not_contains() {
   if ! echo "$body" | grep -qi "$needle"; then
     echo -e "  ${GREEN}✅ PASS${NC}: $test_name"
     ((PASSED++))
-    return 0
   else
     echo -e "  ${RED}❌ FAIL${NC}: $test_name (body contains '$needle')"
     ((FAILED++))
     FAILURES+=("$test_name: body should not contain '$needle'")
-    return 1
   fi
+  return 0  # Always continue
 }
 
 skip_test() {
