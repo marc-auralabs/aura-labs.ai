@@ -20,11 +20,16 @@ struct IntentInputView: View {
                 // Submit button
                 submitButton
 
-                Spacer(minLength: 40)
+                Spacer(minLength: 100)
             }
             .padding()
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(Color(.systemGroupedBackground))
+        .onTapGesture {
+            // Dismiss keyboard on tap outside text fields
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
     }
 
     // MARK: - Header
@@ -54,7 +59,8 @@ struct IntentInputView: View {
                 .font(.headline)
 
             TextEditor(text: $viewModel.intentText)
-                .frame(minHeight: 100)
+                .frame(height: 100)
+                .scrollContentBackground(.hidden)
                 .padding(12)
                 .background(Color(.systemBackground))
                 .cornerRadius(12)

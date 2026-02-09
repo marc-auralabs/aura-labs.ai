@@ -209,6 +209,7 @@ struct StatusBadge: View {
         switch status {
         case .pending: return .gray
         case .searching: return .blue
+        case .marketForming: return .orange
         case .offersReady: return .green
         case .approved: return .purple
         case .completed: return .green

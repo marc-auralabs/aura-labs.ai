@@ -52,18 +52,36 @@ class AuraCore {
         )
         request.httpBody = try encoder.encode(body)
 
+        #if DEBUG
+        if let bodyJson = String(data: request.httpBody!, encoding: .utf8) {
+            print("📤 Request to /sessions: \(bodyJson)")
+        }
+        #endif
+
         let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw AuraError.invalidResponse
         }
 
+        #if DEBUG
+        print("📥 Response status: \(httpResponse.statusCode)")
+        if let rawResponse = String(data: data, encoding: .utf8) {
+            print("📥 Response body: \(rawResponse)")
+        }
+        #endif
+
         guard httpResponse.statusCode == 200 || httpResponse.statusCode == 201 else {
             throw AuraError.httpError(httpResponse.statusCode)
         }
 
-        let sessionResponse = try decoder.decode(SessionResponse.self, from: data)
-        return sessionResponse.session
+        do {
+            let sessionResponse = try decoder.decode(SessionResponse.self, from: data)
+            return sessionResponse.session
+        } catch {
+            print("❌ Decoding error: \(error)")
+            throw AuraError.decodingError(error)
+        }
     }
 
     /// Get session by ID

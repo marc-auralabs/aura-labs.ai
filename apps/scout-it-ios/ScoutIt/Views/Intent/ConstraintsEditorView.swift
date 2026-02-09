@@ -91,16 +91,12 @@ struct ConstraintsEditorView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
-            // Category chips
-            FlowLayout(spacing: 8) {
-                ForEach(availableCategories, id: \.self) { category in
-                    CategoryChip(
-                        title: category,
-                        isSelected: constraints.categories.contains(category),
-                        action: { toggleCategory(category) }
-                    )
-                }
-            }
+            // Category chips - using LazyVGrid for reliable scrolling
+            CategoryGrid(
+                categories: availableCategories,
+                selectedCategories: constraints.categories,
+                onToggle: toggleCategory
+            )
 
             if constraints.categories.isEmpty {
                 Text("No restrictions (all categories allowed)")
@@ -182,48 +178,28 @@ struct CategoryChip: View {
     }
 }
 
-// MARK: - Flow Layout
+// MARK: - Category Grid
+struct CategoryGrid: View {
+    let categories: [String]
+    let selectedCategories: [String]
+    let onToggle: (String) -> Void
 
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
+    private let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = arrange(proposal: proposal, subviews: subviews)
-        return result.size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrange(proposal: proposal, subviews: subviews)
-        for (index, frame) in result.frames.enumerated() {
-            subviews[index].place(
-                at: CGPoint(x: bounds.minX + frame.origin.x, y: bounds.minY + frame.origin.y),
-                proposal: ProposedViewSize(frame.size)
-            )
-        }
-    }
-
-    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, frames: [CGRect]) {
-        let maxWidth = proposal.width ?? .infinity
-        var frames: [CGRect] = []
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-
-            if x + size.width > maxWidth && x > 0 {
-                x = 0
-                y += rowHeight + spacing
-                rowHeight = 0
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(categories, id: \.self) { category in
+                CategoryChip(
+                    title: category,
+                    isSelected: selectedCategories.contains(category),
+                    action: { onToggle(category) }
+                )
             }
-
-            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
         }
-
-        return (CGSize(width: maxWidth, height: y + rowHeight), frames)
     }
 }
 
