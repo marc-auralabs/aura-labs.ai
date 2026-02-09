@@ -7,35 +7,36 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		APP001 /* ScoutItApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC001; };
-		APP002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC002; };
-		APP003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = RES001; };
-		MOD001 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC101; };
-		MOD002 /* Offer.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC102; };
-		MOD003 /* Mandates.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC103; };
-		SVC001 /* AuraCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC201; };
-		SVC002 /* Ed25519Signer.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC202; };
-		SVC003 /* TAPSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC203; };
-		SVC004 /* KeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC204; };
-		VM001 /* SessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC301; };
-		VW001 /* IntentInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC401; };
-		VW002 /* ConstraintsEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC402; };
-		VW003 /* SessionProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC403; };
-		VW004 /* OfferComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC404; };
-		VW005 /* MandateFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC405; };
-		VW006 /* IntentMandateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC406; };
-		VW007 /* CartMandateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC407; };
-		VW008 /* PaymentMandateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC408; };
-		VW009 /* CheckoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC409; };
-		VW010 /* ConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC410; };
-		VW011 /* ScoutLogoShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC411; };
+		APP001 /* ScoutItApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC001 /* ScoutItApp.swift */; };
+		APP002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC002 /* ContentView.swift */; };
+		APP003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = RES001 /* Assets.xcassets */; };
+		MOD001 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC101 /* Session.swift */; };
+		MOD002 /* Offer.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC102 /* Offer.swift */; };
+		MOD003 /* Mandates.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC103 /* Mandates.swift */; };
+		SVC001 /* AuraCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC201 /* AuraCore.swift */; };
+		SVC002 /* Ed25519Signer.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC202 /* Ed25519Signer.swift */; };
+		SVC003 /* TAPSigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC203 /* TAPSigner.swift */; };
+		SVC004 /* KeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC204 /* KeyManager.swift */; };
+		VM001 /* SessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC301 /* SessionViewModel.swift */; };
+		VW001 /* IntentInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC401 /* IntentInputView.swift */; };
+		VW002 /* ConstraintsEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC402 /* ConstraintsEditorView.swift */; };
+		VW003 /* SessionProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC403 /* SessionProgressView.swift */; };
+		VW004 /* OfferComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC404 /* OfferComparisonView.swift */; };
+		VW005 /* MandateFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC405 /* MandateFlowView.swift */; };
+		VW006 /* IntentMandateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC406 /* IntentMandateView.swift */; };
+		VW007 /* CartMandateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC407 /* CartMandateView.swift */; };
+		VW008 /* PaymentMandateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC408 /* PaymentMandateView.swift */; };
+		VW009 /* CheckoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC409 /* CheckoutView.swift */; };
+		VW010 /* ConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC410 /* ConfirmationView.swift */; };
+		VW011 /* ScoutLogoShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC411 /* ScoutLogoShape.swift */; };
+		RES002 /* scout.png in Resources */ = {isa = PBXBuildFile; fileRef = IMG001 /* scout.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		PROD001 /* ScoutIt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScoutIt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		RES001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		SRC001 /* ScoutItApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutItApp.swift; sourceTree = "<group>"; };
 		SRC002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		RES001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		SRC101 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
 		SRC102 /* Offer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Offer.swift; sourceTree = "<group>"; };
 		SRC103 /* Mandates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mandates.swift; sourceTree = "<group>"; };
@@ -55,6 +56,7 @@
 		SRC409 /* CheckoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutView.swift; sourceTree = "<group>"; };
 		SRC410 /* ConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationView.swift; sourceTree = "<group>"; };
 		SRC411 /* ScoutLogoShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutLogoShape.swift; sourceTree = "<group>"; };
+		IMG001 /* scout.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = scout.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,22 +70,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		ROOT /* = */ = {
-			isa = PBXGroup;
-			children = (
-				GRP001 /* ScoutIt */,
-				GRP_PRODUCTS /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		GRP_PRODUCTS /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				PROD001 /* ScoutIt.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		GRP001 /* ScoutIt */ = {
 			isa = PBXGroup;
 			children = (
@@ -106,6 +92,23 @@
 				SRC103 /* Mandates.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		GRP_PRODUCTS /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				PROD001 /* ScoutIt.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		GRP_RESOURCES /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				RES001 /* Assets.xcassets */,
+				IMG001 /* scout.png */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		GRP_SERVICES /* Services */ = {
@@ -139,6 +142,15 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		GRP_VIEWS_CHECKOUT /* Checkout */ = {
+			isa = PBXGroup;
+			children = (
+				SRC409 /* CheckoutView.swift */,
+				SRC410 /* ConfirmationView.swift */,
+			);
+			path = Checkout;
+			sourceTree = "<group>";
+		};
 		GRP_VIEWS_COMPONENTS /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -156,15 +168,6 @@
 			path = Intent;
 			sourceTree = "<group>";
 		};
-		GRP_VIEWS_SESSION /* Session */ = {
-			isa = PBXGroup;
-			children = (
-				SRC403 /* SessionProgressView.swift */,
-				SRC404 /* OfferComparisonView.swift */,
-			);
-			path = Session;
-			sourceTree = "<group>";
-		};
 		GRP_VIEWS_MANDATES /* Mandates */ = {
 			isa = PBXGroup;
 			children = (
@@ -176,21 +179,21 @@
 			path = Mandates;
 			sourceTree = "<group>";
 		};
-		GRP_VIEWS_CHECKOUT /* Checkout */ = {
+		GRP_VIEWS_SESSION /* Session */ = {
 			isa = PBXGroup;
 			children = (
-				SRC409 /* CheckoutView.swift */,
-				SRC410 /* ConfirmationView.swift */,
+				SRC403 /* SessionProgressView.swift */,
+				SRC404 /* OfferComparisonView.swift */,
 			);
-			path = Checkout;
+			path = Session;
 			sourceTree = "<group>";
 		};
-		GRP_RESOURCES /* Resources */ = {
+		ROOT = {
 			isa = PBXGroup;
 			children = (
-				RES001 /* Assets.xcassets */,
+				GRP001 /* ScoutIt */,
+				GRP_PRODUCTS /* Products */,
 			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -198,7 +201,7 @@
 /* Begin PBXNativeTarget section */
 		TGT001 /* ScoutIt */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CFG_LIST_TARGET;
+			buildConfigurationList = CFG_LIST_TARGET /* Build configuration list for PBXNativeTarget "ScoutIt" */;
 			buildPhases = (
 				SRC_PHASE /* Sources */,
 				FRM001 /* Frameworks */,
@@ -221,14 +224,14 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					TGT001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
-			buildConfigurationList = CFG_LIST_PROJECT;
+			buildConfigurationList = CFG_LIST_PROJECT /* Build configuration list for PBXProject "ScoutIt" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -252,6 +255,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				APP003 /* Assets.xcassets in Resources */,
+				RES002 /* scout.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -297,11 +301,30 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -322,6 +345,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -335,11 +359,30 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -353,6 +396,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};

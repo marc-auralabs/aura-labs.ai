@@ -31,10 +31,21 @@ struct IntentInputView: View {
 
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Image("ScoutLogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80, height: 80)
+            // Load image directly from bundle
+            if let path = Bundle.main.path(forResource: "scout", ofType: "png"),
+               let uiImage = UIImage(contentsOfFile: path) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+            } else {
+                // Fallback to SF Symbol if image not found
+                Image(systemName: "magnifyingglass.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .foregroundColor(Color(red: 0.34, green: 0.75, blue: 0.73))
+            }
 
             Text("Scout-It!")
                 .font(.largeTitle)
