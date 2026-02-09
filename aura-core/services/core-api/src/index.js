@@ -84,10 +84,51 @@ async function checkRedis() {
 }
 
 // =============================================================================
-// Admin: Reset Database (one-time use, remove after)
+// Security: UUID Validation Helper
 // =============================================================================
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidUUID(str) {
+  return typeof str === 'string' && UUID_REGEX.test(str);
+}
+
+// Validation middleware for UUID parameters
+function validateUUIDParam(paramName) {
+  return async (request, reply) => {
+    const value = request.params[paramName];
+    if (!value || !isValidUUID(value)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: `Invalid ${paramName} format. Expected UUID.` };
+    }
+  };
+}
+
+// =============================================================================
+// Admin: Reset Database (SECURED - requires ADMIN_SECRET, disabled in production)
+// =============================================================================
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
+
 app.post('/admin/reset-database', async (request, reply) => {
+  // SECURITY: Disabled in production unless explicitly enabled
+  if (config.env === 'production' && !process.env.ADMIN_RESET_ENABLED) {
+    reply.code(404);
+    return { error: 'not_found' };
+  }
+
+  // SECURITY: Require admin secret
+  const authHeader = request.headers.authorization;
+  if (!ADMIN_SECRET) {
+    reply.code(403);
+    return { error: 'admin_disabled', message: 'Admin endpoint not configured' };
+  }
+
+  if (!authHeader || authHeader !== `Bearer ${ADMIN_SECRET}`) {
+    reply.code(401);
+    return { error: 'unauthorized', message: 'Valid admin authorization required' };
+  }
+
   if (!db) {
     reply.code(503);
     return { error: 'database_unavailable' };
@@ -328,6 +369,12 @@ app.post('/scouts/register', async (request, reply) => {
 app.get('/scouts/:scoutId', async (request, reply) => {
   const { scoutId } = request.params;
 
+  // SECURITY: Validate UUID format
+  if (!isValidUUID(scoutId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid scoutId format. Expected UUID.' };
+  }
+
   if (!db) {
     reply.code(503);
     return { error: 'database_unavailable' };
@@ -545,6 +592,12 @@ app.post('/sessions', async (request, reply) => {
 app.get('/sessions/:sessionId', async (request, reply) => {
   const { sessionId } = request.params;
 
+  // SECURITY: Validate UUID format
+  if (!isValidUUID(sessionId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
+  }
+
   if (!db) {
     reply.code(503);
     return { error: 'database_unavailable' };
@@ -606,6 +659,12 @@ app.post('/sessions/:sessionId/offers', async (request, reply) => {
   const { sessionId } = request.params;
   const { beaconId, product, unitPrice, quantity, totalPrice, currency, deliveryDate, terms, metadata } = request.body || {};
 
+  // SECURITY: Validate UUID format for sessionId
+  if (!isValidUUID(sessionId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
+  }
+
   if (!db) {
     reply.code(503);
     return { error: 'database_unavailable' };
@@ -614,6 +673,16 @@ app.post('/sessions/:sessionId/offers', async (request, reply) => {
   if (!beaconId || !product) {
     reply.code(400);
     return { error: 'missing_fields', message: 'beaconId and product are required' };
+  }
+
+  // SECURITY: Validate price and quantity are positive
+  if (typeof unitPrice === 'number' && unitPrice < 0) {
+    reply.code(400);
+    return { error: 'invalid_price', message: 'unitPrice must be a positive number' };
+  }
+  if (typeof quantity === 'number' && quantity < 1) {
+    reply.code(400);
+    return { error: 'invalid_quantity', message: 'quantity must be a positive integer' };
   }
 
   try {
@@ -675,6 +744,12 @@ app.post('/sessions/:sessionId/offers', async (request, reply) => {
 app.get('/sessions/:sessionId/offers', async (request, reply) => {
   const { sessionId } = request.params;
 
+  // SECURITY: Validate UUID format
+  if (!isValidUUID(sessionId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
+  }
+
   if (!db) {
     reply.code(503);
     return { error: 'database_unavailable' };
@@ -726,6 +801,12 @@ app.post('/sessions/:sessionId/commit', async (request, reply) => {
   const { sessionId } = request.params;
   const { offerId, idempotencyKey } = request.body || {};
 
+  // SECURITY: Validate UUID format
+  if (!isValidUUID(sessionId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
+  }
+
   if (!db) {
     reply.code(503);
     return { error: 'database_unavailable' };
@@ -734,6 +815,12 @@ app.post('/sessions/:sessionId/commit', async (request, reply) => {
   if (!offerId) {
     reply.code(400);
     return { error: 'missing_offer_id', message: 'offerId is required' };
+  }
+
+  // SECURITY: Validate offerId is UUID
+  if (!isValidUUID(offerId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid offerId format. Expected UUID.' };
   }
 
   try {
@@ -815,6 +902,12 @@ app.post('/sessions/:sessionId/commit', async (request, reply) => {
 // Cancel session
 app.post('/sessions/:sessionId/cancel', async (request, reply) => {
   const { sessionId } = request.params;
+
+  // SECURITY: Validate UUID format
+  if (!isValidUUID(sessionId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
+  }
 
   if (!db) {
     reply.code(503);
