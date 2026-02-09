@@ -41,6 +41,11 @@ import {
   OfferError,
 } from './errors.js';
 
+// Protocol Integrations
+import { MCPClient } from './mcp/client.js';
+import { AP2Mandates, generateKeyPair as generateAP2KeyPair } from './ap2/mandates.js';
+import { VisaTAP, TAPError } from './tap/visa.js';
+
 /**
  * Create a new Scout instance
  *
@@ -245,5 +250,89 @@ export {
   OfferError,
 } from './errors.js';
 
+// =========================================================================
+// Protocol Integrations
+// =========================================================================
+
+/**
+ * MCP (Model Context Protocol) Client
+ *
+ * Connect to MCP servers to access external tools and context.
+ *
+ * @example
+ * ```js
+ * import { MCPClient } from '@aura-labs/scout';
+ *
+ * const mcp = new MCPClient();
+ * await mcp.connect('https://mcp.example.com/sse');
+ * const tools = await mcp.listAllTools();
+ * const result = await mcp.callTool('server-uri', 'search', { query: 'laptops' });
+ * ```
+ */
+export { MCPClient };
+
+/**
+ * AP2 Mandates - Google's Agent Payments Protocol
+ *
+ * Create user-signed mandates that authorize agent actions:
+ * - Intent Mandate: Authorizes shopping within constraints
+ * - Cart Mandate: Authorizes specific purchase
+ * - Payment Mandate: Authorization for payment networks
+ *
+ * @example
+ * ```js
+ * import { AP2Mandates, generateAP2KeyPair } from '@aura-labs/scout';
+ *
+ * const { publicKey, privateKey } = generateAP2KeyPair();
+ *
+ * const intentMandate = await AP2Mandates.createIntent({
+ *   agentId: 'scout-123',
+ *   userId: 'user-456',
+ *   userKey: privateKey,
+ *   constraints: {
+ *     maxAmount: 5000,
+ *     currency: 'USD',
+ *     categories: ['electronics'],
+ *     validUntil: '2026-03-01T00:00:00Z',
+ *   },
+ * });
+ * ```
+ */
+export { AP2Mandates, generateAP2KeyPair };
+
+/**
+ * Visa TAP - Trusted Agent Protocol
+ *
+ * Agent identity verification for commerce transactions.
+ * Allows payment networks to verify agent authenticity.
+ *
+ * @example
+ * ```js
+ * import { VisaTAP } from '@aura-labs/scout';
+ *
+ * // Generate keys and register agent
+ * const keyPair = VisaTAP.generateKeyPair();
+ * const registration = await VisaTAP.register({
+ *   agentId: 'my-scout-agent',
+ *   publicKey: keyPair.publicKey,
+ *   metadata: { name: 'Shopping Agent', operator: 'AURA Labs' },
+ * });
+ *
+ * // Sign HTTP requests for TAP verification
+ * const signedRequest = await VisaTAP.signRequest(
+ *   { method: 'POST', url: '/api/pay', body: { amount: 100 } },
+ *   { tapId: registration.tapId, privateKey: keyPair.privateKey, keyId: keyPair.keyId }
+ * );
+ * ```
+ */
+export { VisaTAP, TAPError };
+
 // Default export
-export default { createScout, Scout };
+export default {
+  createScout,
+  Scout,
+  // Protocols
+  MCPClient,
+  AP2Mandates,
+  VisaTAP,
+};

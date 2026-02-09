@@ -17,6 +17,10 @@ set -uo pipefail
 
 CORE_URL="${AURA_CORE_URL:-https://aura-labsai-production.up.railway.app}"
 QUICK_MODE="${1:-}"
+OUTPUT_FILE="${SECURITY_TEST_OUTPUT:-/tmp/aura-security-tests.txt}"
+
+# Redirect all output to file and stdout
+exec > >(tee "$OUTPUT_FILE") 2>&1
 
 # Colors
 RED='\033[0;31m'

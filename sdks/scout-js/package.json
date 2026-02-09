@@ -13,12 +13,23 @@
     ".": {
       "import": "./src/index.js",
       "types": "./src/index.d.ts"
+    },
+    "./mcp": {
+      "import": "./src/mcp/client.js"
+    },
+    "./ap2": {
+      "import": "./src/ap2/mandates.js"
+    },
+    "./tap": {
+      "import": "./src/tap/visa.js"
     }
   },
   "scripts": {
     "test": "node --test src/**/*.test.js",
+    "test:protocols": "node src/tests/run-protocol-tests.js",
     "cli": "node bin/scout-cli.js",
-    "example": "node examples/basic-purchase.js"
+    "example": "node examples/basic-purchase.js",
+    "example:protocols": "node examples/protocol-integration.js"
   },
   "dependencies": {},
   "devDependencies": {

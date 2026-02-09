@@ -10,6 +10,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import websocket from '@fastify/websocket';
 import pg from 'pg';
+import { registerDevRoutes } from './routes/dev.js';
 
 const { Pool } = pg;
 
@@ -46,6 +47,9 @@ const app = Fastify({
 await app.register(cors, { origin: true });
 await app.register(helmet, { contentSecurityPolicy: false });
 await app.register(websocket);
+
+// Register development routes (test runners, etc.)
+registerDevRoutes(app, config);
 
 // =============================================================================
 // Health Check Endpoints
