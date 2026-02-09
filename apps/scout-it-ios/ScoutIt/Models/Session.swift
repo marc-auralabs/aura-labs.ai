@@ -1,7 +1,7 @@
 import Foundation
 
 /// Shopping session state
-struct Session: Codable, Identifiable {
+struct Session: Decodable, Identifiable {
     let id: String
     let status: SessionStatus
     let intent: String?  // Extracted from intent.raw
@@ -137,10 +137,20 @@ struct Constraints: Codable {
         merchantBlocklist = try container.decodeIfPresent([String].self, forKey: .merchantBlocklist)
         deliveryBefore = try container.decodeIfPresent(Date.self, forKey: .deliveryBefore)
     }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(maxAmount, forKey: .maxAmount)
+        try container.encode(currency, forKey: .currency)
+        try container.encode(categories, forKey: .categories)
+        try container.encodeIfPresent(merchantAllowlist, forKey: .merchantAllowlist)
+        try container.encodeIfPresent(merchantBlocklist, forKey: .merchantBlocklist)
+        try container.encodeIfPresent(deliveryBefore, forKey: .deliveryBefore)
+    }
 }
 
 /// API response wrapper - handles both { session: {...} } and direct session object
-struct SessionResponse: Codable {
+struct SessionResponse: Decodable {
     let session: Session
 
     init(from decoder: Decoder) throws {

@@ -3,6 +3,7 @@ import Foundation
 /// Offer from a Beacon vendor
 struct Offer: Codable, Identifiable {
     let id: String
+    let sessionId: String?
     let beaconId: String
     let beaconName: String
     let product: Product
@@ -15,6 +16,7 @@ struct Offer: Codable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case sessionId = "session_id"
         case beaconId = "beacon_id"
         case beaconName = "beacon_name"
         case product
@@ -26,10 +28,38 @@ struct Offer: Codable, Identifiable {
         case terms
     }
 
+    /// Explicit initializer for creating mock offers
+    init(
+        id: String,
+        sessionId: String? = nil,
+        beaconId: String,
+        beaconName: String,
+        product: Product,
+        quantity: Int,
+        unitPrice: Decimal,
+        totalPrice: Decimal,
+        currency: String,
+        deliveryDate: Date? = nil,
+        terms: String? = nil
+    ) {
+        self.id = id
+        self.sessionId = sessionId
+        self.beaconId = beaconId
+        self.beaconName = beaconName
+        self.product = product
+        self.quantity = quantity
+        self.unitPrice = unitPrice
+        self.totalPrice = totalPrice
+        self.currency = currency
+        self.deliveryDate = deliveryDate.map { ISO8601DateFormatter().string(from: $0) }
+        self.terms = terms
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         id = try container.decode(String.self, forKey: .id)
+        sessionId = try container.decodeIfPresent(String.self, forKey: .sessionId)
         beaconId = try container.decodeIfPresent(String.self, forKey: .beaconId) ?? "unknown"
         beaconName = try container.decodeIfPresent(String.self, forKey: .beaconName) ?? "Unknown Vendor"
         product = try container.decodeIfPresent(Product.self, forKey: .product) ?? Product(name: "Product")

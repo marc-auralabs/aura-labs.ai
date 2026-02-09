@@ -3,42 +3,38 @@ import SwiftUI
 /// Main intent input screen
 struct IntentInputView: View {
     @ObservedObject var viewModel: SessionViewModel
-    @State private var showConstraints = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Header
-                headerSection
+        VStack(spacing: 0) {
+            Spacer()
 
-                // Intent input
-                intentInputSection
+            // Header
+            headerSection
 
-                // Constraints (expandable)
-                constraintsSection
+            Spacer().frame(height: 32)
 
-                // Submit button
-                submitButton
+            // Intent input
+            intentInputSection
+                .padding(.horizontal)
 
-                Spacer(minLength: 100)
-            }
-            .padding()
+            Spacer()
+
+            // Submit button
+            submitButton
+                .padding(.horizontal)
+                .padding(.bottom, 32)
         }
-        .scrollDismissesKeyboard(.interactively)
         .background(Color(.systemGroupedBackground))
-        .onTapGesture {
-            // Dismiss keyboard on tap outside text fields
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
     }
 
     // MARK: - Header
 
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Image(systemName: "cart.badge.plus")
-                .font(.system(size: 48))
-                .foregroundColor(.blue)
+            Image("ScoutLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 80, height: 80)
 
             Text("Scout-It!")
                 .font(.largeTitle)
@@ -48,7 +44,8 @@ struct IntentInputView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
-        .padding(.top, 20)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
     }
 
     // MARK: - Intent Input
@@ -58,45 +55,13 @@ struct IntentInputView: View {
             Label("What do you need to procure?", systemImage: "text.bubble")
                 .font(.headline)
 
-            TextEditor(text: $viewModel.intentText)
-                .frame(height: 100)
-                .scrollContentBackground(.hidden)
-                .padding(12)
-                .background(Color(.systemBackground))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(.separator), lineWidth: 1)
-                )
+            TextField("Describe what you need...", text: $viewModel.intentText, axis: .vertical)
+                .lineLimit(3...6)
+                .textFieldStyle(.roundedBorder)
 
             Text("Example: \"I need 10 ergonomic keyboards under $1500 for the design team\"")
                 .font(.caption)
                 .foregroundColor(.secondary)
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-    }
-
-    // MARK: - Constraints
-
-    private var constraintsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button(action: { withAnimation { showConstraints.toggle() } }) {
-                HStack {
-                    Label("Purchase Constraints", systemImage: "slider.horizontal.3")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: showConstraints ? "chevron.up" : "chevron.down")
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            if showConstraints {
-                ConstraintsEditorView(constraints: $viewModel.constraints)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
         }
         .padding()
         .background(Color(.systemBackground))

@@ -5,8 +5,6 @@ struct ConstraintsEditorView: View {
     @Binding var constraints: Constraints
 
     @State private var budgetText = ""
-    @State private var categoryInput = ""
-    @State private var showDatePicker = false
 
     private let availableCategories = [
         "electronics",
@@ -18,24 +16,22 @@ struct ConstraintsEditorView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Budget
-            budgetSection
+        Group {
+            Section("Budget") {
+                budgetSection
+            }
 
-            Divider()
+            Section("Currency") {
+                currencySection
+            }
 
-            // Currency
-            currencySection
+            Section("Categories") {
+                categoriesSection
+            }
 
-            Divider()
-
-            // Categories
-            categoriesSection
-
-            Divider()
-
-            // Delivery date
-            deliverySection
+            Section("Delivery") {
+                deliverySection
+            }
         }
         .onAppear {
             budgetText = "\(constraints.maxAmount)"
@@ -45,63 +41,46 @@ struct ConstraintsEditorView: View {
     // MARK: - Budget
 
     private var budgetSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Maximum Budget", systemImage: "dollarsign.circle")
-                .font(.subheadline)
+        HStack {
+            Text(constraints.currency)
                 .foregroundColor(.secondary)
 
-            HStack {
-                Text(constraints.currency)
-                    .foregroundColor(.secondary)
-
-                TextField("1000", text: $budgetText)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .onChange(of: budgetText) { newValue in
-                        if let amount = Decimal(string: newValue) {
-                            constraints.maxAmount = amount
-                        }
+            TextField("1000", text: $budgetText)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .onChange(of: budgetText) { newValue in
+                    if let amount = Decimal(string: newValue) {
+                        constraints.maxAmount = amount
                     }
-            }
+                }
         }
     }
 
     // MARK: - Currency
 
     private var currencySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Currency", systemImage: "banknote")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
-            Picker("Currency", selection: $constraints.currency) {
-                Text("USD").tag("USD")
-                Text("EUR").tag("EUR")
-                Text("GBP").tag("GBP")
-            }
-            .pickerStyle(SegmentedPickerStyle())
+        Picker("Currency", selection: $constraints.currency) {
+            Text("USD").tag("USD")
+            Text("EUR").tag("EUR")
+            Text("GBP").tag("GBP")
         }
+        .pickerStyle(SegmentedPickerStyle())
     }
 
     // MARK: - Categories
 
     private var categoriesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Allowed Categories", systemImage: "tag")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
-            // Category chips - using LazyVGrid for reliable scrolling
-            CategoryGrid(
-                categories: availableCategories,
-                selectedCategories: constraints.categories,
-                onToggle: toggleCategory
-            )
-
-            if constraints.categories.isEmpty {
-                Text("No restrictions (all categories allowed)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+        ForEach(availableCategories, id: \.self) { category in
+            Button(action: { toggleCategory(category) }) {
+                HStack {
+                    Text(category)
+                        .foregroundColor(.primary)
+                    Spacer()
+                    if constraints.categories.contains(category) {
+                        Image(systemName: "checkmark")
+                            .foregroundColor(.blue)
+                    }
+                }
             }
         }
     }
@@ -117,87 +96,21 @@ struct ConstraintsEditorView: View {
     // MARK: - Delivery
 
     private var deliverySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Delivery Before", systemImage: "calendar")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+        Group {
+            DatePicker(
+                "Deliver by",
+                selection: Binding(
+                    get: { constraints.deliveryBefore ?? Date().addingTimeInterval(7 * 24 * 60 * 60) },
+                    set: { constraints.deliveryBefore = $0 }
+                ),
+                in: Date()...,
+                displayedComponents: .date
+            )
 
-            HStack {
-                if let date = constraints.deliveryBefore {
-                    Text(date, style: .date)
-                    Spacer()
-                    Button("Clear") {
-                        constraints.deliveryBefore = nil
-                    }
-                    .font(.caption)
-                    .foregroundColor(.red)
-                } else {
-                    Text("No deadline")
-                        .foregroundColor(.secondary)
-                    Spacer()
+            if constraints.deliveryBefore != nil {
+                Button("Clear deadline", role: .destructive) {
+                    constraints.deliveryBefore = nil
                 }
-
-                Button(action: { showDatePicker.toggle() }) {
-                    Image(systemName: "calendar.badge.plus")
-                }
-            }
-
-            if showDatePicker {
-                DatePicker(
-                    "Delivery Date",
-                    selection: Binding(
-                        get: { constraints.deliveryBefore ?? Date().addingTimeInterval(7 * 24 * 60 * 60) },
-                        set: { constraints.deliveryBefore = $0 }
-                    ),
-                    in: Date()...,
-                    displayedComponents: .date
-                )
-                .datePickerStyle(GraphicalDatePickerStyle())
-            }
-        }
-    }
-}
-
-// MARK: - Category Chip
-
-struct CategoryChip: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(isSelected ? Color.blue : Color(.systemGray5))
-                .foregroundColor(isSelected ? .white : .primary)
-                .cornerRadius(16)
-        }
-    }
-}
-
-// MARK: - Category Grid
-struct CategoryGrid: View {
-    let categories: [String]
-    let selectedCategories: [String]
-    let onToggle: (String) -> Void
-
-    private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(categories, id: \.self) { category in
-                CategoryChip(
-                    title: category,
-                    isSelected: selectedCategories.contains(category),
-                    action: { onToggle(category) }
-                )
             }
         }
     }

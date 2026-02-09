@@ -50,7 +50,7 @@ struct PaymentMandateDetailView: View {
                     Text("Amount")
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(mandate.transaction.currency) \(mandate.transaction.amount)")
+                    Text(verbatim: "\(mandate.transaction.currency) \(mandate.transaction.amount)")
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.green)

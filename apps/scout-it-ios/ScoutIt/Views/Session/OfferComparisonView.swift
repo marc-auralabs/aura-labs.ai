@@ -8,28 +8,36 @@ struct OfferComparisonView: View {
     @State private var showComparison = false
 
     var offers: [Offer] {
-        viewModel.currentSession?.offers ?? []
+        viewModel.currentOffers
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Header
-                headerSection
+        VStack(spacing: 0) {
+            // Scrollable content
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Header
+                    headerSection
 
-                // Offers list
-                if offers.isEmpty {
-                    emptyState
-                } else {
-                    offersSection
-                }
+                    // Offers list
+                    if offers.isEmpty {
+                        emptyState
+                    } else {
+                        offersSection
+                    }
 
-                // Continue button
-                if selectedOfferId != nil {
-                    continueButton
+                    // Bottom padding for scroll content
+                    Color.clear.frame(height: 20)
                 }
+                .padding()
             }
-            .padding()
+
+            // Fixed continue button at bottom
+            if selectedOfferId != nil {
+                continueButton
+                    .padding()
+                    .background(Color(.systemGroupedBackground))
+            }
         }
         .background(Color(.systemGroupedBackground))
     }
@@ -53,7 +61,7 @@ struct OfferComparisonView: View {
             HStack {
                 Text("Budget:")
                     .foregroundColor(.secondary)
-                Text("\(viewModel.constraints.currency) \(viewModel.constraints.maxAmount)")
+                Text(verbatim: "\(viewModel.constraints.currency) \(viewModel.constraints.maxAmount)")
                     .fontWeight(.semibold)
                     .foregroundColor(.blue)
             }

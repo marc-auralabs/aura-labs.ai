@@ -28,6 +28,7 @@
 		VW008 /* PaymentMandateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC408; };
 		VW009 /* CheckoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC409; };
 		VW010 /* ConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC410; };
+		VW011 /* ScoutLogoShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = SRC411; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +54,7 @@
 		SRC408 /* PaymentMandateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentMandateView.swift; sourceTree = "<group>"; };
 		SRC409 /* CheckoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutView.swift; sourceTree = "<group>"; };
 		SRC410 /* ConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationView.swift; sourceTree = "<group>"; };
+		SRC411 /* ScoutLogoShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoutLogoShape.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -128,12 +130,21 @@
 		GRP_VIEWS /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				GRP_VIEWS_COMPONENTS /* Components */,
 				GRP_VIEWS_INTENT /* Intent */,
 				GRP_VIEWS_SESSION /* Session */,
 				GRP_VIEWS_MANDATES /* Mandates */,
 				GRP_VIEWS_CHECKOUT /* Checkout */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		GRP_VIEWS_COMPONENTS /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				SRC411 /* ScoutLogoShape.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		GRP_VIEWS_INTENT /* Intent */ = {
@@ -271,6 +282,7 @@
 				VW008 /* PaymentMandateView.swift in Sources */,
 				VW009 /* CheckoutView.swift in Sources */,
 				VW010 /* ConfirmationView.swift in Sources */,
+				VW011 /* ScoutLogoShape.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -33,7 +33,7 @@ struct CheckoutView: View {
 
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Image(systemName: "cart.badge.checkmark")
+            Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 48))
                 .foregroundColor(.blue)
 

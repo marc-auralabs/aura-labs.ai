@@ -105,9 +105,12 @@ class SessionViewModel: ObservableObject {
     /// Poll for session updates until offers are ready
     private func startPollingForOffers() {
         pollingTask?.cancel()
+        var pollCount = 0
+
         pollingTask = Task {
             while !Task.isCancelled {
                 guard let sessionId = currentSession?.id else { break }
+                pollCount += 1
 
                 do {
                     let updated = try await api.getSession(id: sessionId)
@@ -127,9 +130,78 @@ class SessionViewModel: ObservableObject {
                     // Continue polling on transient errors
                 }
 
+                // DEMO MODE: After 3 polls (~6 seconds), generate mock offers
+                if pollCount >= 3 {
+                    await MainActor.run {
+                        self.injectMockOffers()
+                        self.currentStep = .offers
+                        self.pollingTask?.cancel()
+                    }
+                    break
+                }
+
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
             }
         }
+    }
+
+    /// DEMO: Inject mock offers for demonstration
+    private func injectMockOffers() {
+        let mockOffers = [
+            Offer(
+                id: "offer-\(UUID().uuidString.prefix(8))",
+                sessionId: currentSession?.id,
+                beaconId: "beacon-acme-supplies",
+                beaconName: "ACME Office Supplies",
+                product: Product(name: "Premium Purple Towels", sku: "PPT-100", description: "Soft, absorbent purple towels"),
+                quantity: 100,
+                unitPrice: Decimal(string: "8.50")!,
+                totalPrice: Decimal(string: "850.00")!,
+                currency: "GBP",
+                deliveryDate: Calendar.current.date(byAdding: .day, value: 5, to: Date()),
+                terms: "Net 30, 30-day returns"
+            ),
+            Offer(
+                id: "offer-\(UUID().uuidString.prefix(8))",
+                sessionId: currentSession?.id,
+                beaconId: "beacon-global-textiles",
+                beaconName: "Global Textiles Co",
+                product: Product(name: "Luxury Purple Towels", sku: "LPT-PRO", description: "Premium Egyptian cotton purple towels"),
+                quantity: 100,
+                unitPrice: Decimal(string: "12.00")!,
+                totalPrice: Decimal(string: "1200.00")!,
+                currency: "GBP",
+                deliveryDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()),
+                terms: "Net 15, 60-day returns"
+            ),
+            Offer(
+                id: "offer-\(UUID().uuidString.prefix(8))",
+                sessionId: currentSession?.id,
+                beaconId: "beacon-budget-wholesale",
+                beaconName: "Budget Wholesale",
+                product: Product(name: "Standard Purple Towels", sku: "SPT-ECO", description: "Economy purple towels"),
+                quantity: 100,
+                unitPrice: Decimal(string: "5.99")!,
+                totalPrice: Decimal(string: "599.00")!,
+                currency: "GBP",
+                deliveryDate: Calendar.current.date(byAdding: .day, value: 10, to: Date()),
+                terms: "Prepaid, 14-day returns"
+            ),
+        ]
+
+        // Store mock offers directly for the view to access
+        mockSessionOffers = mockOffers
+    }
+
+    // DEMO: Store mock offers separately since Session is immutable
+    @Published var mockSessionOffers: [Offer] = []
+
+    /// Get current offers (from session or mock)
+    var currentOffers: [Offer] {
+        if let sessionOffers = currentSession?.offers, !sessionOffers.isEmpty {
+            return sessionOffers
+        }
+        return mockSessionOffers
     }
 
     /// Select an offer
@@ -154,15 +226,20 @@ class SessionViewModel: ObservableObject {
             let cartMandate = try await createCartMandate(for: offer, intentMandate: intentMandate)
             mandateChain.cartMandate = cartMandate
 
-            // Approve with API
-            let updated = try await api.approveOffer(
-                sessionId: session.id,
-                offerId: offer.id,
-                intentMandateRef: intentMandate.id,
-                userId: userId
-            )
-            currentSession = updated
-            currentStep = .checkout
+            // DEMO MODE: Skip API call for mock offers
+            if !mockSessionOffers.isEmpty {
+                currentStep = .checkout
+            } else {
+                // Approve with real API
+                let updated = try await api.approveOffer(
+                    sessionId: session.id,
+                    offerId: offer.id,
+                    intentMandateRef: intentMandate.id,
+                    userId: userId
+                )
+                currentSession = updated
+                currentStep = .checkout
+            }
 
         } catch {
             errorMessage = error.localizedDescription
@@ -174,7 +251,6 @@ class SessionViewModel: ObservableObject {
     /// Complete checkout (create payment mandate and process)
     func checkout() async {
         guard let cartMandate = mandateChain.cartMandate,
-              let session = currentSession,
               let offer = selectedOffer else {
             errorMessage = "Missing required data"
             return
@@ -187,21 +263,35 @@ class SessionViewModel: ObservableObject {
             let paymentMandate = try await createPaymentMandate(cartMandate: cartMandate, offer: offer)
             mandateChain.paymentMandate = paymentMandate
 
-            // Get TAP signed headers
-            let checkoutURL = URL(string: "\(AuraCore.baseURL)/checkout")!
-            let tapHeaders = try tapManager.getHeaders(method: "POST", url: checkoutURL)
-
-            // Process checkout
-            let result = try await api.checkout(
-                sessionId: session.id,
-                paymentMandate: paymentMandate,
-                tapSignedHeaders: tapHeaders
-            )
-
-            if result.success {
+            // DEMO MODE: Skip API call for mock offers
+            if !mockSessionOffers.isEmpty {
+                // Simulate successful checkout
+                try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second delay for realism
                 currentStep = .confirmation
             } else {
-                errorMessage = "Checkout failed"
+                // Real API checkout
+                guard let session = currentSession else {
+                    errorMessage = "Missing session"
+                    isLoading = false
+                    return
+                }
+
+                // Get TAP signed headers
+                let checkoutURL = URL(string: "\(AuraCore.baseURL)/checkout")!
+                let tapHeaders = try tapManager.getHeaders(method: "POST", url: checkoutURL)
+
+                // Process checkout
+                let result = try await api.checkout(
+                    sessionId: session.id,
+                    paymentMandate: paymentMandate,
+                    tapSignedHeaders: tapHeaders
+                )
+
+                if result.success {
+                    currentStep = .confirmation
+                } else {
+                    errorMessage = "Checkout failed"
+                }
             }
 
         } catch {
@@ -216,6 +306,7 @@ class SessionViewModel: ObservableObject {
         pollingTask?.cancel()
         currentSession = nil
         mandateChain = MandateChain()
+        mockSessionOffers = []
         intentText = ""
         constraints = Constraints()
         selectedOffer = nil

@@ -30,7 +30,7 @@ struct CartMandateDetailView: View {
                         .font(.body)
                         .fontWeight(.medium)
                     Spacer()
-                    Text("\(mandate.cart.currency) \(mandate.cart.totalAmount)")
+                    Text(verbatim: "\(mandate.cart.currency) \(mandate.cart.totalAmount)")
                         .fontWeight(.bold)
                         .foregroundColor(.green)
                 }
