@@ -27,6 +27,11 @@
   "scripts": {
     "test": "node --test src/**/*.test.js",
     "test:protocols": "node src/tests/run-protocol-tests.js",
+    "test:scenarios": "node src/tests/scenarios/index.js",
+    "test:ap2": "node --test src/tests/scenarios/ap2-scenarios.test.js",
+    "test:tap": "node --test src/tests/scenarios/tap-scenarios.test.js",
+    "test:mcp": "node --test src/tests/scenarios/mcp-scenarios.test.js",
+    "test:integration": "node --test src/tests/scenarios/integration-scenarios.test.js",
     "cli": "node bin/scout-cli.js",
     "example": "node examples/basic-purchase.js",
     "example:protocols": "node examples/protocol-integration.js"
