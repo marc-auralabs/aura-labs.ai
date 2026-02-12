@@ -1,0 +1,40 @@
+{
+  "name": "@aura-labs/mcp-server-scout",
+  "version": "0.1.0",
+  "description": "MCP Server for AURA Scout - Expose procurement capabilities to Claude and other LLM clients",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "mcp-server-scout": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test src/**/*.test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "aura",
+    "scout",
+    "procurement",
+    "claude",
+    "ai-agent"
+  ],
+  "author": "AURA Labs",
+  "license": "BSL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aura-labs-ai/aura-labs"
+  },
+  "homepage": "https://aura-labs.ai/docs/mcp"
+}
