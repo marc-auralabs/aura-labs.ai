@@ -1,6 +1,10 @@
 -- AURA Developer Portal - Supabase Database Schema
 -- Run this in your Supabase SQL Editor (Database > SQL Editor)
 
+-- Clean up legacy auth trigger (profile creation now handled via RPC from signup JS)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS handle_new_user();
+
 -- 1. Create developer_profiles table to store additional user info
 CREATE TABLE IF NOT EXISTS developer_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -108,7 +112,27 @@ CREATE TRIGGER on_profile_created
     FOR EACH ROW
     EXECUTE FUNCTION generate_sandbox_key();
 
--- 8. Create function to regenerate API key
+-- 8. Create RPC function for signup profile creation (bypasses RLS)
+-- The signup page calls this via supabaseClient.rpc('create_developer_profile', {...})
+-- SECURITY DEFINER allows it to insert into developer_profiles before the user is fully authenticated
+CREATE OR REPLACE FUNCTION create_developer_profile(
+    user_id UUID,
+    p_first_name TEXT DEFAULT NULL,
+    p_last_name TEXT DEFAULT NULL,
+    p_company TEXT DEFAULT NULL,
+    p_role TEXT DEFAULT NULL,
+    p_use_case TEXT DEFAULT NULL,
+    p_email_updates BOOLEAN DEFAULT false
+)
+RETURNS void AS $$
+BEGIN
+    INSERT INTO developer_profiles (id, first_name, last_name, company, role, use_case, email_updates)
+    VALUES (user_id, p_first_name, p_last_name, p_company, p_role, p_use_case, p_email_updates)
+    ON CONFLICT (id) DO NOTHING;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 9. Create function to regenerate API key
 CREATE OR REPLACE FUNCTION regenerate_api_key(key_id UUID)
 RETURNS TEXT AS $$
 DECLARE
@@ -136,4 +160,4 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Done! Your schema is ready.
--- Users will automatically get a sandbox API key when they complete signup.
+-- Signup flow: JS calls create_developer_profile RPC -> on_profile_created trigger -> generate_sandbox_key
