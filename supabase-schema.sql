@@ -45,6 +45,14 @@ ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_stats ENABLE ROW LEVEL SECURITY;
 
 -- 5. Create RLS policies - users can only access their own data
+-- Drop existing policies first (makes this script idempotent/re-runnable)
+DROP POLICY IF EXISTS "Users can view own profile" ON developer_profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON developer_profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON developer_profiles;
+DROP POLICY IF EXISTS "Users can view own API keys" ON api_keys;
+DROP POLICY IF EXISTS "Users can insert own API keys" ON api_keys;
+DROP POLICY IF EXISTS "Users can update own API keys" ON api_keys;
+DROP POLICY IF EXISTS "Users can view own usage" ON usage_stats;
 
 -- Developer profiles policies
 CREATE POLICY "Users can view own profile" ON developer_profiles
