@@ -338,6 +338,28 @@
             color: #9ca3af;
         }
 
+        /* Entropy Meter */
+        .entropy-meter {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .entropy-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 2px;
+            transition: width 0.3s, background 0.3s;
+        }
+
+        .entropy-label {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            color: var(--text-muted);
+        }
+
         /* Success State */
         .success-state {
             display: none;
@@ -478,6 +500,15 @@
                             </select>
                         </div>
 
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required placeholder="Use a long passphrase for best results">
+                            <div class="entropy-meter">
+                                <div class="entropy-bar" id="entropy-bar"></div>
+                            </div>
+                            <div class="entropy-label" id="entropy-label"></div>
+                        </div>
+
                         <div class="checkbox-group">
                             <input type="checkbox" id="terms" name="terms" required>
                             <label for="terms">
@@ -574,24 +605,79 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Entropy calculation
+        const MIN_ENTROPY_BITS = 50;
+
+        function calculateEntropy(password) {
+            if (!password) return 0;
+            let poolSize = 0;
+            if (/[a-z]/.test(password)) poolSize += 26;
+            if (/[A-Z]/.test(password)) poolSize += 26;
+            if (/[0-9]/.test(password)) poolSize += 10;
+            if (/[^a-zA-Z0-9]/.test(password)) poolSize += 32;
+            if (poolSize === 0) return 0;
+            return Math.floor(password.length * Math.log2(poolSize));
+        }
+
+        function updateEntropyMeter(password) {
+            const bits = calculateEntropy(password);
+            const bar = document.getElementById('entropy-bar');
+            const label = document.getElementById('entropy-label');
+            const pct = Math.min(100, (bits / 128) * 100);
+            bar.style.width = pct + '%';
+
+            if (bits === 0) {
+                bar.style.background = 'transparent';
+                label.textContent = '';
+            } else if (bits < MIN_ENTROPY_BITS) {
+                bar.style.background = '#dc2626';
+                label.textContent = bits + ' bits — too weak (need ' + MIN_ENTROPY_BITS + '+)';
+                label.style.color = '#dc2626';
+            } else if (bits < 80) {
+                bar.style.background = '#f59e0b';
+                label.textContent = bits + ' bits — acceptable';
+                label.style.color = '#f59e0b';
+            } else if (bits < 112) {
+                bar.style.background = '#10b981';
+                label.textContent = bits + ' bits — strong';
+                label.style.color = '#10b981';
+            } else {
+                bar.style.background = '#059669';
+                label.textContent = bits + ' bits — excellent';
+                label.style.color = '#059669';
+            }
+        }
+
+        document.getElementById('password').addEventListener('input', function() {
+            updateEntropyMeter(this.value);
+        });
+
         // Form handling with Supabase Auth
         document.getElementById('signup-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Creating Account...';
-            submitBtn.disabled = true;
 
             // Gather form data
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
 
+            // Validate entropy
+            const entropy = calculateEntropy(data.password);
+            if (entropy < MIN_ENTROPY_BITS) {
+                alert('Password is too weak (' + entropy + ' bits). Need at least ' + MIN_ENTROPY_BITS + ' bits of entropy. Try a longer password or passphrase.');
+                return;
+            }
+
+            submitBtn.textContent = 'Creating Account...';
+            submitBtn.disabled = true;
+
             try {
                 // 1. Create auth user with Supabase
                 const { data: authData, error: authError } = await supabaseClient.auth.signUp({
                     email: data.email,
-                    password: generateTempPassword(), // User will set via email verification
+                    password: data.password,
                     options: {
                         emailRedirectTo: window.location.origin + '/portal/',
                         data: {
@@ -658,15 +744,6 @@
             }
         });
 
-        // Generate a secure temporary password (user will reset via email)
-        function generateTempPassword() {
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-            let password = '';
-            for (let i = 0; i < 16; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return password;
-        }
     </script>
 </body>
 </html>
