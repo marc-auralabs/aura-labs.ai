@@ -10,6 +10,12 @@ A running log of architectural and implementation decisions made during developm
 
 ## 2026-02-24
 
+### DEC-008: Decision Logging via Cowork Skill
+**Context:** Decisions made during development sessions were getting lost during context compaction and across session boundaries. Code diffs survived but the reasoning behind choices did not.
+**Decision:** Created a Cowork skill (`decision-logger`) that proactively triggers when decisions are made during sessions. The skill writes to `docs/decisions/DECISION_LOG.md` (committed to git) and updates `CLAUDE_PROJECT_CONTEXT.md` section 12 for significant decisions. Also established a mandatory decision logging protocol in the project context document (section 13.1).
+**Reasoning:** Instructions in project context alone are fragile since they depend on Claude following them consistently. A skill provides a structured, repeatable process with the correct format, auto-incrementing DEC numbers, and a checklist of required fields. The skill also triggers proactively and at session wrap-up to catch missed decisions.
+**Alternatives:** Relied solely on instructions in CLAUDE_PROJECT_CONTEXT.md (fragile, no enforcement), used an external tool like Linear or Notion (over-engineered for this, adds dependencies), manual logging by user (burden on user, inconsistent format).
+
 ### DEC-007: Chrome Extension Architecture Direction
 **Context:** Planning the Chrome extension as a Scout client for comparison shopping.
 **Decision:** The Chrome extension will follow the iOS app's pattern: zero client-side NLP for MVP. Raw intent plus user-set constraints are sent to Core. Core handles all semantic processing via Granite. The extension uses the same 4 API endpoints as the iOS app (POST /sessions, GET /sessions/{id}, POST /sessions/{id}/approve, POST /checkout). Ed25519 signing via tweetnacl.js, key storage in Chrome's storage.local API.
