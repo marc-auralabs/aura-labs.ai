@@ -53,8 +53,9 @@ financials/
 *-CONFIDENTIAL.*
 *-PRIVATE.*
 
-# Architecture Decision Records (internal strategy)
+# Architecture Decision Records & Decision Log (internal strategy)
 docs/decisions/PRIVATE-*.md
+docs/decisions/DECISION_LOG.md
 
 # Temporary files
 *.tmp
