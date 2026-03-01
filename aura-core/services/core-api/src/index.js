@@ -11,6 +11,13 @@ import helmet from '@fastify/helmet';
 import websocket from '@fastify/websocket';
 import pg from 'pg';
 import { registerDevRoutes } from './routes/dev.js';
+import {
+  verifyRegistrationSignature,
+  computeKeyFingerprint,
+  createSignatureVerifier,
+} from './lib/agent-auth.js';
+import { parseIntent } from './lib/intent-parser.js';
+import { matchBeacons } from './lib/beacon-matcher.js';
 
 const { Pool } = pg;
 
@@ -21,8 +28,6 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   databaseUrl: process.env.DATABASE_URL,
   redisUrl: process.env.REDIS_URL,
-  intentServiceUrl: process.env.INTENT_SERVICE_URL || 'http://localhost:3001',
-  workerServiceUrl: process.env.WORKER_SERVICE_URL || 'http://localhost:3002',
 };
 
 // Database connection pool
@@ -154,6 +159,7 @@ app.post('/admin/reset-database', async (request, reply) => {
       DROP TABLE IF EXISTS sessions CASCADE;
       DROP TABLE IF EXISTS beacons CASCADE;
       DROP TABLE IF EXISTS scouts CASCADE;
+      DROP TABLE IF EXISTS agents CASCADE;
       DROP TABLE IF EXISTS audit_log CASCADE;
     `);
 
@@ -288,6 +294,26 @@ async function runMigrations() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
+
+      -- AGENTS (Universal Identity — Scouts and Beacons)
+      -- Every agent registers with an Ed25519 public key.
+      -- The public key IS the agent's identity; it signs all requests.
+      -- type: 'scout' (buyer) or 'beacon' (seller)
+      -- manifest: SDK version, capabilities, supported protocols
+      CREATE TABLE IF NOT EXISTS agents (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        type VARCHAR(20) NOT NULL CHECK (type IN ('scout', 'beacon')),
+        public_key TEXT NOT NULL UNIQUE,
+        key_fingerprint VARCHAR(64) NOT NULL,
+        status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'revoked')),
+        manifest JSONB NOT NULL DEFAULT '{}',
+        registered_at TIMESTAMPTZ DEFAULT NOW(),
+        revoked_at TIMESTAMPTZ,
+        last_seen_at TIMESTAMPTZ
+      );
+      CREATE INDEX IF NOT EXISTS idx_agents_public_key ON agents(public_key);
+      CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
+      CREATE INDEX IF NOT EXISTS idx_agents_type ON agents(type);
     `);
 
     // Create update trigger
@@ -321,8 +347,9 @@ app.get('/', async () => ({
   _links: {
     self: { href: '/' },
     health: { href: '/health' },
+    agents: { href: '/agents/register', title: 'Universal agent registration (Scouts and Beacons)', methods: ['POST'] },
     sessions: { href: '/sessions', title: 'Create or list commerce sessions', methods: ['GET', 'POST'] },
-    scouts: { href: '/scouts', title: 'Scout registration and management' },
+    scouts: { href: '/scouts', title: 'Scout registration (legacy — use /agents/register)', deprecated: true },
     beacons: { href: '/beacons', title: 'Beacon registration and management' },
     docs: { href: 'https://aura-labs.ai/developers', title: 'API Documentation' },
   },
@@ -405,6 +432,231 @@ app.get('/scouts/:scoutId', async (request, reply) => {
   } catch (error) {
     reply.code(500);
     return { error: 'fetch_failed', message: error.message };
+  }
+});
+
+// =============================================================================
+// Agent Endpoints (Universal Identity — Scouts and Beacons)
+// =============================================================================
+
+/**
+ * Register a new agent with cryptographic identity.
+ *
+ * The agent generates an Ed25519 key pair locally, then proves possession
+ * of the private key by signing the request body. The public key becomes
+ * the agent's permanent identity anchor.
+ *
+ * Request body: { publicKey, type, manifest }
+ * Header: X-Agent-Signature (base64 Ed25519 signature of the JSON body)
+ */
+app.post('/agents/register', async (request, reply) => {
+  const { publicKey, type, manifest } = request.body || {};
+
+  if (!db) {
+    reply.code(503);
+    return { error: 'database_unavailable', message: 'Database not configured' };
+  }
+
+  // Validate required fields
+  if (!publicKey) {
+    reply.code(400);
+    return { error: 'missing_field', message: 'publicKey is required (base64-encoded Ed25519 public key)' };
+  }
+
+  if (!type || !['scout', 'beacon'].includes(type)) {
+    reply.code(400);
+    return { error: 'invalid_type', message: 'type must be "scout" or "beacon"' };
+  }
+
+  // SECURITY: Validate public key is exactly 32 bytes (Ed25519)
+  const keyBytes = Buffer.from(publicKey, 'base64');
+  if (keyBytes.length !== 32) {
+    reply.code(400);
+    return { error: 'invalid_key', message: 'publicKey must be a 32-byte Ed25519 public key (base64-encoded)' };
+  }
+
+  // SECURITY: Verify proof-of-possession signature
+  const signature = request.headers['x-agent-signature'];
+  if (!signature) {
+    reply.code(400);
+    return { error: 'missing_signature', message: 'X-Agent-Signature header is required (sign the JSON body with your private key)' };
+  }
+
+  // Reconstruct the raw body for signature verification
+  const rawBody = JSON.stringify(request.body);
+  const signatureValid = verifyRegistrationSignature(publicKey, signature, rawBody);
+
+  if (!signatureValid) {
+    reply.code(401);
+    return { error: 'invalid_signature', message: 'Proof-of-possession failed. Signature does not match the provided public key.' };
+  }
+
+  try {
+    const fingerprint = computeKeyFingerprint(publicKey);
+
+    // Check if this key is already registered
+    const existing = await db.query(
+      'SELECT id, status FROM agents WHERE public_key = $1',
+      [publicKey]
+    );
+
+    if (existing.rows.length > 0) {
+      const existingAgent = existing.rows[0];
+
+      // SECURITY: Don't allow re-registration of revoked keys
+      if (existingAgent.status === 'revoked') {
+        reply.code(403);
+        return { error: 'key_revoked', message: 'This public key has been revoked and cannot be re-registered' };
+      }
+
+      // Idempotent: return existing agent for active/suspended keys
+      return {
+        agentId: existingAgent.id,
+        status: existingAgent.status,
+        keyId: fingerprint,
+        _links: {
+          self: { href: `/agents/${existingAgent.id}` },
+          sessions: { href: '/sessions', methods: ['POST'] },
+        },
+      };
+    }
+
+    const result = await db.query(
+      `INSERT INTO agents (type, public_key, key_fingerprint, manifest)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, status, registered_at`,
+      [type, publicKey, fingerprint, manifest || {}]
+    );
+
+    const agent = result.rows[0];
+
+    await db.query(
+      `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by)
+       VALUES ($1, $2, $3, $4, $5)`,
+      ['agent', agent.id, 'registered', { type, status: agent.status, keyId: fingerprint }, 'self']
+    );
+
+    return {
+      agentId: agent.id,
+      status: agent.status,
+      keyId: fingerprint,
+      registeredAt: agent.registered_at,
+      _links: {
+        self: { href: `/agents/${agent.id}` },
+        sessions: { href: '/sessions', methods: ['POST'] },
+      },
+    };
+  } catch (error) {
+    app.log.error(error);
+    reply.code(500);
+    return { error: 'registration_failed', message: error.message };
+  }
+});
+
+/**
+ * Get agent details by ID
+ */
+app.get('/agents/:agentId', async (request, reply) => {
+  const { agentId } = request.params;
+
+  if (!isValidUUID(agentId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid agentId format. Expected UUID.' };
+  }
+
+  if (!db) {
+    reply.code(503);
+    return { error: 'database_unavailable' };
+  }
+
+  try {
+    const result = await db.query('SELECT * FROM agents WHERE id = $1', [agentId]);
+    if (result.rows.length === 0) {
+      reply.code(404);
+      return { error: 'not_found', message: 'Agent not found' };
+    }
+
+    const agent = result.rows[0];
+    return {
+      agentId: agent.id,
+      type: agent.type,
+      status: agent.status,
+      keyId: agent.key_fingerprint,
+      manifest: agent.manifest,
+      registeredAt: agent.registered_at,
+      lastSeenAt: agent.last_seen_at,
+      _links: {
+        self: { href: `/agents/${agent.id}` },
+        sessions: { href: '/sessions', methods: ['POST'] },
+      },
+    };
+  } catch (error) {
+    reply.code(500);
+    return { error: 'fetch_failed', message: error.message };
+  }
+});
+
+/**
+ * Revoke an agent's identity.
+ *
+ * Once revoked, the agent's public key is permanently blacklisted.
+ * All future signed requests from this agent will be rejected with 403.
+ * This is the enforcement mechanism for behavioral violations
+ * (e.g., tit-for-tat protocol violations, market manipulation).
+ *
+ * SECURITY: This endpoint requires admin authorization.
+ */
+app.post('/agents/:agentId/revoke', async (request, reply) => {
+  const { agentId } = request.params;
+  const { reason } = request.body || {};
+
+  if (!isValidUUID(agentId)) {
+    reply.code(400);
+    return { error: 'invalid_parameter', message: 'Invalid agentId format. Expected UUID.' };
+  }
+
+  // SECURITY: Require admin authorization for revocation
+  const authHeader = request.headers.authorization;
+  if (!ADMIN_SECRET || !authHeader || authHeader !== `Bearer ${ADMIN_SECRET}`) {
+    reply.code(403);
+    return { error: 'forbidden', message: 'Agent revocation requires admin authorization' };
+  }
+
+  if (!db) {
+    reply.code(503);
+    return { error: 'database_unavailable' };
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE agents SET status = 'revoked', revoked_at = NOW()
+       WHERE id = $1 AND status != 'revoked'
+       RETURNING id, status, revoked_at`,
+      [agentId]
+    );
+
+    if (result.rows.length === 0) {
+      reply.code(404);
+      return { error: 'not_found', message: 'Agent not found or already revoked' };
+    }
+
+    const agent = result.rows[0];
+
+    await db.query(
+      `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by)
+       VALUES ($1, $2, $3, $4, $5)`,
+      ['agent', agent.id, 'revoked', { status: 'revoked', reason: reason || 'unspecified' }, 'admin']
+    );
+
+    return {
+      agentId: agent.id,
+      status: 'revoked',
+      revokedAt: agent.revoked_at,
+      _links: { self: { href: `/agents/${agent.id}` } },
+    };
+  } catch (error) {
+    reply.code(500);
+    return { error: 'revocation_failed', message: error.message };
   }
 });
 
@@ -511,7 +763,7 @@ app.get('/beacons/sessions', async (request, reply) => {
     const result = await db.query(
       `SELECT id, scout_id, status, raw_intent, parsed_intent, constraints, created_at
        FROM sessions
-       WHERE status IN ('created', 'market_forming')
+       WHERE status IN ('created', 'market_forming', 'collecting_offers')
        ORDER BY created_at DESC
        LIMIT $1`,
       [parseInt(limit) || 20]
@@ -541,7 +793,7 @@ app.get('/beacons/sessions', async (request, reply) => {
 // =============================================================================
 
 app.post('/sessions', async (request, reply) => {
-  const { intent, scoutId, constraints } = request.body || {};
+  const { intent, scoutId, agentId, constraints } = request.body || {};
 
   if (!intent) {
     reply.code(400);
@@ -553,33 +805,70 @@ app.post('/sessions', async (request, reply) => {
     return { error: 'database_unavailable' };
   }
 
+  // Resolve agent identity: prefer agentId (new), fall back to scoutId (legacy)
+  // If agentId is provided, validate it exists and is active in the agents table
+  let resolvedScoutId = scoutId || null;
+  const resolvedAgentId = agentId || null;
+
+  if (resolvedAgentId) {
+    if (!isValidUUID(resolvedAgentId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid agentId format. Expected UUID.' };
+    }
+
+    const agentResult = await db.query('SELECT id, status FROM agents WHERE id = $1', [resolvedAgentId]);
+    if (agentResult.rows.length === 0) {
+      reply.code(404);
+      return { error: 'agent_not_found', message: 'Agent not registered. Call POST /agents/register first.' };
+    }
+
+    // SECURITY: Reject revoked agents
+    if (agentResult.rows[0].status === 'revoked') {
+      reply.code(403);
+      return { error: 'agent_revoked', message: 'This agent has been revoked' };
+    }
+  }
+
   try {
-    // Simple intent parsing (MVP - just extract keywords)
-    // TODO: Replace with Granite LLM call
-    const parsedIntent = {
-      raw: intent,
-      keywords: intent.toLowerCase().match(/\b\w+\b/g) || [],
-      confidence: 0.5,
-    };
+    // Parse intent using structured extraction (Alpha — regex-based, no LLM)
+    // Phase 2 will replace with Granite LLM via Replicate
+    const parsedIntent = parseIntent(intent, constraints);
 
     const result = await db.query(
       `INSERT INTO sessions (scout_id, status, raw_intent, parsed_intent, constraints)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, status, created_at`,
-      [scoutId || null, 'market_forming', intent, parsedIntent, constraints || {}]
+      [resolvedScoutId || null, 'collecting_offers', intent, parsedIntent, constraints || {}]
     );
 
     const session = result.rows[0];
 
+    // Match registered beacons against parsed intent
+    const matchedBeacons = await matchBeacons(db, parsedIntent);
+
+    // Store matched beacon IDs in session context
+    if (matchedBeacons.length > 0) {
+      await db.query(
+        `UPDATE sessions SET context = $1 WHERE id = $2`,
+        [{ matched_beacons: matchedBeacons.map(b => ({ id: b.beaconId, name: b.name, score: b.score })) }, session.id]
+      );
+    }
+
+    const changedBy = resolvedAgentId || resolvedScoutId || 'anonymous';
     await db.query(
       `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by) VALUES ($1, $2, $3, $4, $5)`,
-      ['session', session.id, 'created', { status: session.status, intent }, scoutId || 'anonymous']
+      ['session', session.id, 'created', { status: 'collecting_offers', intent, matchedBeacons: matchedBeacons.length, agentId: resolvedAgentId }, changedBy]
     );
 
     return {
       sessionId: session.id,
-      status: session.status,
+      status: 'collecting_offers',
       intent: parsedIntent,
+      matchedBeacons: matchedBeacons.map(b => ({
+        beaconId: b.beaconId,
+        name: b.name,
+        score: b.score,
+      })),
       _links: {
         self: { href: `/sessions/${session.id}` },
         offers: { href: `/sessions/${session.id}/offers` },
@@ -625,7 +914,7 @@ app.get('/sessions/:sessionId', async (request, reply) => {
 
     // Update status if offers are available
     let status = session.status;
-    if (hasOffers && status === 'market_forming') {
+    if (hasOffers && (status === 'market_forming' || status === 'collecting_offers')) {
       status = 'offers_available';
       await db.query('UPDATE sessions SET status = $1 WHERE id = $2', [status, sessionId]);
     }
@@ -643,8 +932,10 @@ app.get('/sessions/:sessionId', async (request, reply) => {
     return {
       sessionId: session.id,
       status,
-      intent: { raw: session.raw_intent, parsed: session.parsed_intent },
+      intent: session.parsed_intent,
+      rawIntent: session.raw_intent,
       constraints: session.constraints,
+      context: session.context,
       createdAt: session.created_at,
       _links: links,
     };
@@ -698,7 +989,7 @@ app.post('/sessions/:sessionId/offers', async (request, reply) => {
     }
 
     const session = sessionResult.rows[0];
-    if (!['created', 'market_forming', 'offers_available'].includes(session.status)) {
+    if (!['created', 'market_forming', 'collecting_offers', 'offers_available'].includes(session.status)) {
       reply.code(400);
       return { error: 'session_not_accepting_offers', message: `Session status is ${session.status}` };
     }

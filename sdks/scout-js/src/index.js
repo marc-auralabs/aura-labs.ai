@@ -9,9 +9,9 @@
  * ```js
  * import { createScout } from '@aura-labs/scout';
  *
- * const scout = createScout({
- *   apiKey: 'your-api-key',
- * });
+ * // Zero config — auto-generates Ed25519 identity and registers with Core
+ * const scout = createScout();
+ * await scout.ready();
  *
  * // Express purchase intent with constraints
  * const session = await scout.intent('I need 500 widgets', {
@@ -32,6 +32,7 @@
 
 import { ScoutClient } from './client.js';
 import { Session, Constraints } from './session.js';
+import { KeyManager, MemoryStorage } from './key-manager.js';
 import {
   ScoutError,
   ConnectionError,
@@ -69,14 +70,21 @@ export function createScout(config) {
 export class Scout {
   #client;
   #config;
+  #keyManager;
   #sessions = new Map();
   #registered = false;
-  #scoutId = null;
+  #agentId = null;
+  #readyPromise = null;
 
   /**
    * @param {ScoutConfig} config
+   * @param {string} [config.apiKey] - Optional API key (legacy — for developer analytics/billing)
+   * @param {string} [config.coreUrl] - AURA Core API URL
+   * @param {number} [config.timeout] - Request timeout in ms
+   * @param {object} [config.storage] - Storage adapter with get/set/remove methods
+   * @param {object} [config.constraints] - Default constraints for all sessions
    */
-  constructor(config) {
+  constructor(config = {}) {
     this.#config = {
       coreUrl: 'https://aura-labsai-production.up.railway.app',
       timeout: 30000,
@@ -84,36 +92,95 @@ export class Scout {
       ...config,
     };
 
-    if (!this.#config.apiKey) {
-      throw new AuthenticationError('API key is required');
-    }
+    // Initialize key manager with provided storage (or in-memory default)
+    this.#keyManager = new KeyManager({
+      storage: this.#config.storage,
+    });
 
     this.#client = new ScoutClient(this.#config);
   }
 
   /**
+   * Initialize the Scout — generates keys and registers with AURA Core
+   *
+   * Call this once before using the Scout. It generates Ed25519 keys (if new)
+   * and registers with Core via POST /agents/register (if not already registered).
+   *
+   * This is idempotent — safe to call multiple times.
+   *
+   * @returns {Promise<Scout>} Returns self for chaining
+   */
+  async ready() {
+    // Deduplicate concurrent ready() calls
+    if (this.#readyPromise) return this.#readyPromise;
+
+    this.#readyPromise = this.#initialize();
+    try {
+      await this.#readyPromise;
+      return this;
+    } catch (error) {
+      this.#readyPromise = null;
+      throw error;
+    }
+  }
+
+  /**
    * Register this Scout with AURA Core
    *
-   * Called automatically on first intent, but can be called explicitly
-   * to pre-register or set metadata.
+   * Called automatically by ready(), but can be called explicitly
+   * to re-register or update metadata.
+   *
+   * Uses the new /agents/register endpoint with Ed25519 proof-of-possession.
+   * Falls back to legacy /scouts/register if apiKey is provided.
    *
    * @param {object} metadata - Optional metadata about this Scout
-   * @returns {Promise<{scoutId: string}>}
+   * @returns {Promise<{agentId: string}>}
    */
   async register(metadata = {}) {
-    if (this.#registered) {
-      return { scoutId: this.#scoutId };
+    if (this.#registered && this.#agentId) {
+      return { agentId: this.#agentId };
     }
 
-    const result = await this.#client.post('/scouts/register', {
-      apiKey: this.#config.apiKey,
-      metadata,
+    // Ensure keys are initialized
+    if (!this.#keyManager.isInitialized) {
+      await this.#keyManager.init();
+    }
+
+    const publicKey = this.#keyManager.publicKey;
+
+    // Build registration body
+    const body = {
+      publicKey,
+      type: 'scout',
+      manifest: {
+        name: metadata.name || 'AURA Scout',
+        version: '0.1.0',
+        platform: metadata.platform || 'node-sdk',
+        sdkVersion: '0.1.0',
+        capabilities: ['intent', 'compare', 'mandate.sign'],
+        protocolVersions: ['ap2-v1', 'tap-v1'],
+        ...metadata,
+      },
+    };
+
+    // Sign the body for proof-of-possession
+    const bodyString = JSON.stringify(body);
+    const signature = this.#keyManager.sign(bodyString);
+
+    const result = await this.#client.postSigned('/agents/register', body, {
+      'X-Agent-Signature': signature,
     });
 
-    this.#scoutId = result.scoutId;
+    this.#agentId = result.agentId;
     this.#registered = true;
 
-    return { scoutId: this.#scoutId };
+    // Persist agentId for next launch
+    await this.#keyManager.setAgentId(this.#agentId);
+
+    // Configure client to sign subsequent requests
+    this.#client.setKeyManager(this.#keyManager, this.#agentId);
+
+    return { agentId: this.#agentId };
   }
 
   /**
@@ -145,9 +212,9 @@ export class Scout {
    * ```
    */
   async intent(intent, options = {}) {
-    // Auto-register if needed
+    // Auto-initialize if needed
     if (!this.#registered) {
-      await this.register();
+      await this.ready();
     }
 
     // Merge session-specific constraints with defaults
@@ -158,7 +225,7 @@ export class Scout {
 
     const response = await this.#client.post('/sessions', {
       intent,
-      scoutId: this.#scoutId,
+      agentId: this.#agentId,
       constraints: {
         maxBudget: constraints.maxBudget,
         deliveryBy: constraints.deliveryBy,
@@ -225,10 +292,17 @@ export class Scout {
   }
 
   /**
-   * Get Scout ID (null if not registered)
+   * Get Agent ID (null if not registered)
    */
   get id() {
-    return this.#scoutId;
+    return this.#agentId;
+  }
+
+  /**
+   * Get the agent's public key (base64-encoded Ed25519)
+   */
+  get publicKey() {
+    return this.#keyManager.publicKey;
   }
 
   /**
@@ -237,10 +311,30 @@ export class Scout {
   get coreUrl() {
     return this.#client.coreUrl;
   }
+
+  // ─── Private ────────────────────────────────────────────────────────
+
+  async #initialize() {
+    // Step 1: Initialize key manager (generate or load keys)
+    const { isNew } = await this.#keyManager.init();
+
+    // Step 2: Check if already registered (agentId in storage)
+    const storedAgentId = await this.#keyManager.getAgentId();
+    if (storedAgentId) {
+      this.#agentId = storedAgentId;
+      this.#registered = true;
+      this.#client.setKeyManager(this.#keyManager, this.#agentId);
+      return;
+    }
+
+    // Step 3: Register with Core
+    await this.register();
+  }
 }
 
 // Re-export classes
 export { Session, Constraints } from './session.js';
+export { KeyManager, MemoryStorage } from './key-manager.js';
 export {
   ScoutError,
   ConnectionError,
@@ -331,6 +425,7 @@ export { VisaTAP, TAPError };
 export default {
   createScout,
   Scout,
+  KeyManager,
   // Protocols
   MCPClient,
   AP2Mandates,
