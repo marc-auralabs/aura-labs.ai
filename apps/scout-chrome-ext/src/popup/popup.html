@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #F8F9FA;
+      color: #2D3436;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #6C5CE7;
+    }
+    .header .version {
+      font-size: 11px;
+      color: #999;
+      background: #eee;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+    .status.connected {
+      background: #E8F8F5;
+      color: #00B894;
+      border: 1px solid #00B894;
+    }
+    .status.error {
+      background: #FFEAEA;
+      color: #D63031;
+      border: 1px solid #D63031;
+    }
+    .status.loading {
+      background: #F0EDFF;
+      color: #6C5CE7;
+      border: 1px solid #6C5CE7;
+    }
+    .agent-info {
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: #636E72;
+    }
+    .agent-info .label {
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+    .agent-info .value {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      color: #2D3436;
+      word-break: break-all;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary {
+      background: #6C5CE7;
+      color: white;
+    }
+    .footer {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #DFE6E9;
+      font-size: 11px;
+      color: #B2BEC3;
+      text-align: center;
+    }
+    .footer a {
+      color: #6C5CE7;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AURA Scout</h1>
+    <span class="version">v0.1.0</span>
+  </div>
+
+  <div class="status loading" id="status">Connecting...</div>
+
+  <div class="agent-info" id="agent-info" style="display:none">
+    <div class="label">Agent ID</div>
+    <div class="value" id="agent-id-display"></div>
+  </div>
+
+  <button class="btn btn-primary" id="open-panel-btn">Open Side Panel</button>
+
+  <div class="footer">
+    <a href="https://aura-labs.ai" target="_blank">aura-labs.ai</a>
+  </div>
+
+  <script src="../../dist/popup.js" type="module"></script>
+</body>
+</html>

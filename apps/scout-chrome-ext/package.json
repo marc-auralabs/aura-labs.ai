@@ -1,0 +1,22 @@
+{
+  "name": "@aura-labs/scout-chrome-ext",
+  "version": "0.1.0",
+  "description": "AURA Scout Chrome Extension — comparison shopping agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "build:watch": "node esbuild.config.js --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "vitest": "^1.2.0",
+    "jsdom": "^24.0.0"
+  },
+  "dependencies": {
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
+  }
+}
