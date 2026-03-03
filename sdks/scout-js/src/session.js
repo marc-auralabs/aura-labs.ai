@@ -181,7 +181,7 @@ export class Session {
 
     this.#data.status = SessionStatus.COMMITTED;
 
-    return new Transaction(response);
+    return new Transaction(response, this.#client);
   }
 
   /**
@@ -383,9 +383,11 @@ export class Offer {
  */
 export class Transaction {
   #data;
+  #client;
 
-  constructor(data) {
+  constructor(data, client) {
     this.#data = data;
+    this.#client = client;
   }
 
   get id() { return this.#data.transactionId; }
@@ -394,7 +396,64 @@ export class Transaction {
   get paymentStatus() { return this.#data.paymentStatus; }
   get fulfillmentStatus() { return this.#data.fulfillmentStatus; }
 
+  /**
+   * Refresh transaction state from Core
+   *
+   * @returns {Promise<Transaction>} Returns this for chaining
+   */
+  async refresh() {
+    this.#data = await this.#client.get(`/transactions/${this.id}`);
+    return this;
+  }
+
+  /**
+   * Wait for transaction fulfillment
+   *
+   * @param {object} options
+   * @param {number} options.timeout - Max time to wait in ms (default: 300000 / 5 min)
+   * @param {number} options.interval - Poll interval in ms (default: 5000)
+   * @returns {Promise<Transaction>} Returns this when fulfilled
+   * @throws {Error} If fulfillment fails or timeout exceeded
+   */
+  async waitForFulfillment(options = {}) {
+    const { timeout = 300000, interval = 5000 } = options;
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      await this.refresh();
+
+      if (this.fulfillmentStatus === 'delivered') {
+        return this;
+      }
+
+      if (this.fulfillmentStatus === 'failed') {
+        throw new Error(`Transaction fulfillment failed: ${this.id}`);
+      }
+
+      await this.#sleep(interval);
+    }
+
+    throw new Error(`Timed out waiting for transaction fulfillment: ${this.id}`);
+  }
+
+  /**
+   * Get beacon information
+   */
+  get beacon() {
+    return {
+      id: this.#data.beaconId,
+      name: this.#data.beaconName,
+    };
+  }
+
+  /**
+   * Convert to JSON for serialization
+   */
   toJSON() {
     return { ...this.#data };
+  }
+
+  #sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

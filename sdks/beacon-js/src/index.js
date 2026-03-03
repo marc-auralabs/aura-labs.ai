@@ -34,7 +34,7 @@
  */
 
 import { BeaconClient } from './client.js';
-import { BeaconError, ConnectionError, RegistrationError, OfferError } from './errors.js';
+import { BeaconError, ConnectionError, RegistrationError, OfferError, ValidationError } from './errors.js';
 
 /**
  * Create a new Beacon instance
@@ -54,6 +54,11 @@ export class Beacon {
   #pollInterval = null;
   #sessionHandlers = [];
   #seenSessions = new Set();
+  #beforeOfferValidators = [];
+  #offerAcceptedHandlers = [];
+  #transactionUpdateHandlers = [];
+  #policies = {};
+  #currentSession = null;
 
   constructor(config) {
     this.#config = {
@@ -168,9 +173,12 @@ export class Beacon {
       // Call all handlers
       for (const handler of this.#sessionHandlers) {
         try {
+          this.#currentSession = session;
           await handler(session, this);
+          this.#currentSession = null;
         } catch (error) {
           console.error(`Handler error for session ${session.sessionId}:`, error.message);
+          this.#currentSession = null;
         }
       }
     }
@@ -205,20 +213,33 @@ export class Beacon {
       throw new OfferError('product is required', sessionId);
     }
 
+    // Run all pre-offer validators sequentially
+    let validatedOffer = { ...offer };
+    for (const validator of this.#beforeOfferValidators) {
+      try {
+        const result = await validator(this.#currentSession, validatedOffer);
+        if (result) {
+          validatedOffer = { ...validatedOffer, ...result };
+        }
+      } catch (error) {
+        throw new ValidationError(`Validator failed: ${error.message}`, { originalError: error });
+      }
+    }
+
     try {
       const result = await this.#client.post(`/sessions/${sessionId}/offers`, {
         beaconId: this.#beaconId,
-        product,
-        unitPrice,
-        quantity,
-        totalPrice: totalPrice || (unitPrice * quantity),
-        currency: currency || 'USD',
-        deliveryDate,
-        terms,
-        metadata,
+        product: validatedOffer.product,
+        unitPrice: validatedOffer.unitPrice,
+        quantity: validatedOffer.quantity,
+        totalPrice: validatedOffer.totalPrice || (validatedOffer.unitPrice * validatedOffer.quantity),
+        currency: validatedOffer.currency || 'USD',
+        deliveryDate: validatedOffer.deliveryDate,
+        terms: validatedOffer.terms,
+        metadata: validatedOffer.metadata,
       });
 
-      console.log(`📤 Offer submitted to session ${sessionId}: $${result.totalPrice || totalPrice || (unitPrice * quantity)}`);
+      console.log(`📤 Offer submitted to session ${sessionId}: $${result.totalPrice || validatedOffer.totalPrice || (validatedOffer.unitPrice * validatedOffer.quantity)}`);
 
       return result;
     } catch (error) {
@@ -236,6 +257,142 @@ export class Beacon {
 
     const result = await this.#client.get('/beacons/sessions');
     return result.sessions || [];
+  }
+
+  /**
+   * Register a pre-offer validation function
+   * Validator signature: async (session, proposedOffer) => modifiedOffer | undefined
+   */
+  beforeOffer(validator) {
+    this.#beforeOfferValidators.push(validator);
+    return this;
+  }
+
+  /**
+   * Register handler for when an offer is committed
+   * Handler signature: async (transactionData) => void
+   */
+  onOfferAccepted(handler) {
+    this.#offerAcceptedHandlers.push(handler);
+    return this;
+  }
+
+  /**
+   * Register handler for transaction status changes
+   * Handler signature: async (event) => void
+   */
+  onTransactionUpdate(handler) {
+    this.#transactionUpdateHandlers.push(handler);
+    return this;
+  }
+
+  /**
+   * Declare merchant policies
+   * Accepts: { minPrice?, maxDiscountPct?, maxQuantityPerOrder?, deliveryRegions?, maxDeliveryDays? }
+   */
+  registerPolicies(policies) {
+    this.#policies = { ...this.#policies, ...policies };
+
+    // Add built-in validator that enforces policies
+    this.#beforeOfferValidators.unshift(async (session, offer) => {
+      const errors = [];
+
+      if (this.#policies.minPrice && offer.unitPrice < this.#policies.minPrice) {
+        errors.push(`Unit price ${offer.unitPrice} is below minimum ${this.#policies.minPrice}`);
+      }
+
+      if (this.#policies.maxQuantityPerOrder && offer.quantity > this.#policies.maxQuantityPerOrder) {
+        errors.push(`Quantity ${offer.quantity} exceeds maximum ${this.#policies.maxQuantityPerOrder} per order`);
+      }
+
+      if (this.#policies.maxDeliveryDays && offer.deliveryDate) {
+        const today = new Date();
+        const deliveryDate = new Date(offer.deliveryDate);
+        const daysUntilDelivery = Math.floor((deliveryDate - today) / (1000 * 60 * 60 * 24));
+        if (daysUntilDelivery > this.#policies.maxDeliveryDays) {
+          errors.push(`Delivery in ${daysUntilDelivery} days exceeds maximum ${this.#policies.maxDeliveryDays}`);
+        }
+      }
+
+      if (this.#policies.deliveryRegions && session && session.region) {
+        if (!this.#policies.deliveryRegions.includes(session.region)) {
+          errors.push(`Region ${session.region} not in approved delivery regions`);
+        }
+      }
+
+      if (errors.length > 0) {
+        throw new ValidationError(`Policy violations: ${errors.join('; ')}`, { violations: errors });
+      }
+
+      return undefined;
+    });
+
+    return this;
+  }
+
+  /**
+   * Report fulfillment status to Core
+   * update: { fulfillmentStatus, fulfillmentReference?, metadata? }
+   */
+  async updateFulfillment(transactionId, update) {
+    if (!this.#registered) {
+      throw new RegistrationError('Beacon must be registered before updating fulfillment');
+    }
+
+    try {
+      const result = await this.#client.put(`/transactions/${transactionId}/fulfillment`, {
+        fulfillmentStatus: update.fulfillmentStatus,
+        fulfillmentReference: update.fulfillmentReference,
+        metadata: update.metadata,
+      });
+
+      console.log(`✅ Fulfillment updated for transaction ${transactionId}: ${update.fulfillmentStatus}`);
+      return result;
+    } catch (error) {
+      throw new BeaconError(`Failed to update fulfillment: ${error.message}`);
+    }
+  }
+
+  /**
+   * Fetch transaction details from Core
+   */
+  async getTransaction(transactionId) {
+    if (!this.#registered) {
+      throw new RegistrationError('Beacon must be registered before fetching transactions');
+    }
+
+    try {
+      const result = await this.#client.get(`/transactions/${transactionId}`);
+      return result;
+    } catch (error) {
+      throw new BeaconError(`Failed to fetch transaction: ${error.message}`);
+    }
+  }
+
+  /**
+   * Notify handlers of accepted offer (internal method)
+   */
+  _notifyOfferAccepted(transactionData) {
+    for (const handler of this.#offerAcceptedHandlers) {
+      try {
+        handler(transactionData);
+      } catch (error) {
+        console.error('Error in offer accepted handler:', error.message);
+      }
+    }
+  }
+
+  /**
+   * Notify handlers of transaction update (internal method)
+   */
+  _notifyTransactionUpdate(event) {
+    for (const handler of this.#transactionUpdateHandlers) {
+      try {
+        handler(event);
+      } catch (error) {
+        console.error('Error in transaction update handler:', error.message);
+      }
+    }
   }
 
   get isRegistered() {
@@ -259,5 +416,5 @@ export class Beacon {
   }
 }
 
-export { BeaconError, ConnectionError, RegistrationError, OfferError } from './errors.js';
+export { BeaconError, ConnectionError, RegistrationError, OfferError, ValidationError } from './errors.js';
 export default { createBeacon, Beacon };

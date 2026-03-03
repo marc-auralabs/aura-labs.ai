@@ -31,3 +31,11 @@ export class OfferError extends BeaconError {
     this.sessionId = sessionId;
   }
 }
+
+export class ValidationError extends BeaconError {
+  constructor(message, details) {
+    super(message, 'VALIDATION_FAILED');
+    this.name = 'ValidationError';
+    this.details = details;
+  }
+}

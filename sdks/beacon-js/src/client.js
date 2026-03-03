@@ -19,6 +19,10 @@ export class BeaconClient {
     return this.#request('POST', path, body);
   }
 
+  async put(path, body) {
+    return this.#request('PUT', path, body);
+  }
+
   async #request(method, path, body = null) {
     const url = `${this.#config.coreUrl}${path}`;
 
