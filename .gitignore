@@ -1,7 +1,26 @@
-# Claude Context (proprietary sync docs)
-CLAUDE_PROJECT_CONTEXT.md
+# ──────────────────────────────────────────────
+# SOURCE CODE — NOT FOR PUBLIC REPOSITORY
+# The public repo contains SDKs, docs, schemas,
+# reference implementations, and website only.
+# ──────────────────────────────────────────────
+aura-core/
+core/
+apps/
+scripts/
+demo.sh
 
-# Environment & Secrets
+# Security audit reports (detailed findings)
+docs/security/SECURITY_AUDIT_REPORT.md
+docs/security/CRITICAL_FIXES_GUIDE.md
+docs/security/AUDIT_SUMMARY.txt
+
+# Claude project skills (internal tooling)
+.claude/
+
+# ──────────────────────────────────────────────
+# SECRETS & CREDENTIALS
+# ──────────────────────────────────────────────
+CLAUDE_PROJECT_CONTEXT.md
 .env
 .env.*
 !.env.example
@@ -14,6 +33,40 @@ credentials.json
 *.key
 *.p12
 *.pfx
+
+# ──────────────────────────────────────────────
+# PROHIBITED FILE TYPES
+# ──────────────────────────────────────────────
+*.pptx
+*.docx
+*.xlsx
+
+# ──────────────────────────────────────────────
+# PROPRIETARY BUSINESS DOCUMENTS
+# ──────────────────────────────────────────────
+pitch-deck-private/
+investor-docs/
+financials/
+*-CONFIDENTIAL.*
+*-PRIVATE.*
+*investor*
+*pitch*deck*
+hidden.html
+hidden_content_updated.html
+
+# ──────────────────────────────────────────────
+# INFRASTRUCTURE DETAILS
+# ──────────────────────────────────────────────
+SUPABASE_SETUP.md
+supabase-schema.sql
+
+# Architecture Decision Records & Decision Log
+docs/decisions/PRIVATE-*.md
+docs/decisions/DECISION_LOG.md
+
+# ──────────────────────────────────────────────
+# STANDARD IGNORES
+# ──────────────────────────────────────────────
 
 # Node
 node_modules/
@@ -51,34 +104,6 @@ coverage/
 # Logs
 logs/
 *.log
-
-# ──────────────────────────────────────────────
-# Prohibited file types (should not be in a public framework repo)
-# ──────────────────────────────────────────────
-*.pptx
-*.docx
-*.xlsx
-
-# Proprietary Business Documents
-pitch-deck-private/
-investor-docs/
-financials/
-*-CONFIDENTIAL.*
-*-PRIVATE.*
-*investor*
-*pitch*deck*
-
-# Hidden / draft pages (not for public)
-hidden.html
-hidden_content_updated.html
-
-# Infrastructure details (backend-specific, not framework)
-SUPABASE_SETUP.md
-supabase-schema.sql
-
-# Architecture Decision Records & Decision Log (internal strategy)
-docs/decisions/PRIVATE-*.md
-docs/decisions/DECISION_LOG.md
 
 # Temporary files
 *.tmp
