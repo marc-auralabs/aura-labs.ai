@@ -44,7 +44,7 @@ Merchant-operated services that:
 ## Repository Structure
 
 ```
-aura-framework/
+aura-labs.ai/
 ├── docs/                           # Documentation and guides
 │   ├── architecture/              # Architecture diagrams and specs
 │   ├── getting-started/           # Quick start guides
@@ -85,8 +85,8 @@ aura-framework/
 
 ```bash
 # Clone the repository
-git clone https://github.com/aura-labs/aura-framework.git
-cd aura-framework
+git clone https://github.com/aura-labs-ai/aura-labs.ai.git
+cd aura-labs.ai
 
 # Start with the simple beacon example
 cd beacons/simple-beacon
@@ -170,8 +170,8 @@ This project is licensed under the MIT License - see [LICENSE](./LICENSE) for de
 
 ## Community
 
-- **Discord**: [Join our community](https://discord.gg/aura-framework)
-- **Forum**: [discussions.aura-framework.org](https://discussions.aura-framework.org)
+- **Discord**: [Join our community](https://discord.gg/aura-labs)
+- **Forum**: [discussions.aura-labs.ai](https://discussions.aura-labs.ai)
 - **Twitter**: [@AuraFramework](https://twitter.com/AuraFramework)
 
 ## Roadmap

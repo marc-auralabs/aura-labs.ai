@@ -12,8 +12,8 @@ This guide will help you get your first Beacon up and running in under 15 minute
 
 ```bash
 # Clone the repository
-git clone https://github.com/aura-labs/aura-framework.git
-cd aura-framework
+git clone https://github.com/aura-labs-ai/aura-labs.ai.git
+cd aura-labs.ai
 
 # Navigate to the simple beacon example
 cd beacons/simple-beacon
@@ -352,9 +352,9 @@ this.inventory = {
 
 ### Join the Community
 
-- **Discord**: [discord.gg/aura-framework](https://discord.gg/aura-framework)
-- **Forum**: [discussions.aura-framework.org](https://discussions.aura-framework.org)
-- **GitHub**: [github.com/aura-labs/aura-framework](https://github.com/aura-labs/aura-framework)
+- **Discord**: [discord.gg/aura-labs](https://discord.gg/aura-labs)
+- **Forum**: [discussions.aura-labs.ai](https://discussions.aura-labs.ai)
+- **GitHub**: [github.com/aura-labs-ai/aura-labs.ai](https://github.com/aura-labs-ai/aura-labs.ai)
 
 ## Troubleshooting
 

@@ -191,7 +191,7 @@ Each state change dispatches a webhook to your `endpointUrl` with the event type
 
 ## Support
 
-- [GitHub Issues](https://github.com/aura-labs/aura-framework/issues)
+- [GitHub Issues](https://github.com/aura-labs-ai/aura-labs.ai/issues)
 - [Integration Examples](../../examples/README.md)
 - [API Reference](../api/README.md)
 - [Beacon SDK Documentation](../beacon/README.md)

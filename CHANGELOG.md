@@ -154,7 +154,7 @@ For major version upgrades, see the [Migration Guide](./docs/migration.md).
 
 ## Reporting Issues
 
-Found a bug? Please [open an issue](https://github.com/aura-labs/aura-framework/issues) with:
+Found a bug? Please [open an issue](https://github.com/aura-labs-ai/aura-labs.ai/issues) with:
 - Version number
 - Steps to reproduce
 - Expected vs actual behavior

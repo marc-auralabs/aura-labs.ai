@@ -96,4 +96,4 @@ Coming soon: Video walkthroughs of key tutorials.
 
 ## Request a Tutorial
 
-Have a topic you'd like covered? [Open an issue](https://github.com/aura-labs/aura-framework/issues) with the label `tutorial-request`.
+Have a topic you'd like covered? [Open an issue](https://github.com/aura-labs-ai/aura-labs.ai/issues) with the label `tutorial-request`.

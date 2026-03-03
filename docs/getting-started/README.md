@@ -36,8 +36,8 @@ The fastest way to get started:
 
 ```bash
 # Clone the repository
-git clone https://github.com/aura-labs/aura-framework
-cd aura-framework
+git clone https://github.com/aura-labs-ai/aura-labs.ai
+cd aura-labs.ai
 
 # Run the simple Beacon example
 cd beacons/simple-beacon

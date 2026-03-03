@@ -39,13 +39,13 @@ Before contributing, ensure you have:
 
 2. **Clone your fork locally**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/aura-framework.git
-   cd aura-framework
+   git clone https://github.com/YOUR_USERNAME/aura-labs.ai.git
+   cd aura-labs.ai
    ```
 
 3. **Add the upstream repository**:
    ```bash
-   git remote add upstream https://github.com/aura-labs/aura-framework.git
+   git remote add upstream https://github.com/aura-labs-ai/aura-labs.ai.git
    ```
 
 4. **Install dependencies**:
@@ -587,10 +587,10 @@ Scouts discover and filter propositions.
 
 ### Getting Help
 
-- **Discord**: Join our [Discord server](https://discord.gg/aura-framework)
-- **Forum**: Post on [discussions.aura-framework.org](https://discussions.aura-framework.org)
+- **Discord**: Join our [Discord server](https://discord.gg/aura-labs)
+- **Forum**: Post on [discussions.aura-labs.ai](https://discussions.aura-labs.ai)
 - **GitHub Issues**: For bugs and feature requests
-- **Stack Overflow**: Tag questions with `aura-framework`
+- **Stack Overflow**: Tag questions with `aura-labs`
 
 ### Communication Guidelines
 
@@ -641,6 +641,6 @@ If you have questions about contributing, reach out:
 
 - **Email**: [email protected]
 - **Discord**: @maintainers channel
-- **Twitter**: [@AuraFramework](https://twitter.com/AuraFramework)
+- **Twitter**: [@AuraLabs](https://twitter.com/AuraLabs)
 
 Thank you for contributing to AURA! 🚀
