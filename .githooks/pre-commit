@@ -1,10 +1,15 @@
 #!/bin/bash
-# Pre-commit hook: catches secrets, prohibited files, and missing docs
+# Pre-commit hook for a PUBLIC repository.
+#
+# Primary concern: is this appropriate for public visibility?
+# Everything committed here is visible to the entire internet.
+#
 # Install: git config core.hooksPath .githooks
 
 RED='\033[0;31m'
 YELLOW='\033[0;33m'
 GREEN='\033[0;32m'
+BOLD='\033[1m'
 NC='\033[0m'
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACM)
@@ -15,28 +20,69 @@ fi
 
 ISSUES=0
 
-# ── 1. Prohibited file types ──────────────────────────────
-PROHIBITED=$(echo "$STAGED" | grep -iE '\.(pptx|docx|xlsx)$' || true)
+# ══════════════════════════════════════════════
+# PUBLIC APPROPRIATENESS CHECK
+# This is the most important check. Only these
+# directories belong in the public repo:
+#
+#   sdks/         — Public SDKs for developers
+#   beacons/      — Reference beacon implementations
+#   scouts/       — Reference scout implementations
+#   schemas/      — Protocol JSON schemas
+#   examples/     — Example code
+#   docs/         — Documentation
+#   brand/        — Brand assets
+#   fonts/        — Web fonts
+#   portal/       — Developer portal
+#   .github/      — CI, templates, governance
+#   .githooks/    — Git hooks
+#   *.html        — Website pages (root level)
+#   *.png         — Logo images (root level)
+#   *.md          — Root-level docs (README, etc.)
+#
+# Everything else needs explicit justification.
+# ══════════════════════════════════════════════
+
+ALLOWED_PATTERNS='^(sdks/|beacons/|scouts/|schemas/|examples/|docs/|brand/|fonts/|portal/|\.github/|\.githooks/)'
+ALLOWED_ROOT='^[^/]*\.(html|png|md|json)$|^\.gitignore$|^CNAME$|^LICENSE$|^package\.json$'
+
+NEW_FILES=$(echo "$STAGED" | grep -v -E "$ALLOWED_PATTERNS" | grep -v -E "$ALLOWED_ROOT" || true)
+
+if [ -n "$NEW_FILES" ]; then
+  echo -e "${RED}${BOLD}✗ PUBLIC REPO CHECK: Files outside allowed directories${NC}"
+  echo -e "${RED}  This is a PUBLIC repository. The following files are not in${NC}"
+  echo -e "${RED}  an approved public directory:${NC}"
+  echo ""
+  echo "$NEW_FILES" | while read -r f; do echo "    $f"; done
+  echo ""
+  echo -e "  ${YELLOW}Allowed directories: sdks/, beacons/, scouts/, schemas/,"
+  echo -e "  examples/, docs/, brand/, fonts/, portal/, .github/, .githooks/${NC}"
+  echo ""
+  echo -e "  If this file genuinely belongs in the public repo, add its"
+  echo -e "  path pattern to .githooks/pre-commit ALLOWED_PATTERNS."
+  ISSUES=$((ISSUES + 1))
+fi
+
+# ── Prohibited file types ─────────────────────────────────
+PROHIBITED=$(echo "$STAGED" | grep -iE '\.(pptx|docx|xlsx|pem|key|p12|pfx)$' || true)
 ENV_FILES=$(echo "$STAGED" | grep -iE '\.env$' | grep -v '\.env\.example' | grep -v '\.env\.sample' || true)
 PROHIBITED="$PROHIBITED$ENV_FILES"
 
 if [ -n "$PROHIBITED" ]; then
-  echo -e "${RED}✗ Prohibited file types staged for commit:${NC}"
+  echo -e "${RED}✗ Prohibited file types:${NC}"
   echo "$PROHIBITED"
-  echo "  These file types should not be in a public repo."
-  echo "  Remove with: git reset HEAD <file>"
   ISSUES=$((ISSUES + 1))
 fi
 
-# ── 2. Sensitive filename patterns ────────────────────────
+# ── Sensitive filename patterns ───────────────────────────
 SENSITIVE=$(echo "$STAGED" | grep -iE '(investor|pitch.?deck|confidential|private|secret)' || true)
 if [ -n "$SENSITIVE" ]; then
-  echo -e "${RED}✗ Potentially sensitive files staged:${NC}"
+  echo -e "${RED}✗ Potentially sensitive filenames:${NC}"
   echo "$SENSITIVE"
   ISSUES=$((ISSUES + 1))
 fi
 
-# ── 3. Secret patterns in staged file contents ────────────
+# ── Secret patterns in file contents ──────────────────────
 SECRETS_FOUND=0
 
 for FILE in $STAGED; do
@@ -72,25 +118,23 @@ if [ "$SECRETS_FOUND" -gt 0 ]; then
   ISSUES=$((ISSUES + SECRETS_FOUND))
 fi
 
-# ── 4. Documentation reminder (warning only) ─────────────
-CODE_CHANGED=$(echo "$STAGED" | grep -E '^(aura-core|sdks|beacons|scouts|schemas|core)/' || true)
+# ── Documentation reminder (warning only) ─────────────────
+CODE_CHANGED=$(echo "$STAGED" | grep -E '^(sdks|beacons|scouts|schemas)/' || true)
 DOC_CHANGED=$(echo "$STAGED" | grep -E '^(docs/|.*README\.md$|CHANGELOG\.md)' || true)
 
 if [ -n "$CODE_CHANGED" ] && [ -z "$DOC_CHANGED" ]; then
-  echo -e "${YELLOW}⚠ Code changed without documentation updates:${NC}"
-  echo "$CODE_CHANGED" | head -5
+  echo -e "${YELLOW}⚠ Code changed without documentation updates.${NC}"
   echo "  Consider updating docs/ or a README.md."
-  echo "  Add [skip-docs] to your commit message if not needed."
-  # Warning only locally — CI will enforce on PRs.
 fi
 
 # ── Result ────────────────────────────────────────────────
 if [ "$ISSUES" -gt 0 ]; then
   echo ""
-  echo -e "${RED}Commit blocked: $ISSUES issue(s) found.${NC}"
-  echo "Fix the issues above, or use --no-verify to bypass (not recommended)."
+  echo -e "${RED}${BOLD}Commit blocked — $ISSUES issue(s) found.${NC}"
+  echo -e "This is a ${BOLD}public${NC} repository. Everything committed is visible to everyone."
+  echo "Use --no-verify to bypass (not recommended)."
   exit 1
 fi
 
-echo -e "${GREEN}✓ Pre-commit checks passed.${NC}"
+echo -e "${GREEN}✓ All checks passed — safe for public repo.${NC}"
 exit 0
