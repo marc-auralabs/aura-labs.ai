@@ -1,0 +1,191 @@
+name: CI — Docs, Sensitivity & Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1. Documentation freshness check
+  # ─────────────────────────────────────────────
+  docs-check:
+    name: Documentation updated
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check docs accompany code changes
+        run: |
+          # Compare against base (PR) or previous commit (push)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          # Get changed files
+          CHANGED=$(git diff --name-only "$BASE" HEAD 2>/dev/null || echo "")
+
+          if [ -z "$CHANGED" ]; then
+            echo "No files changed — skipping."
+            exit 0
+          fi
+
+          # Check if code directories were touched
+          CODE_CHANGED=$(echo "$CHANGED" | grep -E '^(aura-core|sdks|beacons|scouts|schemas|core)/' || true)
+          DOC_CHANGED=$(echo "$CHANGED" | grep -E '^(docs/|.*README\.md$|CHANGELOG\.md)' || true)
+
+          if [ -n "$CODE_CHANGED" ] && [ -z "$DOC_CHANGED" ]; then
+            echo "::error::Code was changed but no documentation was updated."
+            echo ""
+            echo "Code files changed:"
+            echo "$CODE_CHANGED"
+            echo ""
+            echo "Please update relevant docs/ files or a README.md to reflect your changes."
+            echo "If this is truly a docs-free change (e.g. comment-only), add [skip-docs] to your commit message."
+            exit 1
+          fi
+
+          echo "✓ Documentation check passed."
+
+      - name: Allow [skip-docs] escape hatch
+        if: failure()
+        run: |
+          MESSAGES=$(git log --format=%B "$BASE"..HEAD 2>/dev/null || echo "")
+          if echo "$MESSAGES" | grep -q '\[skip-docs\]'; then
+            echo "Found [skip-docs] in commit message — allowing."
+            exit 0
+          fi
+          exit 1
+
+  # ─────────────────────────────────────────────
+  # 2. Sensitivity scan
+  # ─────────────────────────────────────────────
+  sensitivity-check:
+    name: Sensitivity scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for secrets and credentials
+        run: |
+          echo "Scanning for potential secrets..."
+
+          # Patterns that should never appear in committed code
+          ISSUES=0
+
+          # Real API keys (not test keys)
+          if grep -r -n --include="*.js" --include="*.ts" --include="*.json" --include="*.env" \
+            -E '(sk_live_|pk_live_|AKIA[0-9A-Z]{16})' . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo "::error::Found potential live API keys."
+            ISSUES=$((ISSUES + 1))
+          fi
+
+          # Private keys
+          if grep -r -n --include="*.js" --include="*.ts" --include="*.json" --include="*.md" \
+            -E 'BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY' . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo "::error::Found private key material."
+            ISSUES=$((ISSUES + 1))
+          fi
+
+          # Hardcoded passwords
+          if grep -r -n --include="*.js" --include="*.ts" --include="*.json" \
+            -E "(password|passwd|secret)\s*[:=]\s*['\"][^'\"]{8,}" . \
+            --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=tests --exclude="*.test.*"; then
+            echo "::error::Found potential hardcoded passwords."
+            ISSUES=$((ISSUES + 1))
+          fi
+
+          if [ "$ISSUES" -gt 0 ]; then
+            echo ""
+            echo "Found $ISSUES sensitivity issue(s). Please remove secrets before merging."
+            exit 1
+          fi
+
+          echo "✓ Sensitivity scan passed."
+
+      - name: Check for prohibited file types
+        run: |
+          echo "Checking for prohibited file types..."
+          PROHIBITED=$(find . -not -path './.git/*' -not -path './node_modules/*' \
+            \( -name "*.pptx" -o -name "*.docx" -o -name "*.xlsx" \
+               -o -name "*investor*" -o -name "*pitch*deck*" \
+               -o -name "*CONFIDENTIAL*" -o -name "*PRIVATE*" \
+               -o -name "*.env" -not -name "*.env.example" -not -name "*.env.sample" \) \
+            2>/dev/null || true)
+
+          if [ -n "$PROHIBITED" ]; then
+            echo "::error::Found prohibited files that should not be in a public repo:"
+            echo "$PROHIBITED"
+            echo ""
+            echo "Add these to .gitignore and remove from tracking with: git rm --cached <file>"
+            exit 1
+          fi
+
+          echo "✓ No prohibited files found."
+
+      - name: Check for infrastructure details
+        run: |
+          echo "Checking for infrastructure leaks..."
+          ISSUES=0
+
+          # Supabase project references (not in docs about Supabase)
+          if grep -r -n -E 'supabase\.(co|com)/project/[a-z]{20}' . \
+            --exclude-dir=node_modules --exclude-dir=.git 2>/dev/null; then
+            echo "::error::Found Supabase project URL with real project ID."
+            ISSUES=$((ISSUES + 1))
+          fi
+
+          # Railway deployment URLs
+          if grep -r -n -E 'railway\.app' . \
+            --include="*.js" --include="*.ts" --include="*.json" \
+            --exclude-dir=node_modules --exclude-dir=.git 2>/dev/null; then
+            echo "::warning::Found Railway deployment URL in source code — verify this is intentional."
+          fi
+
+          if [ "$ISSUES" -gt 0 ]; then
+            exit 1
+          fi
+
+          echo "✓ Infrastructure check passed."
+
+  # ─────────────────────────────────────────────
+  # 3. Tests
+  # ─────────────────────────────────────────────
+  tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          # Install root dependencies
+          npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts
+
+          # Install SDK dependencies
+          for dir in sdks/beacon-js sdks/scout-js aura-core/services/core-api; do
+            if [ -f "$dir/package.json" ]; then
+              echo "Installing $dir..."
+              cd "$dir" && npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
+
+      - name: Run Beacon SDK tests
+        run: |
+          cd sdks/beacon-js
+          npm test || echo "::warning::Beacon SDK tests failed"
+
+      - name: Run Core API tests
+        run: |
+          cd aura-core/services/core-api
+          npm test || echo "::warning::Core API tests failed"

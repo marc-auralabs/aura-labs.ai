@@ -1,0 +1,17 @@
+# Default owner for everything
+* @marc-auralabs
+
+# Documentation — require review on all doc changes
+docs/ @marc-auralabs
+*.md @marc-auralabs
+
+# Security-sensitive files — always require review
+.gitignore @marc-auralabs
+.github/ @marc-auralabs
+LICENSE @marc-auralabs
+SECURITY.md @marc-auralabs
+
+# Website and public-facing content
+index.html @marc-auralabs
+developers.html @marc-auralabs
+portal/ @marc-auralabs

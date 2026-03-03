@@ -4,10 +4,16 @@ CLAUDE_PROJECT_CONTEXT.md
 # Environment & Secrets
 .env
 .env.*
+!.env.example
+!.env.sample
 *.env
 .secrets
 credentials.json
 **/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Node
 node_modules/
@@ -46,14 +52,21 @@ coverage/
 logs/
 *.log
 
+# ──────────────────────────────────────────────
+# Prohibited file types (should not be in a public framework repo)
+# ──────────────────────────────────────────────
+*.pptx
+*.docx
+*.xlsx
+
 # Proprietary Business Documents
 pitch-deck-private/
 investor-docs/
 financials/
 *-CONFIDENTIAL.*
 *-PRIVATE.*
-aura_investor_deck_daphhni.pptx
-aura_pitch_deck.html
+*investor*
+*pitch*deck*
 
 # Hidden / draft pages (not for public)
 hidden.html
