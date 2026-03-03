@@ -8,6 +8,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Beacon Merchant Integration Hooks** (DEC-010)
+  - `beforeOffer(validator)` — pre-offer validation middleware for inventory checks, price enforcement
+  - `onOfferAccepted(handler)` — handler for committed transactions
+  - `onTransactionUpdate(handler)` — handler for transaction status changes
+  - `registerPolicies(policies)` — declarative business rules (minPrice, maxQuantityPerOrder, maxDeliveryDays, deliveryRegions)
+  - `updateFulfillment(transactionId, update)` — report shipping/delivery to Core
+  - `getTransaction(transactionId)` — fetch transaction details
+  - `ValidationError` class for blocked offers
+
+- **Transaction Lifecycle Endpoints**
+  - `GET /transactions/:transactionId` — full transaction details with HATEOAS links
+  - `PUT /transactions/:transactionId/fulfillment` — update fulfillment status (shipped, delivered)
+  - `PUT /transactions/:transactionId/payment` — update payment status (pending, charged, failed, refunded)
+  - Auto-transitions: `committed` → `fulfilled` (on delivery), `fulfilled` → `completed` (on payment + delivery)
+  - Audit log entries for all state changes
+
+- **Webhook Dispatcher**
+  - Fire-and-forget webhook delivery to beacon `endpointUrl`
+  - 3 retries with exponential backoff (1s, 2s, 4s)
+  - Events: `transaction.committed`, `fulfillment.updated`, `payment.updated`
+
+- **Scout SDK Enhancements**
+  - `Transaction.refresh()` — poll transaction status
+  - `Transaction.waitForFulfillment(options)` — wait for delivery with timeout
+  - `Transaction.beacon` getter — access beacon info from transaction
+
+- **Demo Script** (`demo.sh`)
+  - Full end-to-end commerce flow walkthrough
+  - Step 7: post-transaction lifecycle (ship → deliver → pay → completed)
+
+### Documentation
+- Rewrote Beacon SDK README with complete API reference and integration hooks
+- Rewrote docs/beacon/README.md with correct SDK patterns (was using obsolete event-driven API)
+- Rewrote docs/api/README.md with actual REST endpoints (was describing non-existent WebSocket API)
+- Wrote docs/tutorials/beacon-transactions.md (replaced stub)
+- Updated docs/integration-guides/README.md with correct SDK patterns
+
+## [1.1.0] - 2026-02-24
+
+### Added
+- **Ed25519 Agent Identity** (DEC-009)
+  - Universal cryptographic identity for all agents (Scouts and Beacons)
+  - `POST /agents/register` with proof-of-possession signature
+  - Request signing for integrity verification
+  - Agent revocation support
+  - 114 tests passing
+
+- **Core API Consolidation**
+  - Intent parser with NLP extraction (quantity, price, delivery, features)
+  - Beacon matcher with scoring algorithm
+  - Session state machine (market_forming → committed → cancelled)
+  - Offer submission and commitment flow
+
 - Initial public release of AURA Framework
 - Simple Beacon reference implementation
 - Core protocol specification v1.0

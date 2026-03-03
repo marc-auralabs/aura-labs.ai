@@ -1,309 +1,510 @@
 # Beacon SDK Documentation
 
-Build selling agents that connect your inventory to the AURA ecosystem.
+Build selling agents that connect your inventory to the AURA ecosystem. Beacons are server-side agents that register with AURA Core, handle buyer sessions, submit offers, and manage transaction lifecycles.
 
 ## What is a Beacon?
 
 A Beacon is a selling agent that:
-- Signals willingness to participate in markets
-- Receives anonymized buyer intent
-- Responds with propositions (offerings)
-- Negotiates pricing dynamically
-- Processes transactions
+- Registers with AURA Core and receives a unique beaconId
+- Polls for new buyer sessions expressing intent
+- Evaluates sessions against business rules and policies
+- Submits offers with dynamic pricing and fulfillment terms
+- Tracks transactions through committed → shipped → delivered → fulfilled → completed states
+- Receives webhooks for state changes via a registered endpoint URL
 
-Beacons integrate into seller systems: e-commerce platforms, ERP systems, inventory management, booking systems.
+Beacons integrate into seller systems: e-commerce platforms, ERP systems, inventory management, booking systems, and marketplace integrations.
 
 ## Quick Start
 
 ### Installation
 
 ```bash
-npm install @aura-labs/beacon-sdk
+npm install @aura-labs/beacon
 ```
 
 ### Basic Usage
 
 ```javascript
-import { Beacon } from '@aura-labs/beacon-sdk';
+import { createBeacon } from '@aura-labs/beacon';
 
-// Initialize Beacon
-const beacon = new Beacon({
-  apiKey: process.env.AURA_API_KEY,
-  merchantName: 'My Store',
-  category: 'electronics'
+// Create beacon instance
+const beacon = createBeacon({
+  externalId: 'my-store-001',      // Your internal identifier
+  name: 'My Store',
+  description: 'Electronics retailer',
+  endpointUrl: 'https://mystore.com/webhook',  // Receives transaction webhooks
+  capabilities: ['retail', 'shipping'],
+  coreUrl: 'https://core.aura-labs.io',
+  pollIntervalMs: 5000               // Poll every 5 seconds
 });
 
-// Connect to AURA Core
-await beacon.connect();
+// Register with AURA Core
+const { beaconId } = await beacon.register();
+console.log('Registered with beaconId:', beaconId);
 
-// Register propositions (your inventory)
-beacon.registerPropositions([
-  {
-    id: 'sku-123',
-    name: 'Wireless Headphones Pro',
-    category: 'electronics',
-    priceRange: { min: 250, max: 350 },
-    available: true
+// Handle incoming sessions
+beacon.onSession(async (session, beacon) => {
+  const { sessionId, status, intent, constraints, createdAt } = session;
+
+  // intent.raw: original buyer text
+  // intent.parsed: structured intent { category, keywords, quantity, priceRange }
+  // constraints: buyer requirements { maxPrice, deliveryRegions, maxDeliveryDays }
+
+  // Evaluate if you can fulfill
+  if (matchesInventory(intent.parsed)) {
+    const offer = {
+      product: findProduct(intent.parsed),
+      unitPrice: calculatePrice(intent.parsed),
+      quantity: intent.parsed.quantity || 1,
+      currency: 'USD',
+      deliveryDate: calculateDelivery(),
+      terms: 'Standard terms apply'
+    };
+
+    await beacon.submitOffer(sessionId, offer);
   }
-]);
-
-// Handle Scout inquiries
-beacon.on('inquiry', async (inquiry) => {
-  const matches = beacon.matchInventory(inquiry.intent);
-  return matches;
 });
 
-// Handle negotiation
-beacon.on('negotiation', async (request) => {
-  const price = calculatePrice(request);
-  return beacon.makeOffer(request.id, price);
+// Apply business rules
+beacon.registerPolicies({
+  minPrice: 10,
+  maxQuantityPerOrder: 100,
+  maxDeliveryDays: 30,
+  deliveryRegions: ['US', 'CA', 'UK']
 });
 
-// Handle transactions
-beacon.on('transaction', async (transaction) => {
-  await processOrder(transaction);
-  return beacon.confirmTransaction(transaction.id);
+// Optional: Pre-offer validation
+beacon.beforeOffer(async (session, offer) => {
+  // Validate or modify offer before submission
+  if (offer.unitPrice < 5) {
+    throw new Error('Price too low');
+  }
+  return offer;  // Return modified offer or undefined to block
+});
+
+// Track accepted offers
+beacon.onOfferAccepted(async (transactionData) => {
+  console.log('Offer accepted, transaction:', transactionData.transactionId);
+});
+
+// Start polling for sessions
+await beacon.startPolling();
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await beacon.stopPolling();
 });
 ```
 
 ## Core Concepts
 
-### Propositions
+### Registration
 
-A proposition is an offering you're willing to sell:
+Beacons register once with AURA Core:
 
 ```javascript
-const proposition = {
-  id: 'your-sku',              // Your internal identifier
-  name: 'Product Name',
-  category: 'electronics',
-  description: 'Detailed description',
-  priceRange: {
-    min: 90,                   // Lowest you'll accept
-    max: 120,                  // List price
-    currency: 'USD'
-  },
-  available: true,
-  stock: 50,                   // Optional, for your tracking
-  attributes: {
-    color: 'black',
-    size: 'medium',
-    features: ['wireless', 'ANC']
-  },
-  fulfillment: {
-    shippingOptions: [
-      { method: 'standard', days: 5, price: 0 },
-      { method: 'express', days: 2, price: 15 }
-    ],
-    locations: ['US', 'CA', 'UK']
-  }
+const beacon = createBeacon({
+  externalId: 'my-store-001',        // Your internal identifier
+  name: 'My Store',                  // Display name
+  description: 'What you sell',      // Brief description
+  endpointUrl: 'https://mystore.com/webhook',  // Webhook receiver
+  capabilities: ['retail', 'shipping', 'drop-shipping'],  // What you can do
+  coreUrl: 'https://core.aura-labs.io',
+  pollIntervalMs: 5000
+});
+
+const { beaconId } = await beacon.register();
+// Returns beaconId (UUID) - use this to identify your beacon
+// Future: Registration will also return Ed25519 keypair for request signing
+```
+
+**What happens:**
+- POST to `/beacons/register` with config
+- Core returns unique `beaconId`
+- Beacon stores beaconId for all subsequent requests
+- No API keys — identity via beaconId (and future Ed25519 signatures)
+
+### Session Handling
+
+Sessions represent buyer intent. Your beacon polls for them:
+
+```javascript
+beacon.onSession(async (session, beacon) => {
+  // session structure:
+  // {
+  //   sessionId: "uuid",
+  //   status: "pending" | "offer_requested" | "offered" | "committed",
+  //   intent: {
+  //     raw: "I'm looking for wireless headphones under $100",
+  //     parsed: {
+  //       category: "electronics",
+  //       keywords: ["wireless", "headphones"],
+  //       quantity: 1,
+  //       priceRange: { min: 0, max: 100 }
+  //     }
+  //   },
+  //   constraints: {
+  //     maxPrice: 100,
+  //     deliveryRegions: ["US"],
+  //     maxDeliveryDays: 7
+  //   },
+  //   createdAt: "2026-03-03T10:00:00Z"
+  // }
+
+  // Respond with an offer or ignore (don't call submitOffer)
+});
+```
+
+**Polling:**
+```javascript
+// Automatically polls GET /beacons/sessions every pollIntervalMs
+await beacon.startPolling();
+
+// Deduplicates sessions via internal Set
+// Calls onSession handler for each new unique session
+// Stops polling
+await beacon.stopPolling();
+```
+
+### Offer Submission
+
+Submit an offer to a session:
+
+```javascript
+const offer = {
+  product: 'Wireless Headphones Pro',      // Your product name/identifier
+  unitPrice: 89.99,                        // Price per unit
+  quantity: 1,                             // Quantity available
+  currency: 'USD',
+  deliveryDate: '2026-03-10',              // When you can deliver
+  terms: 'Standard return policy applies', // Optional terms
+  metadata: { sku: 'SKU-123', color: 'black' }  // Optional metadata
 };
+
+await beacon.submitOffer(sessionId, offer);
+// POST to /sessions/:sessionId/offers
+// Returns offer confirmation
 ```
 
-### Inventory Management
+**Validation flow:**
+1. Offer passes through `beforeOffer` validators (if registered)
+2. Offer passes through policy validators (if registered)
+3. Offer submitted to Core
 
-Keep AURA in sync with your inventory:
+If any validator throws or returns undefined, offer is blocked.
+
+## Merchant Integration Hooks
+
+### beforeOffer: Pre-Offer Validation Middleware
+
+Validate or modify offers before submission:
 
 ```javascript
-// Initial load
-beacon.registerPropositions(yourInventory.map(toProposition));
+beacon.beforeOffer(async (session, offer) => {
+  // Validators run sequentially (chainable)
+  // Return modified offer, undefined to block, or throw to reject
 
-// Real-time updates
-yourInventory.on('change', (item) => {
-  beacon.updateProposition(item.id, {
-    available: item.stock > 0,
-    stock: item.stock
-  });
+  // Example: Enforce minimum margin
+  if (offer.unitPrice < 50) {
+    throw new Error(`Price ${offer.unitPrice} below cost`);
+  }
+
+  // Example: Modify offer based on session
+  if (session.constraints.maxDeliveryDays < 3) {
+    offer.deliveryDate = calculateExpressDelivery();
+    offer.terms = 'Express delivery applies';
+  }
+
+  return offer;  // Return to proceed
 });
 
-// Bulk update
-beacon.syncInventory(getCurrentInventory());
+// Chain multiple validators
+beacon
+  .beforeOffer(validateMinimumPrice)
+  .beforeOffer(validateInventory)
+  .beforeOffer(addDynamicDiscount);
 ```
 
-### Inquiry Handling
+### registerPolicies: Business Rules
 
-When a Scout is looking for something you might have:
-
-```javascript
-beacon.on('inquiry', async (inquiry) => {
-  // inquiry contains:
-  // - intent: what they're looking for
-  // - behavioralData: anonymized buyer context
-  // - constraints: their requirements
-
-  // Search your inventory
-  const matches = searchInventory(inquiry.intent);
-
-  // Filter by constraints
-  const filtered = matches.filter(item =>
-    item.price <= inquiry.constraints.priceRange.max
-  );
-
-  // Return matching propositions
-  return filtered.map(item => ({
-    propositionId: item.id,
-    name: item.name,
-    priceRange: item.priceRange,
-    available: true
-  }));
-});
-```
-
-### Dynamic Pricing
-
-Price based on context, not identity:
+Declare business rules. SDK auto-validates offers:
 
 ```javascript
-beacon.on('negotiation', async (request) => {
-  const { propositionId, behavioralData, constraints } = request;
-
-  const item = getItem(propositionId);
-  let price = item.basePrice;
-  let discount = 0;
-  const incentives = [];
-
-  // Loyalty pricing (based on behavior, not identity)
-  if (behavioralData.loyaltyIndicators?.repeatCustomer) {
-    discount += 10;
-    incentives.push({
-      type: 'loyalty',
-      description: '10% returning customer discount'
-    });
-  }
-
-  // Inventory-based pricing
-  if (item.stock > 100) {
-    discount += 5;
-    incentives.push({
-      type: 'overstock',
-      description: '5% inventory clearance'
-    });
-  }
-
-  // Meet their constraints if possible
-  if (constraints.maxPrice && price * (1 - discount/100) > constraints.maxPrice) {
-    // Can we meet their budget?
-    const maxDiscount = ((price - constraints.maxPrice) / price) * 100;
-    if (maxDiscount <= 20) { // Our maximum allowed discount
-      discount = maxDiscount;
-    }
-  }
-
-  const finalPrice = price * (1 - discount / 100);
-
-  return beacon.makeOffer(request.id, {
-    price: finalPrice,
-    discount,
-    incentives,
-    validFor: 300000 // 5 minutes
-  });
+beacon.registerPolicies({
+  minPrice: 10,                    // Minimum unit price
+  maxQuantityPerOrder: 100,        // Max units per offer
+  maxDeliveryDays: 30,             // Maximum delivery time
+  deliveryRegions: ['US', 'CA', 'UK']  // Where you ship
 });
 ```
 
-### Transaction Processing
+**What happens:**
+- SDK automatically adds policy validator to beforeOffer chain
+- Checks every offer against these rules
+- Blocks offers that violate policies
+- Policies are SDK-side only (Core doesn't enforce them)
 
-When a deal is accepted:
+### onOfferAccepted: Offer Committed
+
+Called when a buyer commits to your offer:
 
 ```javascript
-beacon.on('transaction', async (transaction) => {
-  // NOW you receive buyer identity for fulfillment
-  const { identity, shippingAddress, paymentMethod } = transaction;
+beacon.onOfferAccepted(async (transactionData) => {
+  // {
+  //   transactionId: "uuid",
+  //   sessionId: "uuid",
+  //   offer: { product, unitPrice, quantity, ... },
+  //   committedAt: "2026-03-03T10:05:00Z"
+  // }
 
-  try {
-    // Reserve inventory
-    await reserveStock(transaction.propositionId);
+  console.log('Order confirmed:', transactionData.transactionId);
+  // Reserve inventory, create order record, etc.
+});
+```
 
-    // Create order in your system
-    const order = await createOrder({
-      customer: identity,
-      items: [{ sku: transaction.propositionId, price: transaction.price }],
-      shipping: shippingAddress
-    });
+### onTransactionUpdate: Track Status Changes
 
-    // Process payment
-    await processPayment(paymentMethod, transaction.price);
+Called for any transaction status change:
 
-    // Confirm with AURA
-    return beacon.confirmTransaction(transaction.id, {
-      orderId: order.id,
-      estimatedDelivery: order.deliveryDate,
-      trackingAvailable: true
-    });
+```javascript
+beacon.onTransactionUpdate(async (event) => {
+  // {
+  //   transactionId: "uuid",
+  //   status: "committed" | "shipped" | "delivered" | "fulfilled" | "completed",
+  //   timestamp: "2026-03-03T10:05:00Z",
+  //   metadata: { ... }
+  // }
 
-  } catch (error) {
-    // Release inventory and report failure
-    await releaseStock(transaction.propositionId);
-    return beacon.failTransaction(transaction.id, error.message);
+  if (event.status === 'shipped') {
+    console.log('Order shipped:', event.transactionId);
   }
 });
 ```
+
+### Fulfillment Tracking
+
+Update fulfillment status as you process the order:
+
+```javascript
+// When you ship the order
+await beacon.updateFulfillment(transactionId, {
+  fulfillmentStatus: 'shipped',
+  fulfillmentReference: 'TRACK-123456',  // Tracking number
+  metadata: { carrier: 'FedEx' }
+});
+
+// When delivered
+await beacon.updateFulfillment(transactionId, {
+  fulfillmentStatus: 'delivered',
+  metadata: { deliveredAt: '2026-03-10T14:30:00Z' }
+});
+
+// GET transaction details
+const transaction = await beacon.getTransaction(transactionId);
+// {
+//   transactionId: "uuid",
+//   sessionId: "uuid",
+//   status: "delivered",
+//   offer: { ... },
+//   fulfillment: { status: "delivered", reference: "TRACK-123456" },
+//   createdAt: "2026-03-03T10:05:00Z",
+//   updatedAt: "2026-03-10T14:30:00Z"
+// }
+```
+
+## Transaction Lifecycle
+
+Transactions follow this state machine:
+
+```
+committed → shipped → delivered → fulfilled → completed
+           (your action) (your action) (auto)     (auto)
+                                    ↓
+                              (buyer pays + delivered)
+```
+
+**States:**
+
+- **committed**: Buyer accepted your offer. This is when you receive the order.
+- **shipped**: You've shipped the order (call `updateFulfillment('shipped')`).
+- **delivered**: Order arrived at buyer (call `updateFulfillment('delivered')`).
+- **fulfilled**: Auto-transitioned when delivered (payment pending).
+- **completed**: Auto-transitioned when paid and fulfilled.
+
+**Webhooks:**
+
+Core sends webhooks to your `endpointUrl` at each state change:
+
+```javascript
+// Your endpoint receives:
+POST https://mystore.com/webhook
+{
+  transactionId: "uuid",
+  status: "shipped",
+  timestamp: "2026-03-10T10:00:00Z",
+  offer: { ... }
+}
+```
+
+Handle webhooks to trigger fulfillment workflows, accounting updates, etc.
 
 ## API Reference
 
-### Beacon Class
-
-#### Constructor
+### Factory Function
 
 ```javascript
-new Beacon(config)
+const beacon = createBeacon(config)
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `apiKey` | string | AURA API key |
-| `merchantName` | string | Your business name |
-| `category` | string | Primary category |
-| `subcategories` | string[] | Additional categories |
+| Config | Type | Description |
+|--------|------|-------------|
+| `externalId` | string | Your internal beacon identifier |
+| `name` | string | Display name for your beacon |
+| `description` | string | What the beacon does/sells |
+| `endpointUrl` | string | HTTPS URL to receive webhooks |
+| `capabilities` | string[] | Your capabilities: `retail`, `shipping`, `drop-shipping`, etc. |
+| `coreUrl` | string | AURA Core URL (default: production) |
+| `pollIntervalMs` | number | Session polling interval in milliseconds (default: 5000) |
 
-#### Methods
+### Methods
 
-| Method | Description |
-|--------|-------------|
-| `connect()` | Connect to AURA Core |
-| `disconnect()` | Disconnect |
-| `registerPropositions(items)` | Register inventory |
-| `updateProposition(id, updates)` | Update single item |
-| `syncInventory(items)` | Full inventory sync |
-| `makeOffer(requestId, offer)` | Make pricing offer |
-| `confirmTransaction(txId, details)` | Confirm transaction |
-| `failTransaction(txId, reason)` | Report failure |
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `register()` | `async () => { beaconId }` | Register beacon with Core, returns beaconId |
+| `startPolling()` | `async () => void` | Start polling for new sessions |
+| `stopPolling()` | `async () => void` | Stop polling |
+| `submitOffer()` | `async (sessionId, offer) => void` | Submit offer to a session |
+| `beforeOffer()` | `(validator) => beacon` | Register pre-offer validator (chainable) |
+| `registerPolicies()` | `(rules) => beacon` | Register business policies (chainable) |
+| `onSession()` | `(handler) => beacon` | Register session handler (chainable) |
+| `onOfferAccepted()` | `(handler) => beacon` | Register offer-accepted handler (chainable) |
+| `onTransactionUpdate()` | `(handler) => beacon` | Register transaction-update handler (chainable) |
+| `updateFulfillment()` | `async (transactionId, update) => void` | Update fulfillment status |
+| `getTransaction()` | `async (transactionId) => transaction` | Get transaction details |
 
-#### Events
+### Hooks & Callbacks
 
-| Event | Description |
-|-------|-------------|
-| `connected` | Connected to AURA Core |
-| `registered` | Beacon registered |
-| `inquiry` | Scout inquiry received |
-| `negotiation` | Negotiation request |
-| `transaction` | Transaction to process |
-| `error` | Error occurred |
+| Hook | Signature | Description |
+|------|-----------|-------------|
+| `onSession` | `(session, beacon) => Promise<void>` | Called for each new session during polling |
+| `beforeOffer` | `(session, offer) => Promise<offer \| undefined>` | Validator runs before submitOffer, can modify or block |
+| `onOfferAccepted` | `(transactionData) => Promise<void>` | Called when offer is committed |
+| `onTransactionUpdate` | `(event) => Promise<void>` | Called for any transaction status change |
+
+### Data Structures
+
+**Session:**
+```javascript
+{
+  sessionId: string,
+  status: 'pending' | 'offer_requested' | 'offered' | 'committed',
+  intent: {
+    raw: string,           // Original buyer text
+    parsed: {
+      category: string,
+      keywords: string[],
+      quantity: number,
+      priceRange: { min: number, max: number }
+    }
+  },
+  constraints: {
+    maxPrice: number,
+    deliveryRegions: string[],
+    maxDeliveryDays: number
+  },
+  createdAt: string        // ISO timestamp
+}
+```
+
+**Offer:**
+```javascript
+{
+  product: string,         // Your product name/identifier
+  unitPrice: number,       // Price per unit
+  quantity: number,        // Quantity available
+  totalPrice?: number,     // Optional: computed automatically if omitted
+  currency?: string,       // Default: 'USD'
+  deliveryDate: string,    // Date you can deliver (ISO format)
+  terms?: string,          // Optional terms/conditions
+  metadata?: object        // Optional custom data
+}
+```
+
+**Transaction:**
+```javascript
+{
+  transactionId: string,
+  sessionId: string,
+  status: 'committed' | 'shipped' | 'delivered' | 'fulfilled' | 'completed',
+  offer: Offer,
+  fulfillment?: {
+    status: 'shipped' | 'delivered',
+    reference?: string,    // Tracking number
+    metadata?: object
+  },
+  createdAt: string,
+  updatedAt: string
+}
+```
 
 ## Best Practices
 
-### Inventory
+### Session Evaluation
 
-- Keep propositions in sync with actual inventory
-- Update availability in real-time
-- Handle out-of-stock gracefully
+- Always check `constraints` (max price, delivery regions, max days)
+- Use `intent.parsed` for structured data, `intent.raw` for debugging
+- Ignore sessions you can't fulfill — don't submit an offer
 
-### Pricing
+### Offer Submission
 
-- Set realistic price ranges
-- Don't discriminate based on identity (you don't have it)
-- Use behavioral data ethically
+- Submit offers quickly (within seconds of receiving session)
+- Use accurate delivery dates (don't promise 2-day if you can't)
+- Set realistic prices and quantities
+- Don't discriminate based on buyer identity (you don't have it)
 
-### Reliability
+### Validation Hooks
 
-- Handle AURA Core disconnections
-- Implement idempotent transaction handling
-- Log all transactions for reconciliation
+- Use `beforeOffer` to enforce business rules at SDK level
+- Keep validators fast (no complex I/O)
+- Throw descriptive errors when rejecting offers
+- Chain multiple validators for separation of concerns
+
+### Fulfillment Tracking
+
+- Call `updateFulfillment('shipped')` as soon as item ships
+- Call `updateFulfillment('delivered')` when confirmed delivered
+- Include tracking numbers and carrier info in metadata
+- Handle webhook retries gracefully (implement idempotency)
+
+### Polling & Performance
+
+- Adjust `pollIntervalMs` based on session volume
+- Keep handlers async but non-blocking
+- Handle polling errors gracefully (exponential backoff)
+- Log all sessions and offers for reconciliation
+
+### Error Handling
+
+```javascript
+beacon.onSession(async (session) => {
+  try {
+    // Evaluate and submit offer
+    if (canFulfill(session)) {
+      await beacon.submitOffer(sessionId, offer);
+    }
+  } catch (error) {
+    console.error('Error handling session:', error);
+    // Don't re-throw — let polling continue
+  }
+});
+```
 
 ## Integration Guides
 
 - [Shopify Integration](../integration-guides/shopify.md)
 - [WooCommerce Integration](../integration-guides/woocommerce.md)
 - [Custom Platform Guide](../integration-guides/custom-ecommerce.md)
+- [Webhook Handling](../integration-guides/webhooks.md)
 
 ## Examples
 
@@ -316,5 +517,6 @@ See [Beacon Implementations](../../beacons/) for:
 ## See Also
 
 - [Protocol Specification](../protocol/PROTOCOL_SPECIFICATION.md)
-- [API Reference](../api/README.md)
+- [AURA Core API Reference](../api/README.md)
 - [Tutorials](../tutorials/README.md)
+- [Troubleshooting](../guides/troubleshooting.md)

@@ -43,6 +43,7 @@ beacon.onSession(async (session) => {
 });
 
 // Start polling for sessions
+// (For production use, see Merchant Integration Hooks below for offer validation and fulfillment tracking)
 await beacon.startPolling();
 ```
 
@@ -187,6 +188,208 @@ Manually fetch available sessions without polling.
 
 ```javascript
 const sessions = await beacon.getSessions();
+```
+
+## Merchant Integration Hooks
+
+Integration hooks enable advanced merchant logic including offer validation, business rule enforcement, and fulfillment tracking. All hook methods return `this` for method chaining.
+
+### `beacon.beforeOffer(validator)`
+
+Register a pre-offer validation middleware. Runs sequentially before each `submitOffer()` call. Use this to validate inventory, apply dynamic pricing, or enforce business rules.
+
+**Validator Signature:**
+```javascript
+async (session, proposedOffer) => modifiedOffer | undefined
+```
+
+- If validator throws an error, the offer is blocked
+- If validator returns an object, it is merged into the offer
+- If validator returns `undefined`, the offer proceeds unchanged
+
+**Example: Inventory Check**
+```javascript
+beacon.beforeOffer(async (session, proposedOffer) => {
+  const inventory = await checkInventory(proposedOffer.product.sku);
+  if (inventory < proposedOffer.quantity) {
+    throw new Error(`Insufficient inventory: only ${inventory} available`);
+  }
+  // Return undefined to proceed with original offer
+});
+```
+
+**Example: Dynamic Price Floor**
+```javascript
+beacon.beforeOffer(async (session, proposedOffer) => {
+  const minPrice = await calculateMinPrice(proposedOffer.product.sku);
+  if (proposedOffer.unitPrice < minPrice) {
+    // Return modified offer with minimum price
+    return { unitPrice: minPrice };
+  }
+});
+```
+
+### `beacon.onOfferAccepted(handler)`
+
+Register a handler called when an offer is committed/accepted by the buyer.
+
+**Handler Signature:**
+```javascript
+async (transactionData) => void
+```
+
+**Example: Log Accepted Orders**
+```javascript
+beacon.onOfferAccepted(async (transactionData) => {
+  console.log(`Order ${transactionData.transactionId} accepted`);
+  await logOrderToSystem(transactionData);
+  await notifyWarehouse(transactionData);
+});
+```
+
+### `beacon.onTransactionUpdate(handler)`
+
+Register a handler for transaction status changes (e.g., payment confirmed, shipped, delivered).
+
+**Handler Signature:**
+```javascript
+async (event) => void
+```
+
+**Example: Track Transaction Status**
+```javascript
+beacon.onTransactionUpdate(async (event) => {
+  console.log(`Transaction ${event.transactionId}: ${event.status}`);
+  if (event.status === 'payment_confirmed') {
+    await chargeCard(event.paymentReference);
+  }
+});
+```
+
+### `beacon.registerPolicies(policies)`
+
+Declare your merchant business rules. Auto-adds a built-in `beforeOffer` validator enforcing these policies.
+
+**Policies Object:**
+```javascript
+{
+  minPrice?: number,              // Minimum unit price
+  maxQuantityPerOrder?: number,   // Order quantity cap
+  maxDeliveryDays?: number,       // Maximum days until delivery
+  deliveryRegions?: string[],     // Supported shipping regions
+}
+```
+
+**Example: Enforce Business Rules**
+```javascript
+beacon.registerPolicies({
+  minPrice: 10.00,
+  maxQuantityPerOrder: 1000,
+  maxDeliveryDays: 7,
+  deliveryRegions: ['US', 'CA', 'MX'],
+});
+
+// Now all offers are validated against these policies automatically
+```
+
+### `beacon.updateFulfillment(transactionId, update)`
+
+Report fulfillment progress to AURA Core.
+
+**Update Object:**
+```javascript
+{
+  fulfillmentStatus: 'shipped' | 'delivered',
+  fulfillmentReference?: string,  // Tracking number, shipment ID, etc.
+  metadata?: object,              // Additional metadata
+}
+```
+
+**Example: Report Shipment**
+```javascript
+await beacon.updateFulfillment(transactionId, {
+  fulfillmentStatus: 'shipped',
+  fulfillmentReference: 'FDX123456789',
+  metadata: { carrier: 'FedEx', estimatedDelivery: '2026-03-10' },
+});
+```
+
+### `beacon.getTransaction(transactionId)`
+
+Fetch detailed transaction information from AURA Core.
+
+**Example: Check Transaction Details**
+```javascript
+const transaction = await beacon.getTransaction(transactionId);
+console.log(`Status: ${transaction.status}`);
+console.log(`Amount: ${transaction.totalPrice} ${transaction.currency}`);
+console.log(`Buyer: ${transaction.buyerInfo.name}`);
+```
+
+### Chaining Example
+
+Integration hooks support method chaining for clean setup:
+
+```javascript
+beacon
+  .registerPolicies({
+    minPrice: 15.00,
+    maxQuantityPerOrder: 500,
+  })
+  .beforeOffer(async (session, offer) => {
+    const inventory = await checkInventory(offer.product.sku);
+    if (inventory < offer.quantity) {
+      throw new Error('Out of stock');
+    }
+  })
+  .onOfferAccepted(async (tx) => {
+    await fulfillmentService.createOrder(tx);
+  })
+  .onTransactionUpdate(async (event) => {
+    if (event.status === 'dispute') {
+      await escalationTeam.alert(event);
+    }
+  });
+
+await beacon.register();
+await beacon.startPolling();
+```
+
+## Beacon Properties
+
+Access beacon state and metadata:
+
+```javascript
+beacon.isRegistered  // boolean — beacon registered with Core
+beacon.id            // UUID assigned by AURA Core
+beacon.externalId    // Your external identifier
+beacon.name          // Display name
+beacon.isPolling     // boolean — polling active
+```
+
+## Error Classes
+
+The SDK exports the following error types for precise error handling:
+
+- `BeaconError` — Base error class
+- `ConnectionError` — Core API connection failures
+- `RegistrationError` — Registration failures
+- `OfferError` — Offer submission failures
+- `ValidationError` — Thrown by `beforeOffer` validators
+
+**Example: Error Handling**
+```javascript
+import { createBeacon, ValidationError, OfferError } from '@aura-labs/beacon';
+
+try {
+  await beacon.submitOffer(sessionId, offer);
+} catch (error) {
+  if (error instanceof ValidationError) {
+    console.error('Offer validation failed:', error.message);
+  } else if (error instanceof OfferError) {
+    console.error('Offer submission failed:', error.message);
+  }
+}
 ```
 
 ## Session Object
