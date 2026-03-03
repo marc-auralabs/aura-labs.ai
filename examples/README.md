@@ -59,22 +59,32 @@ npm start
 The simplest possible Beacon integration:
 
 ```javascript
-const { AuraBeacon } = require('@aura-labs/beacon-sdk');
+import { createBeacon } from '@aura-labs/beacon';
 
-const beacon = new AuraBeacon({
-  apiKey: process.env.AURA_API_KEY,
-  merchantName: 'My Store'
+const beacon = createBeacon({
+  externalId: 'my-store-001',
+  name: 'My Store',
+  endpointUrl: 'https://mystore.com/webhook',
+  capabilities: ['retail', 'shipping'],
+  coreUrl: 'https://core.aura-labs.io'
 });
 
-beacon.setInventory([
-  { id: 'prod-1', name: 'Widget', price: 29.99 }
-]);
+await beacon.register();
 
-beacon.on('inquiry', (inquiry) => {
-  return beacon.matchInventory(inquiry);
+beacon.onSession(async (session, beacon) => {
+  const product = findProduct(session.intent.parsed);
+  if (product) {
+    await beacon.submitOffer(session.sessionId, {
+      product: product.name,
+      unitPrice: product.price,
+      quantity: session.intent.parsed.quantity || 1,
+      currency: 'USD',
+      deliveryDate: '2026-03-10'
+    });
+  }
 });
 
-beacon.connect();
+await beacon.startPolling();
 ```
 
 ### E-commerce Platform Integration

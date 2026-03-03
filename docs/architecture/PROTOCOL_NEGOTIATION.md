@@ -251,53 +251,75 @@ class SessionActor extends Actor {
 ### Scout Integration (Simple)
 
 ```javascript
-const scout = new AuraScout({ apiKey: 'xxx' });
+import { createScout } from '@aura-labs/scout';
+
+const scout = createScout({ coreUrl: 'https://core.aura-labs.io' });
+await scout.register();
 
 // Express intent naturally
-const session = await scout.findMarket({
-  intent: "I need 500 widgets, prefer under $90 each, within 2 weeks"
+const session = await scout.createSession({
+  intent: "I need 500 widgets, prefer under $90 each, within 2 weeks",
+  constraints: { maxPrice: 100, maxDeliveryDays: 14 }
 });
 
-// Discover available paths (HATEOAS)
-console.log(session.availableActions);
-// ['start_auction', 'request_quotes', 'browse_direct']
+// Wait for offers from Beacons
+const offers = await session.waitForOffers({ timeoutMs: 30000 });
+console.log(`Received ${offers.length} offers`);
 
-// Follow preferred path
-const auction = await session.follow('start_auction');
+// Approve best offer — creates a transaction
+const transaction = await session.approve(offers[0].offerId);
+console.log('Transaction:', transaction.transactionId);
 
-// Respond to protocol events
-auction.on('bid_received', bid => console.log(bid));
-auction.on('auction_ended', result => console.log(result));
+// Track fulfillment
+await transaction.waitForFulfillment({ timeoutMs: 600000 });
 ```
 
 ### Beacon Integration (Capability Declaration)
 
 ```javascript
-const beacon = new AuraBeacon({
-  apiKey: 'xxx',
-  capabilities: {
-    identity: ['api_key'],
-    negotiation: ['direct', 'rfq'],
-    payment: ['card', 'invoice_net30'],
-    fulfillment: ['shipped']
+import { createBeacon } from '@aura-labs/beacon';
+
+const beacon = createBeacon({
+  externalId: 'widget-factory-001',
+  name: 'Widget Factory',
+  description: 'Industrial widgets, various sizes, bulk discounts',
+  endpointUrl: 'https://widgets.example.com/webhook',
+  capabilities: ['manufacturing', 'shipping', 'bulk'],
+  coreUrl: 'https://core.aura-labs.io'
+});
+
+await beacon.register();
+
+// Enforce business rules
+beacon.registerPolicies({
+  minPrice: 50,
+  maxQuantityPerOrder: 10000,
+  maxDeliveryDays: 14,
+  deliveryRegions: ['US', 'CA', 'EU']
+});
+
+// Validate inventory before committing
+beacon.beforeOffer(async (session, offer) => {
+  const stock = await inventory.check(offer.product);
+  if (stock < offer.quantity) throw new Error('Insufficient stock');
+  return offer;
+});
+
+// Respond to buyer sessions
+beacon.onSession(async (session, beacon) => {
+  const match = findProduct(session.intent.parsed);
+  if (match) {
+    await beacon.submitOffer(session.sessionId, {
+      product: match.name,
+      unitPrice: calculatePrice(match, session.intent.parsed.quantity),
+      quantity: session.intent.parsed.quantity || 1,
+      currency: 'USD',
+      deliveryDate: calculateDeliveryDate()
+    });
   }
 });
 
-// Describe offerings naturally
-beacon.registerOfferings([
-  { description: "Industrial widgets, various sizes", category: "widgets" },
-  { description: "Custom widget fabrication", category: "widgets" }
-]);
-
-// Respond to opportunities
-beacon.on('opportunity', async (session) => {
-  if (session.protocol === 'rfq') {
-    return { price: calculatePrice(session.requirements), terms: '...' };
-  }
-  if (session.protocol === 'direct') {
-    return { catalogItems: getMatchingItems(session.requirements) };
-  }
-});
+await beacon.startPolling();
 ```
 
 ## Design Decisions

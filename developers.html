@@ -624,7 +624,7 @@
                         <p>Integrate buying agent capabilities into shopping apps, procurement portals, or any system where users search for products.</p>
                         <div class="code-block">
                             <pre><span class="comment"># Install the Scout SDK</span>
-npm install @aura-labs/scout-sdk
+npm install @aura-labs/scout
 
 <span class="comment"># Configure with your API key</span>
 export AURA_API_KEY=your_api_key
@@ -644,16 +644,13 @@ npm run example
                         <p>Add selling agent capabilities to e-commerce backends, ERP systems, or any platform that manages inventory and pricing.</p>
                         <div class="code-block">
                             <pre><span class="comment"># Install the Beacon SDK</span>
-npm install @aura-labs/beacon-sdk
+npm install @aura-labs/beacon
 
-<span class="comment"># Configure with your API key</span>
-export AURA_API_KEY=your_api_key
-
-<span class="comment"># Run the example Beacon</span>
-npm run example
+<span class="comment"># Run your beacon</span>
+node my-beacon.js
 
 <span class="success">✓ Beacon registered with AURA Core</span>
-<span class="success">✓ Ready to receive inquiries</span></pre>
+<span class="success">✓ Polling for buyer sessions...</span></pre>
                         </div>
                         <a href="docs/beacon/README.md" class="btn btn-primary">Beacon Documentation →</a>
                     </div>
@@ -738,7 +735,7 @@ npm run example
                     <a href="docs/protocol/README.md" class="doc-card">
                         <div class="icon">📡</div>
                         <h3>Protocol Specification</h3>
-                        <p>Complete WebSocket and REST API documentation for AURA Core.</p>
+                        <p>Complete REST API documentation for AURA Core.</p>
                     </a>
 
                     <a href="docs/scout/README.md" class="doc-card">

@@ -889,22 +889,30 @@
                     <span class="code-dot red"></span>
                     <span class="code-dot yellow"></span>
                     <span class="code-dot green"></span>
-                    <span class="code-title">simple-beacon.js</span>
+                    <span class="code-title">my-beacon.js</span>
                 </div>
                 <div class="code-body">
-<span class="comment">// Initialize a Beacon to signal market participation</span>
-<span class="keyword">const</span> beacon = <span class="keyword">new</span> <span class="function">SimpleBeacon</span>({
-  <span class="property">beaconId</span>: <span class="string">'my-store-beacon'</span>,
-  <span class="property">auraCore</span>: <span class="string">'wss://api.aura-labs.ai'</span>
+<span class="comment">// Create a Beacon — your selling agent</span>
+<span class="keyword">import</span> { <span class="function">createBeacon</span> } <span class="keyword">from</span> <span class="string">'@aura-labs/beacon'</span>;
+
+<span class="keyword">const</span> beacon = <span class="function">createBeacon</span>({
+  <span class="property">name</span>: <span class="string">'My Store'</span>,
+  <span class="property">capabilities</span>: [<span class="string">'retail'</span>, <span class="string">'shipping'</span>],
+  <span class="property">endpointUrl</span>: <span class="string">'https://mystore.com/webhook'</span>
 });
 
-<span class="comment">// Handle Scout inquiries with dynamic pricing</span>
-beacon.<span class="function">on</span>(<span class="string">'inquiry'</span>, <span class="keyword">async</span> (inquiry) => {
-  <span class="keyword">const</span> matches = <span class="keyword">await</span> beacon.<span class="function">searchInventory</span>(inquiry.intent);
-  <span class="keyword">return</span> beacon.<span class="function">createPropositions</span>(matches, inquiry.behavioralData);
+<span class="keyword">await</span> beacon.<span class="function">register</span>();
+
+<span class="comment">// Respond to buyer sessions with offers</span>
+beacon.<span class="function">onSession</span>(<span class="keyword">async</span> (session, beacon) => {
+  <span class="keyword">const</span> match = <span class="function">findProduct</span>(session.intent.parsed);
+  <span class="keyword">if</span> (match) <span class="keyword">await</span> beacon.<span class="function">submitOffer</span>(session.sessionId, {
+    <span class="property">product</span>: match.name, <span class="property">unitPrice</span>: match.price,
+    <span class="property">quantity</span>: <span class="string">1</span>, <span class="property">deliveryDate</span>: <span class="string">'2026-03-10'</span>
+  });
 });
 
-beacon.<span class="function">connect</span>();
+<span class="keyword">await</span> beacon.<span class="function">startPolling</span>();
                 </div>
             </div>
         </section>
@@ -1107,7 +1115,7 @@ beacon.<span class="function">connect</span>();
                         <ul class="dev-features">
                             <li>
                                 <span class="check">✓</span>
-                                <span><strong>Protocol Specification</strong>: Complete WebSocket and REST API documentation</span>
+                                <span><strong>Protocol Specification</strong>: Complete REST API documentation</span>
                             </li>
                             <li>
                                 <span class="check">✓</span>
@@ -1131,18 +1139,17 @@ beacon.<span class="function">connect</span>();
                     </div>
 
                     <div class="dev-code">
-                        <pre><span class="comment"># 1. Sign up for developer access</span>
+                        <pre><span class="comment"># 1. Install the Beacon SDK</span>
+npm install @aura-labs/beacon
+
+<span class="comment"># 2. Sign up for developer access</span>
 <span class="comment">#    → <a href="developer-signup.html" style="color: #7c73f7;">developer-signup.html</a></span>
 
-<span class="comment"># 2. Get your API key from the portal</span>
-export AURA_API_KEY=your_api_key
-
-<span class="comment"># 3. Download and run the reference Beacon</span>
-npm install @aura-labs/beacon-sdk
-npm start
+<span class="comment"># 3. Run your beacon</span>
+node my-beacon.js
 
 <span class="success">✓ Beacon registered with AURA Core</span>
-<span class="success">✓ Ready to receive Scout inquiries</span></pre>
+<span class="success">✓ Polling for buyer sessions...</span></pre>
                     </div>
                 </div>
             </div>

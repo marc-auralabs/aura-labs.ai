@@ -18,13 +18,13 @@ Scouts integrate into buyer-facing applications: shopping apps, browser extensio
 ### Installation
 
 ```bash
-npm install @aura-labs/scout-sdk
+npm install @aura-labs/scout
 ```
 
 ### Basic Usage
 
 ```javascript
-import { Scout } from '@aura-labs/scout-sdk';
+import { Scout } from '@aura-labs/scout';
 
 // Initialize Scout
 const scout = new Scout({
