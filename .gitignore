@@ -52,6 +52,16 @@ investor-docs/
 financials/
 *-CONFIDENTIAL.*
 *-PRIVATE.*
+aura_investor_deck_daphhni.pptx
+aura_pitch_deck.html
+
+# Hidden / draft pages (not for public)
+hidden.html
+hidden_content_updated.html
+
+# Infrastructure details (backend-specific, not framework)
+SUPABASE_SETUP.md
+supabase-schema.sql
 
 # Architecture Decision Records & Decision Log (internal strategy)
 docs/decisions/PRIVATE-*.md
