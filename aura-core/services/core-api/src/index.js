@@ -432,7 +432,12 @@ async function runMigrations() {
       $$ LANGUAGE plpgsql;
     `);
 
-    for (const table of ['scouts', 'beacons', 'sessions', 'transactions']) {
+    // Trigger table names are hardcoded — validate against allowlist to prevent
+    // any future refactor from introducing SQL injection via string interpolation.
+    const TRIGGER_TABLES = Object.freeze(['scouts', 'beacons', 'sessions', 'transactions']);
+    const VALID_TABLE_NAME = /^[a-z_]+$/;
+    for (const table of TRIGGER_TABLES) {
+      if (!VALID_TABLE_NAME.test(table)) throw new Error(`Invalid table name: ${table}`);
       await db.query(`DROP TRIGGER IF EXISTS ${table}_updated_at ON ${table}`);
       await db.query(`CREATE TRIGGER ${table}_updated_at BEFORE UPDATE ON ${table} FOR EACH ROW EXECUTE FUNCTION update_updated_at()`);
     }
@@ -853,6 +858,26 @@ app.post('/sessions', { preHandler: verifyAgent }, async (request, reply) => {
   if (!intent) {
     reply.code(400);
     return { error: 'missing_intent', message: 'Please provide an intent describing what you want' };
+  }
+
+  // Input validation: intent must be a reasonable string
+  if (typeof intent !== 'string' || intent.length > 2000) {
+    reply.code(400);
+    return { error: 'invalid_intent', message: 'Intent must be a string under 2000 characters' };
+  }
+
+  // Constraints must be a plain object if provided
+  if (constraints !== undefined && constraints !== null) {
+    if (typeof constraints !== 'object' || Array.isArray(constraints)) {
+      reply.code(400);
+      return { error: 'invalid_constraints', message: 'Constraints must be a JSON object' };
+    }
+    // Cap constraints size to prevent abuse
+    const constraintsStr = JSON.stringify(constraints);
+    if (constraintsStr.length > 10000) {
+      reply.code(400);
+      return { error: 'invalid_constraints', message: 'Constraints object too large (max 10KB)' };
+    }
   }
 
   if (!db) {
