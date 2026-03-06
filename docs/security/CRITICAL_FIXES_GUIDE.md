@@ -336,7 +336,7 @@ Replace the `/sessions` POST endpoint:
 // ============================================================================
 
 app.post(
-  '/sessions',
+  '/v1/sessions',
   { preHandler: verifyScoutAuth }, // Require authentication
   async (request, reply) => {
     const { intent, constraints } = request.body || {};
@@ -628,12 +628,12 @@ test('POST /scouts/register requires API key', async (t) => {
   t.match(response.body, /invalid_api_key/);
 });
 
-test('POST /sessions requires authentication', async (t) => {
+test('POST /v1/sessions requires authentication', async (t) => {
   const app = await build();
 
   const response = await app.inject({
     method: 'POST',
-    url: '/sessions',
+    url: '/v1/sessions',
     payload: {
       intent: 'I need widgets'
     }
@@ -643,12 +643,12 @@ test('POST /sessions requires authentication', async (t) => {
   t.match(response.body, /authorization/i);
 });
 
-test('POST /sessions with valid auth creates session', async (t) => {
+test('POST /v1/sessions with valid auth creates session', async (t) => {
   const app = await build();
 
   const response = await app.inject({
     method: 'POST',
-    url: '/sessions',
+    url: '/v1/sessions',
     headers: {
       authorization: 'Bearer test-api-key-that-is-at-least-32-characters-long'
     },

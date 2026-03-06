@@ -54,7 +54,7 @@ Scout Intent → Beacon receives session → submitOffer() → stored as open of
 When a Scout chooses your offer, AURA Core creates a transaction:
 
 ```
-Scout commits to offer → POST /sessions/:id/commit → Transaction created
+Scout commits to offer → POST /v1/sessions/:id/commit → Transaction created
 → transaction.committed webhook event sent to your beacon
 ```
 

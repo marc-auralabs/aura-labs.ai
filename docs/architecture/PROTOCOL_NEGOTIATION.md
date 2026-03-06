@@ -57,7 +57,7 @@ This ensures market integrity. Neither party can deviate from agreed rules.
 Rather than upfront capability negotiation, protocols emerge through hypermedia discovery.
 
 ```
-Scout: POST /sessions { intent: "I want widgets..." }
+Scout: POST /v1/sessions { intent: "I want widgets..." }
 
 Core responds with available actions based on market reality:
 {
@@ -66,15 +66,15 @@ Core responds with available actions based on market reality:
   "participants": 7,
   "_links": {
     "start_auction": {
-      "href": "/sessions/abc123/auction",
+      "href": "/v1/sessions/abc123/auction",
       "title": "3 sellers support auction"
     },
     "request_quotes": {
-      "href": "/sessions/abc123/rfq",
+      "href": "/v1/sessions/abc123/rfq",
       "title": "5 sellers support RFQ"
     },
     "browse_direct": {
-      "href": "/sessions/abc123/catalog",
+      "href": "/v1/sessions/abc123/catalog",
       "title": "7 sellers with fixed prices"
     }
   }
@@ -86,7 +86,7 @@ Scout doesn't declare "I support auction"—they see auction is available and ch
 Each subsequent response provides the next valid actions:
 
 ```
-Scout: POST /sessions/abc123/auction
+Scout: POST /v1/sessions/abc123/auction
 
 Core:
 {

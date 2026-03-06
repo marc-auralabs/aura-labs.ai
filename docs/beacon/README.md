@@ -119,7 +119,7 @@ const { beaconId } = await beacon.register();
 ```
 
 **What happens:**
-- POST to `/beacons/register` with config
+- POST to `/v1/beacons/register` with config
 - Core returns unique `beaconId`
 - Beacon stores beaconId for all subsequent requests
 - No API keys — identity via beaconId (and future Ed25519 signatures)
@@ -157,7 +157,7 @@ beacon.onSession(async (session, beacon) => {
 
 **Polling:**
 ```javascript
-// Automatically polls GET /beacons/sessions every pollIntervalMs
+// Automatically polls GET /v1/beacons/sessions every pollIntervalMs
 await beacon.startPolling();
 
 // Deduplicates sessions via internal Set
@@ -182,7 +182,7 @@ const offer = {
 };
 
 await beacon.submitOffer(sessionId, offer);
-// POST to /sessions/:sessionId/offers
+// POST to /v1/sessions/:sessionId/offers
 // Returns offer confirmation
 ```
 

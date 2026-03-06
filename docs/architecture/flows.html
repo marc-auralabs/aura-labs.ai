@@ -125,10 +125,10 @@
       <div class="box security">Sign Request Body<small>Ed25519(privateKey, JSON.stringify(body))</small></div>
     </div>
     <div class="arrow down">↓</div>
-    <div class="arrow-label">POST /agents/register + X-Agent-Signature header</div>
+    <div class="arrow-label">POST /v1/agents/register + X-Agent-Signature header</div>
 
     <div class="flow-row">
-      <div class="box api">Core API<small>POST /agents/register</small></div>
+      <div class="box api">Core API<small>POST /v1/agents/register</small></div>
     </div>
     <div class="arrow down">↓</div>
 
@@ -146,7 +146,7 @@
     <div class="arrow down">↓</div>
 
     <div class="flow-row">
-      <div class="box api">Return { agentId, keyId, status }<small>+ HATEOAS links to /sessions</small></div>
+      <div class="box api">Return { agentId, keyId, status }<small>+ HATEOAS links to /v1/sessions</small></div>
     </div>
   </div>
 
@@ -160,14 +160,14 @@
     <div class="flow-row">
       <div class="box agent">Beacon SDK<small>Merchant Integration</small></div>
       <div class="arrow">→</div>
-      <div class="box api">POST /beacons/register<small>{ externalId, name, capabilities }</small></div>
+      <div class="box api">POST /v1/beacons/register<small>{ externalId, name, capabilities }</small></div>
       <div class="arrow">→</div>
       <div class="box db">INSERT INTO beacons<small>+ audit_log entry</small></div>
     </div>
   </div>
 
   <div class="note">
-    <strong>Two registrations:</strong> Beacons register as merchants (capabilities, products) via <code>/beacons/register</code> AND optionally as agents (Ed25519 identity) via <code>/agents/register</code> with type "beacon".
+    <strong>Two registrations:</strong> Beacons register as merchants (capabilities, products) via <code>/v1/beacons/register</code> AND optionally as agents (Ed25519 identity) via <code>/v1/agents/register</code> with type "beacon".
   </div>
 </div>
 
@@ -229,7 +229,7 @@
     <div class="flow-row">
       <div class="box agent">Scout<small>"Find organic coffee beans under $20/lb"</small></div>
       <div class="arrow">→</div>
-      <div class="box api">POST /sessions<small>{ intent, constraints }</small></div>
+      <div class="box api">POST /v1/sessions<small>{ intent, constraints }</small></div>
       <div class="arrow">→</div>
       <div class="box state">collecting_offers<small>Session created</small></div>
     </div>
@@ -240,7 +240,7 @@
     <!-- Step 2: Discovery -->
     <div class="divider"><span>Phase 2 — Market Formation</span></div>
     <div class="flow-row">
-      <div class="box api" style="background:#1a2a2a;border-color:#2a8a8a;color:#80d0d0;">Beacon Polling<small>GET /beacons/sessions</small></div>
+      <div class="box api" style="background:#1a2a2a;border-color:#2a8a8a;color:#80d0d0;">Beacon Polling<small>GET /v1/beacons/sessions</small></div>
       <div class="arrow">→</div>
       <div class="box api">Match Beacons<small>beacon-matcher.js</small></div>
       <div class="arrow">→</div>
@@ -255,14 +255,14 @@
     <div class="flow-row">
       <div class="box api" style="background:#1a2a2a;border-color:#2a8a8a;color:#80d0d0;">Beacon<small>Prepares offer</small></div>
       <div class="arrow">→</div>
-      <div class="box api">POST /sessions/:id/offers<small>{ product, price, terms }</small></div>
+      <div class="box api">POST /v1/sessions/:id/offers<small>{ product, price, terms }</small></div>
       <div class="arrow">→</div>
       <div class="box db">INSERT INTO offers<small>status: pending</small></div>
     </div>
     <div class="arrow down">↓</div>
     <div class="arrow-label">Multiple beacons can submit offers to the same session</div>
     <div class="flow-row">
-      <div class="box agent">Scout<small>GET /sessions/:id</small></div>
+      <div class="box agent">Scout<small>GET /v1/sessions/:id</small></div>
       <div class="arrow">→</div>
       <div class="box api">Return Offers<small>Compare price, terms, delivery</small></div>
       <div class="arrow">→</div>
@@ -274,7 +274,7 @@
     <div class="flow-row">
       <div class="box agent">Scout<small>Selects best offer</small></div>
       <div class="arrow">→</div>
-      <div class="box api">POST /sessions/:id/commit<small>{ offerId }</small></div>
+      <div class="box api">POST /v1/sessions/:id/commit<small>{ offerId }</small></div>
       <div class="arrow">→</div>
       <div class="box db">BEGIN TRANSACTION<small>Atomic: update session + create tx</small></div>
     </div>
