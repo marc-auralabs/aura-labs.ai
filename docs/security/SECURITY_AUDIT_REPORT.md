@@ -1,8 +1,13 @@
 # AURA Codebase Security Audit Report
 
+> **ARCHIVED — March 6, 2026**
+> This report is from February 9, 2026. All CRITICAL and HIGH severity findings
+> have been remediated. See the remediation tracker (REMEDIATION_TRACKER.docx)
+> and decision log (DEC-009, DEC-015) for details. Retained for audit trail.
+
 **Date:** February 9, 2026
 **Scope:** Scout SDK, Beacon SDK, Core API, Scripts
-**Status:** Multiple critical and high-severity vulnerabilities identified
+**Status:** ~~Multiple critical and high-severity vulnerabilities identified~~ **REMEDIATED**
 
 ---
 

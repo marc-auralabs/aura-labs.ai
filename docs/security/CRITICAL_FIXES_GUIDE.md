@@ -1,5 +1,10 @@
 # AURA Critical Security Fixes - Implementation Guide
 
+> **ARCHIVED — March 6, 2026**
+> All 5 CRITICAL vulnerabilities have been remediated. The actual implementation
+> diverged from some recommendations here (e.g., Ed25519 identity via DEC-009
+> instead of bcrypt hashing). Retained for reference.
+
 This document provides concrete code examples to fix the 5 CRITICAL severity vulnerabilities.
 
 ---

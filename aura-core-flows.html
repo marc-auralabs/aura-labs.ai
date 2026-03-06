@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURA Core — System Flow Diagrams</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: #e0e0e8; line-height: 1.6; }
+
+  .header { text-align: center; padding: 48px 24px 32px; border-bottom: 1px solid #1a1a2e; }
+  .header h1 { font-size: 28px; font-weight: 600; color: #fff; letter-spacing: -0.5px; }
+  .header p { color: #888; margin-top: 8px; font-size: 14px; }
+
+  .nav { display: flex; justify-content: center; gap: 8px; padding: 20px 24px; flex-wrap: wrap; position: sticky; top: 0; background: #0a0a0f; z-index: 10; border-bottom: 1px solid #1a1a2e; }
+  .nav a { padding: 8px 16px; border-radius: 6px; font-size: 13px; color: #aaa; text-decoration: none; background: #12121e; border: 1px solid #1a1a2e; transition: all 0.2s; }
+  .nav a:hover, .nav a.active { color: #fff; background: #1e1e3a; border-color: #4a4aff; }
+
+  .section { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
+  .section + .section { border-top: 1px solid #1a1a2e; }
+  .section h2 { font-size: 22px; color: #fff; margin-bottom: 8px; }
+  .section .subtitle { color: #888; font-size: 14px; margin-bottom: 32px; }
+
+  /* Flow diagram styles */
+  .flow { position: relative; padding: 32px 0; }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0; flex-wrap: wrap; }
+  .flow-row.spaced { margin: 20px 0; }
+
+  .box { padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; text-align: center; min-width: 140px; position: relative; }
+  .box.agent { background: #1a1a3a; border: 1px solid #4a4aff; color: #a0a0ff; }
+  .box.api { background: #1a2a1a; border: 1px solid #2a8a2a; color: #80d080; }
+  .box.db { background: #2a1a1a; border: 1px solid #8a3a3a; color: #d08080; }
+  .box.action { background: #1a1a1a; border: 1px solid #444; color: #ccc; }
+  .box.state { background: #2a2a1a; border: 1px solid #8a8a2a; color: #d0d080; min-width: 120px; }
+  .box.security { background: #2a1a2a; border: 1px solid #8a2a8a; color: #d080d0; }
+  .box small { display: block; font-size: 11px; color: inherit; opacity: 0.7; margin-top: 2px; }
+
+  .arrow { color: #555; font-size: 20px; font-weight: bold; flex-shrink: 0; }
+  .arrow.down { display: block; text-align: center; margin: 4px 0; color: #555; font-size: 18px; }
+  .arrow-label { font-size: 11px; color: #666; text-align: center; display: block; margin: -2px 0 2px; }
+
+  .divider { border-top: 1px dashed #2a2a3e; margin: 24px 0; position: relative; }
+  .divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #0a0a0f; padding: 0 12px; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+
+  .note { background: #111118; border-left: 3px solid #4a4aff; padding: 12px 16px; border-radius: 0 6px 6px 0; font-size: 12px; color: #999; margin: 16px 0; }
+  .note strong { color: #ccc; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .legend-dot.agent { background: #1a1a3a; border: 1px solid #4a4aff; }
+  .legend-dot.api { background: #1a2a1a; border: 1px solid #2a8a2a; }
+  .legend-dot.db { background: #2a1a1a; border: 1px solid #8a3a3a; }
+  .legend-dot.state { background: #2a2a1a; border: 1px solid #8a8a2a; }
+  .legend-dot.security { background: #2a1a2a; border: 1px solid #8a2a8a; }
+
+  /* State machine */
+  .state-machine { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .state-row { display: flex; gap: 12px; align-items: center; justify-content: center; }
+  .state-node { padding: 10px 18px; border-radius: 20px; font-size: 12px; font-weight: 600; text-align: center; }
+  .state-node.initial { background: #1a3a1a; border: 2px solid #2a8a2a; color: #80d080; }
+  .state-node.active { background: #1a1a3a; border: 2px solid #4a4aff; color: #a0a0ff; }
+  .state-node.terminal { background: #2a1a1a; border: 2px solid #8a3a3a; color: #d08080; }
+  .state-node.success { background: #1a2a1a; border: 2px solid #2a8a2a; color: #80d080; }
+  .transition-label { font-size: 10px; color: #666; font-style: italic; }
+
+  /* Sequence diagram styles */
+  .sequence { display: grid; gap: 0; margin: 20px 0; }
+  .seq-header { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; text-align: center; margin-bottom: 16px; }
+  .seq-actor { padding: 10px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+  .seq-step { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0; padding: 6px 0; position: relative; align-items: center; min-height: 36px; }
+  .seq-step + .seq-step { border-top: 1px dotted #1a1a2e; }
+  .seq-cell { text-align: center; font-size: 11px; color: #888; position: relative; }
+  .seq-msg { background: #111120; padding: 4px 10px; border-radius: 4px; display: inline-block; font-size: 11px; white-space: nowrap; }
+  .seq-msg.request { border: 1px solid #2a4a8a; color: #80a0d0; }
+  .seq-msg.response { border: 1px solid #2a6a2a; color: #80c080; }
+  .seq-msg.internal { border: 1px solid #4a4a4a; color: #aaa; }
+  .seq-arrow-right { position: absolute; top: 50%; right: -8px; width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid #4a4aff; transform: translateY(-50%); }
+  .seq-arrow-left { position: absolute; top: 50%; left: -8px; width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-right: 6px solid #2a8a2a; transform: translateY(-50%); }
+  .seq-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: #1a1a2e; }
+
+  @media (max-width: 768px) {
+    .flow-row { flex-direction: column; }
+    .arrow { transform: rotate(90deg); }
+    .seq-header, .seq-step { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>AURA Core — System Flow Diagrams</h1>
+  <p>Agent-to-Agent Commerce Protocol &middot; v0.1.0 &middot; March 2026</p>
+</div>
+
+<nav class="nav">
+  <a href="#registration">Registration</a>
+  <a href="#auth">Authentication</a>
+  <a href="#commerce">Commerce Flow</a>
+  <a href="#session-states">Session States</a>
+  <a href="#transaction">Transaction Lifecycle</a>
+  <a href="#security">Security Layers</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section" id="registration">
+  <h2>1. Agent Registration</h2>
+  <p class="subtitle">How scouts and beacons join the AURA network with cryptographic identity (DEC-009)</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot agent"></div> Agent (Scout/Beacon)</div>
+    <div class="legend-item"><div class="legend-dot api"></div> Core API</div>
+    <div class="legend-item"><div class="legend-dot db"></div> Database</div>
+    <div class="legend-item"><div class="legend-dot security"></div> Crypto Verification</div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="box agent">Agent (Local)<small>Scout or Beacon SDK</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="arrow-label">Generate Ed25519 key pair (private key never leaves agent)</div>
+
+    <div class="flow-row">
+      <div class="box security">Sign Request Body<small>Ed25519(privateKey, JSON.stringify(body))</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="arrow-label">POST /agents/register + X-Agent-Signature header</div>
+
+    <div class="flow-row">
+      <div class="box api">Core API<small>POST /agents/register</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row" style="gap: 24px;">
+      <div class="box security">Validate Key<small>Must be 32 bytes</small></div>
+      <div class="box security">Verify Signature<small>Proof-of-possession</small></div>
+      <div class="box security">Check Revocation<small>Reject revoked keys</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="arrow-label">All checks pass</div>
+
+    <div class="flow-row">
+      <div class="box db">INSERT INTO agents<small>id, type, public_key, fingerprint, manifest</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box api">Return { agentId, keyId, status }<small>+ HATEOAS links to /sessions</small></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Idempotent:</strong> Re-registering the same public key returns the existing agent. Revoked keys cannot re-register.
+  </div>
+
+  <div class="divider"><span>Beacon Registration (Merchant)</span></div>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="box agent">Beacon SDK<small>Merchant Integration</small></div>
+      <div class="arrow">→</div>
+      <div class="box api">POST /beacons/register<small>{ externalId, name, capabilities }</small></div>
+      <div class="arrow">→</div>
+      <div class="box db">INSERT INTO beacons<small>+ audit_log entry</small></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Two registrations:</strong> Beacons register as merchants (capabilities, products) via <code>/beacons/register</code> AND optionally as agents (Ed25519 identity) via <code>/agents/register</code> with type "beacon".
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section" id="auth">
+  <h2>2. Request Authentication</h2>
+  <p class="subtitle">Ed25519 signature verification on every protected request (verifyAgent preHandler)</p>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="box agent">Agent SDK<small>Any authenticated request</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="arrow-label">Build request with headers: X-Agent-ID, X-Signature, X-Timestamp</div>
+
+    <div class="flow-row">
+      <div class="box security">Sign Payload<small>Ed25519(privateKey, method + path + timestamp + body)</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box api">Core API — verifyAgent preHandler</div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row" style="gap: 24px;">
+      <div class="box action">Check Timestamp<small>Within 5-min window</small></div>
+      <div class="box action">Lookup Agent<small>DB: agents.public_key</small></div>
+      <div class="box action">Verify Ed25519<small>crypto.verify()</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="arrow-label">Sets request.agent = { id, status }</div>
+
+    <div class="flow-row">
+      <div class="box api">Route Handler Executes<small>Agent identity available throughout request</small></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>No shared secrets:</strong> The private key never leaves the agent. The public key is the identity. Every request is independently verifiable.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section" id="commerce">
+  <h2>3. Commerce Flow (End-to-End)</h2>
+  <p class="subtitle">The complete agent-to-agent transaction: intent → discovery → negotiation → commit</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot agent"></div> Scout (Buyer Agent)</div>
+    <div class="legend-item"><div class="legend-dot api"></div> Core API</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1a2a2a;border:1px solid #2a8a8a;"></div> Beacon (Seller Agent)</div>
+    <div class="legend-item"><div class="legend-dot state"></div> State Change</div>
+  </div>
+
+  <div class="flow">
+    <!-- Step 1: Intent -->
+    <div class="divider"><span>Phase 1 — Intent</span></div>
+    <div class="flow-row">
+      <div class="box agent">Scout<small>"Find organic coffee beans under $20/lb"</small></div>
+      <div class="arrow">→</div>
+      <div class="box api">POST /sessions<small>{ intent, constraints }</small></div>
+      <div class="arrow">→</div>
+      <div class="box state">collecting_offers<small>Session created</small></div>
+    </div>
+    <div class="note">
+      <strong>Intent parsing:</strong> Core API extracts structured data (product, price constraints, quantity) from natural language using regex-based parser. Agent identity from Ed25519 signature.
+    </div>
+
+    <!-- Step 2: Discovery -->
+    <div class="divider"><span>Phase 2 — Market Formation</span></div>
+    <div class="flow-row">
+      <div class="box api" style="background:#1a2a2a;border-color:#2a8a8a;color:#80d0d0;">Beacon Polling<small>GET /beacons/sessions</small></div>
+      <div class="arrow">→</div>
+      <div class="box api">Match Beacons<small>beacon-matcher.js</small></div>
+      <div class="arrow">→</div>
+      <div class="box api" style="background:#1a2a2a;border-color:#2a8a8a;color:#80d0d0;">Matched Beacons<small>Receive session + intent</small></div>
+    </div>
+    <div class="note">
+      <strong>No app store:</strong> Beacons declare capabilities at registration. The matcher finds beacons whose capabilities overlap with the session intent. No central directory required.
+    </div>
+
+    <!-- Step 3: Offers -->
+    <div class="divider"><span>Phase 3 — Negotiation</span></div>
+    <div class="flow-row">
+      <div class="box api" style="background:#1a2a2a;border-color:#2a8a8a;color:#80d0d0;">Beacon<small>Prepares offer</small></div>
+      <div class="arrow">→</div>
+      <div class="box api">POST /sessions/:id/offers<small>{ product, price, terms }</small></div>
+      <div class="arrow">→</div>
+      <div class="box db">INSERT INTO offers<small>status: pending</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="arrow-label">Multiple beacons can submit offers to the same session</div>
+    <div class="flow-row">
+      <div class="box agent">Scout<small>GET /sessions/:id</small></div>
+      <div class="arrow">→</div>
+      <div class="box api">Return Offers<small>Compare price, terms, delivery</small></div>
+      <div class="arrow">→</div>
+      <div class="box state">offers_available<small>Ready to commit</small></div>
+    </div>
+
+    <!-- Step 4: Commit -->
+    <div class="divider"><span>Phase 4 — Commitment</span></div>
+    <div class="flow-row">
+      <div class="box agent">Scout<small>Selects best offer</small></div>
+      <div class="arrow">→</div>
+      <div class="box api">POST /sessions/:id/commit<small>{ offerId }</small></div>
+      <div class="arrow">→</div>
+      <div class="box db">BEGIN TRANSACTION<small>Atomic: update session + create tx</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="flow-row" style="gap: 24px;">
+      <div class="box action">Validate Offer<small>Still pending? Not expired?</small></div>
+      <div class="box action">Lock Session<small>SELECT ... FOR UPDATE</small></div>
+      <div class="box action">Create Transaction<small>idempotency_key check</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="flow-row">
+      <div class="box state">committed<small>Session + Transaction</small></div>
+      <div class="arrow">→</div>
+      <div class="box api" style="background:#1a2a2a;border-color:#2a8a8a;color:#80d0d0;">Webhook to Beacon<small>Transaction committed notification</small></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section" id="session-states">
+  <h2>4. Session State Machine</h2>
+  <p class="subtitle">All possible states and transitions for a commerce session</p>
+
+  <div class="state-machine">
+    <div class="state-row">
+      <div class="state-node initial">created</div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="transition-label">intent parsed, beacons matched</div>
+
+    <div class="state-row">
+      <div class="state-node active">collecting_offers</div>
+    </div>
+    <div class="arrow down">↓</div>
+    <div class="transition-label">at least one offer received</div>
+
+    <div class="state-row">
+      <div class="state-node active">offers_available</div>
+    </div>
+
+    <div style="display:flex;gap:48px;align-items:flex-start;justify-content:center;margin-top:12px;">
+      <div style="text-align:center;">
+        <div class="arrow down">↓</div>
+        <div class="transition-label">scout commits an offer</div>
+        <div class="state-node active" style="margin-top:8px;">committed</div>
+        <div class="arrow down">↓</div>
+        <div class="transition-label">fulfillment delivered</div>
+        <div class="state-node active" style="margin-top:8px;">fulfilled</div>
+        <div class="arrow down">↓</div>
+        <div class="transition-label">payment charged + fulfillment delivered</div>
+        <div class="state-node success" style="margin-top:8px;">completed</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="arrow down">↓</div>
+        <div class="transition-label">scout or timeout cancels</div>
+        <div class="state-node terminal" style="margin-top:8px;">cancelled</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top: 32px;">
+    <strong>Auto-transitions:</strong> The system automatically moves sessions to <code>completed</code> when both payment is <code>charged</code> AND fulfillment is <code>delivered</code>. This can trigger from either the payment or fulfillment update.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section" id="transaction">
+  <h2>5. Transaction Lifecycle</h2>
+  <p class="subtitle">Post-commit: payment processing, fulfillment tracking, and auto-completion</p>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="box state">committed<small>Transaction created</small></div>
+    </div>
+
+    <div style="display:flex;gap:48px;justify-content:center;margin-top:16px;">
+      <!-- Payment track -->
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:#666;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Payment Track</div>
+        <div class="box action">pending</div>
+        <div class="arrow down">↓</div>
+        <div class="box action">authorized</div>
+        <div class="arrow down">↓</div>
+        <div class="box action" style="border-color:#2a8a2a;color:#80d080;">charged</div>
+        <div style="margin-top:8px;">
+          <div class="arrow down" style="color:#8a3a3a;">↓</div>
+          <div class="box action" style="border-color:#8a3a3a;color:#d08080;">refunded</div>
+        </div>
+      </div>
+
+      <!-- Fulfillment track -->
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:#666;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Fulfillment Track</div>
+        <div class="box action">pending</div>
+        <div class="arrow down">↓</div>
+        <div class="box action">processing</div>
+        <div class="arrow down">↓</div>
+        <div class="box action">shipped</div>
+        <div class="arrow down">↓</div>
+        <div class="box action" style="border-color:#2a8a2a;color:#80d080;">delivered</div>
+      </div>
+    </div>
+
+    <div class="arrow down" style="margin-top:20px;">↓</div>
+    <div class="arrow-label">payment: charged AND fulfillment: delivered</div>
+    <div class="flow-row">
+      <div class="box state" style="border-color:#2a8a2a;color:#80d080;font-size:15px;">completed</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Dual-track convergence:</strong> Payment and fulfillment progress independently. The transaction auto-completes when both reach their terminal states. Either track update can trigger the completion check.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section" id="security">
+  <h2>6. Security Layers</h2>
+  <p class="subtitle">Request processing pipeline — every request passes through these layers in order</p>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="box agent">Incoming Request</div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">TLS Encryption<small>Railway handles termination</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">CORS Check<small>Origin allowlist (aura-labs.ai, chrome-ext, localhost)</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">Helmet Headers<small>HSTS, X-Frame-Options: DENY, noSniff, no-referrer</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">Rate Limiting<small>Agent: 120/min &middot; IP: 30/min &middot; Health: exempt</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">Request ID<small>X-Request-ID (from client or generated)</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">UUID Validation<small>Global preHandler: all *Id params must be valid UUIDs</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">Ed25519 Auth<small>verifyAgent: signature + timestamp + agent lookup</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">Input Validation<small>Intent: &lt;2000 chars &middot; Constraints: &lt;10KB &middot; Type checks</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box security">Error Sanitization<small>safeError(): suppress internal details in production</small></div>
+    </div>
+    <div class="arrow down">↓</div>
+
+    <div class="flow-row">
+      <div class="box api">Route Handler<small>Business logic executes with validated, authenticated context</small></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>DEC-015:</strong> No human admin endpoints exist. All operational control flows through policy agents (Tier 1: observe, alert, act &middot; Tier 2: create, enforce, modify).
+  </div>
+</div>
+
+<div style="text-align:center;padding:48px 24px;color:#444;font-size:12px;">
+  AURA Labs &middot; Agentic Commerce Protocol &middot; Generated March 2026
+</div>
+
+</body>
+</html>

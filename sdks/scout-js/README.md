@@ -21,10 +21,9 @@ npm install @aura-labs/scout
 ```javascript
 import { createScout } from '@aura-labs/scout';
 
-// Initialize with your API key
-const scout = createScout({
-  apiKey: 'your-api-key',
-});
+// Zero-config — auto-generates Ed25519 identity and registers with Core
+const scout = createScout();
+await scout.ready();
 
 // Express purchase intent with constraints
 const session = await scout.intent('I need 500 widgets', {
@@ -47,11 +46,11 @@ if (session.bestOffer) {
 The SDK includes a CLI for testing:
 
 ```bash
-# Interactive mode
-npx @aura-labs/scout --api-key YOUR_KEY
+# Interactive mode (zero-config, uses Ed25519 keys)
+npx @aura-labs/scout
 
 # Single intent mode
-npx @aura-labs/scout --api-key YOUR_KEY --intent "I need office supplies" --max-budget 500
+npx @aura-labs/scout --intent "I need office supplies" --max-budget 500
 ```
 
 ## Constraint Engine
@@ -92,15 +91,18 @@ const session = await scout.intent('Buy enterprise software licenses', {
 
 ### `createScout(config)`
 
-Create a new Scout instance.
+Create a new Scout instance. Authentication is handled via Ed25519 public key registration — no API keys required.
 
 ```javascript
 const scout = createScout({
-  apiKey: 'required',
-  coreUrl: 'https://api.aura-labs.ai', // optional
+  coreUrl: 'https://aura-labsai-production.up.railway.app', // optional, defaults to production
   timeout: 30000, // optional, ms
+  storage: customStorageAdapter, // optional, defaults to in-memory
   constraints: {}, // optional, default constraints
 });
+
+// Initialize and register with AURA Core (idempotent)
+await scout.ready();
 ```
 
 ### `scout.intent(text, options)`
@@ -161,14 +163,19 @@ try {
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `AURA_API_KEY` | Your AURA API key |
-| `AURA_CORE_URL` | Core API URL (optional) |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `AURA_CORE_URL` | Core API URL (optional) | `https://aura-labsai-production.up.railway.app` |
 
-## Get an API Key
+## Authentication
 
-Sign up at [aura-labs.ai/developers](https://aura-labs.ai/developers) to get your API key.
+Scout uses **Ed25519 public key cryptography** for identity. When you call `scout.ready()`:
+1. An Ed25519 key pair is auto-generated (or loaded from storage)
+2. The Scout registers with AURA Core via `POST /agents/register` using proof-of-possession (signed request)
+3. Core assigns an agent ID, which is persisted for future sessions
+4. All subsequent requests are signed with the private key for identity verification
+
+No API keys or other credentials are required.
 
 ## License
 

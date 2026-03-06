@@ -128,12 +128,12 @@ List all active sessions in this conversation.
 
 | Environment Variable | Description | Default |
 |---------------------|-------------|---------|
-| `AURA_API_KEY` | Your AURA developer API key | (required) |
-| `AURA_CORE_URL` | AURA Core API URL | `https://aura-labsai-production.up.railway.app` |
+| `AURA_CORE_URL` | AURA Core API URL. Override to use a custom Core instance (e.g., local development or staging). | `https://aura-labsai-production.up.railway.app` |
 
-## Get an API Key
-
-Sign up for a free developer account at [aura-labs.ai](https://aura-labs.ai) to get your API key.
+**Example: Use a custom Core URL**
+```bash
+AURA_CORE_URL=http://localhost:3000 npm start
+```
 
 ## How it Works
 

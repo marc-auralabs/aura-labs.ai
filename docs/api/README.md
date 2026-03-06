@@ -29,8 +29,53 @@ Agent requests use Ed25519 signatures as defined in DEC-009 specification:
 2. Include agent signature in request headers for authenticated operations
 3. No API keys needed for basic demo/dev scenarios
 
+### Protected Endpoints
+Protected endpoints require Ed25519 signature verification through the following headers:
+- `X-Agent-ID`: The agent's unique identifier (UUID)
+- `X-Signature`: Base64-encoded Ed25519 signature of the request body
+- `X-Timestamp`: ISO 8601 timestamp of the request
+
+These headers are verified by the `verifyAgent` preHandler on all protected endpoints. See [DEC-009](../protocol/DEC-009.md) for complete signature specification.
+
 ### Unauthenticated Endpoints
 Some endpoints (health checks, root info) do not require authentication.
+
+## Rate Limiting
+
+All requests are subject to rate limiting to prevent abuse:
+
+- **Per-Agent (Authenticated)**: 120 requests per minute, identified by `X-Agent-ID` header
+- **Per-IP (Unauthenticated)**: 30 requests per minute, identified by client IP address
+
+Rate limit status is returned in response headers:
+- `X-RateLimit-Limit`: The rate limit ceiling for the given request
+- `X-RateLimit-Remaining`: Number of requests left in the current window
+- `X-RateLimit-Reset`: Unix timestamp when the rate limit window resets
+
+When rate limit is exceeded, the API returns HTTP 429 (Too Many Requests).
+
+## CORS
+
+CORS is restricted to known origins to ensure secure cross-origin requests:
+
+**Production:**
+- `https://aura-labs.ai`
+- `https://www.aura-labs.ai`
+- `chrome-extension://*` (Scout Chrome extension)
+
+**Development:**
+- `http://localhost:*` (any localhost port)
+
+Server-side agents and SDKs do not use CORS and can make direct API calls.
+
+## Input Validation
+
+Protected endpoints validate all request inputs:
+
+- **Intent**: Must be a string between 1 and 2000 characters
+- **Constraints**: Must be a valid JSON object under 10KB in size (if provided)
+
+Invalid inputs return HTTP 400 (Bad Request) with detailed error messages.
 
 ## Endpoints
 
@@ -236,11 +281,15 @@ Create a new commerce session with NLP-parsed intent. AURA matches intent to com
 **Request:**
 ```json
 {
-  "scoutId": "uuid",
   "intent": "Looking for wireless headphones under $100",
-  "metadata": {}
+  "constraints": {
+    "maxPrice": 100,
+    "category": "electronics"
+  }
 }
 ```
+
+Agent identity comes from Ed25519 signature verification (X-Agent-ID, X-Signature, X-Timestamp headers), not from the request body.
 
 **Response:** `201 Created`
 ```json
@@ -269,7 +318,7 @@ Get session state, offers, and transaction details.
   "sessionId": "uuid",
   "scoutId": "uuid",
   "intent": "Looking for wireless headphones under $100",
-  "state": "open|committed|cancelled",
+  "state": "created|market_forming|collecting_offers|offers_available|committed|fulfilled|completed|cancelled",
   "offers": [
     {
       "offerId": "uuid",
@@ -371,6 +420,7 @@ Commit to an offer, creating a transaction. Required to have at least one offer 
   "offerId": "uuid",
   "beaconId": "uuid",
   "scoutId": "uuid",
+  "agentId": "uuid",
   "state": "committed",
   "price": 89.99,
   "paymentStatus": "pending",
@@ -383,6 +433,8 @@ Commit to an offer, creating a transaction. Required to have at least one offer 
   }
 }
 ```
+
+Note: `agentId` is the primary identifier. `scoutId` is included for legacy compatibility.
 
 #### POST /sessions/:sessionId/cancel
 Cancel an open session.
@@ -412,10 +464,11 @@ Get full transaction details including fulfillment and payment status.
   "offerId": "uuid",
   "beaconId": "uuid",
   "scoutId": "uuid",
-  "state": "committed|fulfilled|completed",
+  "agentId": "uuid",
+  "state": "committed|fulfilled|completed|cancelled",
   "price": 89.99,
-  "paymentStatus": "pending|charged|failed|refunded",
-  "fulfillmentStatus": "pending|shipped|delivered",
+  "paymentStatus": "pending|authorized|charged|failed|refunded",
+  "fulfillmentStatus": "pending|processing|shipped|delivered|failed",
   "createdAt": "2026-03-03T00:00:00Z",
   "committedAt": "2026-03-03T00:00:00Z",
   "fulfilledAt": null,
@@ -434,7 +487,7 @@ Update fulfillment status. Auto-transitions transaction to 'fulfilled' when stat
 **Request:**
 ```json
 {
-  "status": "pending|shipped|delivered",
+  "status": "pending|processing|shipped|delivered|failed",
   "trackingNumber": "1Z999AA10123456784"
 }
 ```
@@ -473,7 +526,7 @@ Update payment status. Auto-transitions transaction to 'completed' when both pay
 **Request:**
 ```json
 {
-  "status": "pending|charged|failed|refunded"
+  "status": "pending|authorized|charged|refunded|failed"
 }
 ```
 
