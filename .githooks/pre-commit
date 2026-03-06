@@ -75,13 +75,36 @@ if [ "$SECRETS_FOUND" -gt 0 ]; then
   ISSUES=$((ISSUES + SECRETS_FOUND))
 fi
 
-# ── Documentation reminder (warning only) ─────────────────
-CODE_CHANGED=$(echo "$STAGED" | grep -E '^(sdks|beacons|scouts|schemas)/' || true)
-DOC_CHANGED=$(echo "$STAGED" | grep -E '^(docs/|.*README\.md$|CHANGELOG\.md)' || true)
+# ── Documentation propagation check ───────────────────────
+# Source code changes should include corresponding doc updates.
+# This is a WARNING for most changes and a BLOCK for high-impact files.
 
-if [ -n "$CODE_CHANGED" ] && [ -z "$DOC_CHANGED" ]; then
-  echo -e "${YELLOW}⚠ Code changed without documentation updates.${NC}"
-  echo "  Consider updating docs/ or a README.md."
+SOURCE_CHANGED=$(echo "$STAGED" | grep -E '^(aura-core/|sdks/|beacons/|scouts/|core/)' | grep -v 'node_modules' | grep -v '\.test\.' || true)
+DOC_CHANGED=$(echo "$STAGED" | grep -E '^(docs/|portal/|.*README\.md$|CHANGELOG\.md)' || true)
+
+if [ -n "$SOURCE_CHANGED" ]; then
+  # Check for high-impact file changes that MUST have doc updates
+  API_CHANGED=$(echo "$STAGED" | grep -E 'aura-core/services/core-api/src/index\.js$' || true)
+  SCHEMA_CHANGED=$(echo "$STAGED" | grep -E 'aura-core/database/schema\.sql$' || true)
+  AUTH_CHANGED=$(echo "$STAGED" | grep -E 'agent-auth\.js$' || true)
+  SDK_CHANGED=$(echo "$STAGED" | grep -E '^sdks/.*src/' || true)
+  HIGH_IMPACT="$API_CHANGED$SCHEMA_CHANGED$AUTH_CHANGED$SDK_CHANGED"
+
+  if [ -n "$HIGH_IMPACT" ] && [ -z "$DOC_CHANGED" ]; then
+    echo -e "${RED}${BOLD}✗ High-impact source changed without documentation updates${NC}"
+    echo -e "  Modified:"
+    echo "$HIGH_IMPACT" | while read -r f; do echo "    $f"; done
+    echo ""
+    echo -e "  ${YELLOW}These files affect the public API, auth model, or SDK interface."
+    echo -e "  Update the corresponding docs (see Documentation Manifest in senior-engineer skill)."
+    echo -e "  At minimum: docs/api/README.md, relevant SDK README, or docs/architecture/flows.html${NC}"
+    echo ""
+    echo -e "  Use --no-verify to bypass if this is an internal-only change."
+    ISSUES=$((ISSUES + 1))
+  elif [ -n "$SOURCE_CHANGED" ] && [ -z "$DOC_CHANGED" ]; then
+    echo -e "${YELLOW}⚠ Source code changed without documentation updates.${NC}"
+    echo "  Review the Documentation Manifest — does this change affect external docs?"
+  fi
 fi
 
 # ── Result ────────────────────────────────────────────────
