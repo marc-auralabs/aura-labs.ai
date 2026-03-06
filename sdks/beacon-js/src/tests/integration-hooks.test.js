@@ -24,7 +24,7 @@ function createMockFetch() {
     const path = new URL(url).pathname;
 
     // Handle beacon registration
-    if (path === '/beacons/register' && options.method === 'POST') {
+    if (path === '/v1/beacons/register' && options.method === 'POST') {
       return {
         ok: true,
         json: async () => ({
@@ -37,7 +37,7 @@ function createMockFetch() {
     }
 
     // Handle sessions fetch
-    if (path === '/beacons/sessions' && options.method === 'GET') {
+    if (path === '/v1/beacons/sessions' && options.method === 'GET') {
       return {
         ok: true,
         json: async () => ({
@@ -53,13 +53,13 @@ function createMockFetch() {
     }
 
     // Handle offer submission
-    if (path.match(/\/sessions\/.*\/offers$/) && options.method === 'POST') {
+    if (path.match(/\/v1\/sessions\/.*\/offers$/) && options.method === 'POST') {
       const body = JSON.parse(options.body);
       return {
         ok: true,
         json: async () => ({
           offerId: 'offer-789',
-          sessionId: path.split('/')[2],
+          sessionId: path.split('/')[3],
           totalPrice: body.totalPrice || body.unitPrice * body.quantity,
           status: 'submitted',
         }),
@@ -67,8 +67,8 @@ function createMockFetch() {
     }
 
     // Handle fulfillment updates
-    if (path.match(/\/transactions\/.*\/fulfillment$/) && options.method === 'PUT') {
-      const transactionId = path.split('/')[2];
+    if (path.match(/\/v1\/transactions\/.*\/fulfillment$/) && options.method === 'PUT') {
+      const transactionId = path.split('/')[3];
       const body = JSON.parse(options.body);
       return {
         ok: true,
@@ -81,8 +81,8 @@ function createMockFetch() {
     }
 
     // Handle transaction fetch
-    if (path.match(/\/transactions\/[^/]+$/) && options.method === 'GET') {
-      const transactionId = path.split('/')[2];
+    if (path.match(/\/v1\/transactions\/[^/]+$/) && options.method === 'GET') {
+      const transactionId = path.split('/')[3];
       return {
         ok: true,
         json: async () => ({

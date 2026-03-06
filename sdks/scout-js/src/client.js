@@ -19,6 +19,10 @@ import { randomUUID } from 'crypto';
 import { ConnectionError, AuthenticationError, ScoutError } from './errors.js';
 import { ScoutActivityEventTypes } from './activity.js';
 
+// API version prefix — all requests target this version of the Core API.
+// Bump this constant when upgrading to a new API version.
+const API_VERSION = '/v1';
+
 export class ScoutClient {
   #config;
   #keyManager = null;
@@ -87,7 +91,7 @@ export class ScoutClient {
    * Falls back to Bearer token auth if apiKey is provided.
    */
   async #request(method, path, body = null, extraHeaders = {}) {
-    const url = `${this.#config.coreUrl}${path}`;
+    const url = `${this.#config.coreUrl}${API_VERSION}${path}`;
     const requestId = randomUUID();
     const bodyString = body ? JSON.stringify(body) : null;
 

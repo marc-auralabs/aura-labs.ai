@@ -12,6 +12,9 @@ export const TEST_CONFIG = {
   timeout: 10000,
 };
 
+// API version prefix for versioned endpoints
+export const API_PREFIX = '/v1';
+
 /**
  * HTTP client for tests
  */

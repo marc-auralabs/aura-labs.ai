@@ -37,6 +37,7 @@ import {
 // Configuration
 const CORE_URL = process.env.AURA_CORE_URL || 'https://aura-labsai-production.up.railway.app';
 const API_KEY = process.env.AURA_API_KEY;
+const API_VERSION = '/v1';
 
 // Session storage (in-memory for this server instance)
 const sessions = new Map();
@@ -45,7 +46,7 @@ const sessions = new Map();
  * Make authenticated request to AURA Core
  */
 async function coreRequest(method, path, body = null) {
-  const url = `${CORE_URL}${path}`;
+  const url = `${CORE_URL}${API_VERSION}${path}`;
   const headers = {
     'Content-Type': 'application/json',
   };

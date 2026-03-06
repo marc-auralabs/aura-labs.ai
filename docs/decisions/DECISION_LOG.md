@@ -10,6 +10,18 @@ A running log of architectural and implementation decisions made during developm
 
 ## 2026-03-06
 
+### DEC-016: URL-Path API Versioning with HATEOAS Propagation
+
+**Context:** The Core API had no version declaration — all routes were registered at root (`/sessions`, `/agents/register`). This meant breaking changes had no safe migration path, agents couldn't declare which API contract they targeted, and HATEOAS links didn't carry version context. API versioning was elevated from LOW to critical priority because it has downstream impact on documentation, SDK compatibility, and integration synchronization.
+
+**Decision:** Version is a declared value in the URL path (`/v1/sessions`), not a query parameter or header. All business routes are wrapped in a Fastify plugin registered under `/v1`. A `versionedHref(request, path)` helper extracts the version prefix from the incoming request URL and applies it to all HATEOAS `_links.href` values, so agents navigating via links automatically stay within their declared version. Health checks and version discovery (`GET /`) remain unversioned. SDKs declare their target version via an `API_VERSION` constant prepended to all request paths.
+
+**Reasoning:** URL-path versioning makes the API contract explicit and machine-readable — agents declare their version by the URL they call, not by an optional header that could be omitted. The HATEOAS propagation pattern means agents that discover the API via links never need to construct versioned URLs manually. Fastify's plugin prefix mechanism provides clean scoping without changing route handler internals.
+
+**Alternatives:** (1) Header-based versioning (`Accept-Version: v1`) — rejected because it's invisible in logs, optional by nature, and harder for agents to declare. (2) Query parameter (`?version=1`) — rejected because it pollutes URL semantics and is easily stripped by intermediaries. (3) Subdomain versioning (`v1.api.aura-labs.ai`) — rejected as overkill for current scale and adds DNS complexity.
+
+**Docs to update:** `docs/api/README.md` (versioning section, all endpoint paths, all HATEOAS examples), SDK READMEs (URL construction), `docs/architecture/flows.html` (registration/commerce flow URLs)
+
 ### DEC-015: Policy Agents Are the Operator Layer — No Human Admin Endpoints
 
 **Context:** During security remediation, the question arose of how to secure the unprotected `/admin/reset-database` endpoint. The obvious fix — add an API key or env-gate it — leads to a deeper question: what is AURA's admin model? Who (or what) operates the platform?

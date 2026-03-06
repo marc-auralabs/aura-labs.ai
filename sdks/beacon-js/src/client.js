@@ -10,6 +10,10 @@ import { randomUUID } from 'crypto';
 import { ConnectionError, BeaconError } from './errors.js';
 import { ActivityEventTypes } from './activity.js';
 
+// API version prefix — all requests target this version of the Core API.
+// Bump this constant when upgrading to a new API version.
+const API_VERSION = '/v1';
+
 export class BeaconClient {
   #config;
   #activityLogger;
@@ -32,7 +36,7 @@ export class BeaconClient {
   }
 
   async #request(method, path, body = null) {
-    const url = `${this.#config.coreUrl}${path}`;
+    const url = `${this.#config.coreUrl}${API_VERSION}${path}`;
     const requestId = randomUUID();
 
     const headers = {

@@ -9,7 +9,7 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { request, fixtures } from './setup.js';
+import { request, fixtures, API_PREFIX } from './setup.js';
 
 // =============================================================================
 // CRITICAL: SQL Injection Prevention
@@ -18,7 +18,7 @@ import { request, fixtures } from './setup.js';
 describe('SQL Injection Prevention', () => {
   test('should reject SQL injection in session ID parameter', async () => {
     const maliciousId = fixtures.sqlInjection.basic;
-    const res = await request(`/sessions/${encodeURIComponent(maliciousId)}`);
+    const res = await request(`${API_PREFIX}/sessions/${encodeURIComponent(maliciousId)}`);
 
     // Should return 400 Bad Request, not 500 (which indicates SQL error)
     assert.notStrictEqual(res.status, 500, 'Server error suggests SQL injection vulnerability');
@@ -28,7 +28,7 @@ describe('SQL Injection Prevention', () => {
 
   test('should reject SQL injection in beacon ID parameter', async () => {
     const maliciousId = fixtures.sqlInjection.union;
-    const res = await request(`/beacons/${encodeURIComponent(maliciousId)}`);
+    const res = await request(`${API_PREFIX}/beacons/${encodeURIComponent(maliciousId)}`);
 
     assert.notStrictEqual(res.status, 500, 'Server error suggests SQL injection vulnerability');
     assert.strictEqual(res.status, 400, 'Should reject invalid beacon ID format');
@@ -36,7 +36,7 @@ describe('SQL Injection Prevention', () => {
 
   test('should reject SQL injection in scout ID parameter', async () => {
     const maliciousId = fixtures.sqlInjection.blind;
-    const res = await request(`/scouts/${encodeURIComponent(maliciousId)}`);
+    const res = await request(`${API_PREFIX}/scouts/${encodeURIComponent(maliciousId)}`);
 
     assert.notStrictEqual(res.status, 500, 'Server error suggests SQL injection vulnerability');
     assert.strictEqual(res.status, 400, 'Should reject invalid scout ID format');
@@ -44,7 +44,7 @@ describe('SQL Injection Prevention', () => {
 
   test('should reject SQL injection in offer submission', async () => {
     const sessionId = fixtures.sessionId();
-    const res = await request(`/sessions/${sessionId}/offers`, {
+    const res = await request(`${API_PREFIX}/sessions/${sessionId}/offers`, {
       method: 'POST',
       body: {
         beaconId: fixtures.sqlInjection.basic,
@@ -61,7 +61,7 @@ describe('SQL Injection Prevention', () => {
     const invalidIds = ['not-a-uuid', '12345', 'abc', ''];
 
     for (const id of invalidIds) {
-      const res = await request(`/sessions/${id}`);
+      const res = await request(`${API_PREFIX}/sessions/${id}`);
       assert.strictEqual(res.status, 400, `Should reject invalid ID: ${id}`);
     }
   });
@@ -73,7 +73,7 @@ describe('SQL Injection Prevention', () => {
 
 describe('Authentication', () => {
   test('should require authentication for session creation', async () => {
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'POST',
       body: fixtures.validIntent(),
       // No auth header
@@ -105,7 +105,7 @@ describe('Authentication', () => {
   });
 
   test('should reject invalid API keys', async () => {
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer invalid-key' },
       body: fixtures.validIntent(),
@@ -117,7 +117,7 @@ describe('Authentication', () => {
   test('should reject expired tokens', async () => {
     // This would require a real expired token
     const expiredToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2MDAwMDAwMDB9.fake';
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${expiredToken}` },
       body: fixtures.validIntent(),
@@ -222,7 +222,7 @@ describe('Rate Limiting', () => {
 
     // Simulate brute force
     for (let i = 0; i < 10; i++) {
-      const res = await request('/scouts/register', {
+      const res = await request(`${API_PREFIX}/scouts/register`, {
         method: 'POST',
         body: { apiKey: `wrong-key-${i}` },
       });
@@ -240,7 +240,7 @@ describe('Rate Limiting', () => {
 
 describe('Input Validation', () => {
   test('should reject oversized request bodies', async () => {
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'POST',
       body: {
         intent: fixtures.oversizedPayloads.largeString,
@@ -251,7 +251,7 @@ describe('Input Validation', () => {
   });
 
   test('should reject deeply nested JSON', async () => {
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'POST',
       body: {
         intent: 'test',
@@ -263,7 +263,7 @@ describe('Input Validation', () => {
   });
 
   test('should sanitize XSS in intent field', async () => {
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'POST',
       body: {
         intent: fixtures.xssPayloads.basic,
@@ -280,7 +280,7 @@ describe('Input Validation', () => {
   });
 
   test('should validate required fields', async () => {
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'POST',
       body: {}, // Missing intent
     });
@@ -340,7 +340,7 @@ describe('CORS Security', () => {
   });
 
   test('should restrict allowed methods', async () => {
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'OPTIONS',
       headers: {
         'Origin': 'https://aura-labs.ai',
@@ -363,7 +363,7 @@ describe('CORS Security', () => {
 
 describe('Information Disclosure Prevention', () => {
   test('should not expose stack traces in errors', async () => {
-    const res = await request('/sessions/invalid');
+    const res = await request(`${API_PREFIX}/sessions/invalid`);
 
     assert.ok(
       !res.text.includes('at ') && !res.text.includes('.js:'),
@@ -372,7 +372,7 @@ describe('Information Disclosure Prevention', () => {
   });
 
   test('should not expose database errors', async () => {
-    const res = await request(`/sessions/${fixtures.sqlInjection.basic}`);
+    const res = await request(`${API_PREFIX}/sessions/${fixtures.sqlInjection.basic}`);
 
     assert.ok(
       !res.text.toLowerCase().includes('postgres') &&
@@ -413,7 +413,7 @@ describe('Session Security', () => {
     // Create a session, then check it respects expiration
     // This requires checking that expired sessions return appropriate errors
     const expiredSessionId = 'expired-session-id';
-    const res = await request(`/sessions/${expiredSessionId}`);
+    const res = await request(`${API_PREFIX}/sessions/${expiredSessionId}`);
 
     // Should either be 404 or 410 Gone for expired sessions
     assert.ok(
@@ -425,7 +425,7 @@ describe('Session Security', () => {
   test('should prevent session hijacking via ID guessing', async () => {
     // UUIDs should be cryptographically random
     // This is more of a design verification
-    const res = await request('/sessions', {
+    const res = await request(`${API_PREFIX}/sessions`, {
       method: 'POST',
       body: fixtures.validIntent(),
     });

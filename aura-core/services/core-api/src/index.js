@@ -36,6 +36,14 @@ function safeError(error, fallbackMessage = 'An internal error occurred') {
   return fallbackMessage;
 }
 
+// Versioned HATEOAS helper — extracts version prefix from request URL
+// so all _links.href values match the caller's declared API version.
+function versionedHref(request, path) {
+  const match = request.url.match(/^\/(v\d+)/);
+  const prefix = match ? `/${match[1]}` : '';
+  return `${prefix}${path}`;
+}
+
 // Configuration from environment
 const config = {
   port: parseInt(process.env.PORT || '3000'),
@@ -236,30 +244,9 @@ async function checkRedis() {
 }
 
 // =============================================================================
-// Security: UUID Validation (Fix #3 — Global preHandler)
+// Security: UUID Validation
+// (moved inside plugin function below)
 // =============================================================================
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function isValidUUID(str) {
-  return typeof str === 'string' && UUID_REGEX.test(str);
-}
-
-// Global hook: validate ALL path parameters that end in "Id" as UUIDs.
-// This catches sessionId, beaconId, agentId, transactionId, offerId, scoutId.
-// Applied once, protects every current and future endpoint.
-// Exception: beaconId can also be an external_id (non-UUID string), handled per-route.
-app.addHook('preHandler', async (request, reply) => {
-  const params = request.params || {};
-  for (const [key, value] of Object.entries(params)) {
-    if (key.endsWith('Id') && key !== 'beaconId' && value) {
-      if (!isValidUUID(value)) {
-        reply.code(400);
-        return { error: 'invalid_parameter', message: `Invalid ${key} format. Expected UUID.` };
-      }
-    }
-  }
-});
 
 // =============================================================================
 // Admin Reset Endpoint: REMOVED (DEC-015)
@@ -450,950 +437,834 @@ async function runMigrations() {
 }
 
 // =============================================================================
-// API Root - HATEOAS Entry Point
+// API Root - Version Discovery Entry Point
 // =============================================================================
 
 app.get('/', async () => ({
   name: 'AURA Core API',
-  version: '0.1.0',
   description: 'Agent Universal Resource Architecture — Infrastructure for Agentic Commerce',
+  versions: {
+    v1: {
+      status: 'current',
+      href: '/v1',
+      deprecated: false,
+    },
+  },
   _links: {
     self: { href: '/' },
     health: { href: '/health' },
-    agents: { href: '/agents/register', title: 'Universal agent registration (Scouts and Beacons)', methods: ['POST'] },
-    sessions: { href: '/sessions', title: 'Create or list commerce sessions', methods: ['GET', 'POST'] },
-    scouts: { href: '/agents/register', title: 'Scout registration (use /agents/register with type: "scout")', methods: ['POST'] },
-    beacons: { href: '/beacons', title: 'Beacon registration and management' },
+    current: { href: '/v1', title: 'Current API version' },
     docs: { href: 'https://aura-labs.ai/developers', title: 'API Documentation' },
   },
 }));
 
 // =============================================================================
-// Scout Endpoints: REMOVED (DEC-015 / Fix #2)
-//
-// Legacy scout registration stored API keys as plaintext (apiKey.slice(-8)).
-// Scouts now register via POST /agents/register with Ed25519 proof-of-possession,
-// the same identity model as beacons. One auth system, one identity model.
-//
-// Scout lookup is available via GET /agents/:agentId (universal agent endpoint).
+// Versioned Business Routes (v1)
 // =============================================================================
 
-// =============================================================================
-// Agent Endpoints (Universal Identity — Scouts and Beacons)
-// =============================================================================
-
-/**
- * Register a new agent with cryptographic identity.
- *
- * The agent generates an Ed25519 key pair locally, then proves possession
- * of the private key by signing the request body. The public key becomes
- * the agent's permanent identity anchor.
- *
- * Request body: { publicKey, type, manifest }
- * Header: X-Agent-Signature (base64 Ed25519 signature of the JSON body)
- */
-app.post('/agents/register', async (request, reply) => {
-  const { publicKey, type, manifest } = request.body || {};
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable', message: 'Database not configured' };
+async function businessRoutesV1(app, opts) {
+  // UUID validation hook (moved inside plugin so it only applies to business routes)
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function isValidUUID(str) {
+    return typeof str === 'string' && UUID_REGEX.test(str);
   }
-
-  // Validate required fields
-  if (!publicKey) {
-    reply.code(400);
-    return { error: 'missing_field', message: 'publicKey is required (base64-encoded Ed25519 public key)' };
-  }
-
-  if (!type || !['scout', 'beacon'].includes(type)) {
-    reply.code(400);
-    return { error: 'invalid_type', message: 'type must be "scout" or "beacon"' };
-  }
-
-  // SECURITY: Validate public key is exactly 32 bytes (Ed25519)
-  const keyBytes = Buffer.from(publicKey, 'base64');
-  if (keyBytes.length !== 32) {
-    reply.code(400);
-    return { error: 'invalid_key', message: 'publicKey must be a 32-byte Ed25519 public key (base64-encoded)' };
-  }
-
-  // SECURITY: Verify proof-of-possession signature
-  const signature = request.headers['x-agent-signature'];
-  if (!signature) {
-    reply.code(400);
-    return { error: 'missing_signature', message: 'X-Agent-Signature header is required (sign the JSON body with your private key)' };
-  }
-
-  // Reconstruct the raw body for signature verification
-  const rawBody = JSON.stringify(request.body);
-  const signatureValid = verifyRegistrationSignature(publicKey, signature, rawBody);
-
-  if (!signatureValid) {
-    reply.code(401);
-    return { error: 'invalid_signature', message: 'Proof-of-possession failed. Signature does not match the provided public key.' };
-  }
-
-  try {
-    const fingerprint = computeKeyFingerprint(publicKey);
-
-    // Check if this key is already registered
-    const existing = await db.query(
-      'SELECT id, status FROM agents WHERE public_key = $1',
-      [publicKey]
-    );
-
-    if (existing.rows.length > 0) {
-      const existingAgent = existing.rows[0];
-
-      // SECURITY: Don't allow re-registration of revoked keys
-      if (existingAgent.status === 'revoked') {
-        reply.code(403);
-        return { error: 'key_revoked', message: 'This public key has been revoked and cannot be re-registered' };
-      }
-
-      // Idempotent: return existing agent for active/suspended keys
-      return {
-        agentId: existingAgent.id,
-        status: existingAgent.status,
-        keyId: fingerprint,
-        _links: {
-          self: { href: `/agents/${existingAgent.id}` },
-          sessions: { href: '/sessions', methods: ['POST'] },
-        },
-      };
-    }
-
-    const result = await db.query(
-      `INSERT INTO agents (type, public_key, key_fingerprint, manifest)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, status, registered_at`,
-      [type, publicKey, fingerprint, manifest || {}]
-    );
-
-    const agent = result.rows[0];
-
-    await db.query(
-      `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by)
-       VALUES ($1, $2, $3, $4, $5)`,
-      ['agent', agent.id, 'registered', { type, status: agent.status, keyId: fingerprint }, 'self']
-    );
-
-    return {
-      agentId: agent.id,
-      status: agent.status,
-      keyId: fingerprint,
-      registeredAt: agent.registered_at,
-      _links: {
-        self: { href: `/agents/${agent.id}` },
-        sessions: { href: '/sessions', methods: ['POST'] },
-      },
-    };
-  } catch (error) {
-    app.log.error(error);
-    reply.code(500);
-    return { error: 'registration_failed', message: safeError(error, 'Registration failed') };
-  }
-});
-
-/**
- * Get agent details by ID
- */
-app.get('/agents/:agentId', async (request, reply) => {
-  const { agentId } = request.params;
-
-  if (!isValidUUID(agentId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid agentId format. Expected UUID.' };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    const result = await db.query('SELECT * FROM agents WHERE id = $1', [agentId]);
-    if (result.rows.length === 0) {
-      reply.code(404);
-      return { error: 'not_found', message: 'Agent not found' };
-    }
-
-    const agent = result.rows[0];
-    return {
-      agentId: agent.id,
-      type: agent.type,
-      status: agent.status,
-      keyId: agent.key_fingerprint,
-      manifest: agent.manifest,
-      registeredAt: agent.registered_at,
-      lastSeenAt: agent.last_seen_at,
-      _links: {
-        self: { href: `/agents/${agent.id}` },
-        sessions: { href: '/sessions', methods: ['POST'] },
-      },
-    };
-  } catch (error) {
-    reply.code(500);
-    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
-  }
-});
-
-/**
- * Revoke an agent's identity.
- *
- * Once revoked, the agent's public key is permanently blacklisted.
- * All future signed requests from this agent will be rejected with 403.
- * This is the enforcement mechanism for behavioral violations
- * (e.g., tit-for-tat protocol violations, market manipulation).
- *
- * SECURITY: Requires authenticated agent identity (Ed25519 signature).
- * Per DEC-015, agent revocation is a policy agent responsibility.
- * The calling agent must be authenticated via verifyAgent preHandler.
- */
-app.post('/agents/:agentId/revoke', { preHandler: verifyAgent }, async (request, reply) => {
-  const { agentId } = request.params;
-  const { reason } = request.body || {};
-
-  if (!isValidUUID(agentId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid agentId format. Expected UUID.' };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    const result = await db.query(
-      `UPDATE agents SET status = 'revoked', revoked_at = NOW()
-       WHERE id = $1 AND status != 'revoked'
-       RETURNING id, status, revoked_at`,
-      [agentId]
-    );
-
-    if (result.rows.length === 0) {
-      reply.code(404);
-      return { error: 'not_found', message: 'Agent not found or already revoked' };
-    }
-
-    const agent = result.rows[0];
-
-    await db.query(
-      `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by)
-       VALUES ($1, $2, $3, $4, $5)`,
-      ['agent', agent.id, 'revoked', { status: 'revoked', reason: reason || 'unspecified' }, request.agent?.id || 'system']
-    );
-
-    return {
-      agentId: agent.id,
-      status: 'revoked',
-      revokedAt: agent.revoked_at,
-      _links: { self: { href: `/agents/${agent.id}` } },
-    };
-  } catch (error) {
-    reply.code(500);
-    return { error: 'revocation_failed', message: safeError(error, 'Revocation failed') };
-  }
-});
-
-// =============================================================================
-// Beacon Endpoints
-// =============================================================================
-
-app.post('/beacons/register', async (request, reply) => {
-  const { externalId, name, description, endpointUrl, capabilities, metadata } = request.body || {};
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  if (!externalId || !name) {
-    reply.code(400);
-    return { error: 'missing_fields', message: 'externalId and name are required' };
-  }
-
-  try {
-    const result = await db.query(
-      `INSERT INTO beacons (external_id, name, description, endpoint_url, capabilities, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (external_id) DO UPDATE SET
-         name = EXCLUDED.name,
-         description = EXCLUDED.description,
-         endpoint_url = EXCLUDED.endpoint_url,
-         capabilities = EXCLUDED.capabilities,
-         metadata = EXCLUDED.metadata,
-         updated_at = NOW()
-       RETURNING id, external_id, name, status, capabilities, created_at`,
-      [externalId, name, description, endpointUrl, capabilities || {}, metadata || {}]
-    );
-
-    const beacon = result.rows[0];
-
-    // Structured activity logging
-    request.log.info({
-      event: 'beacon.registered',
-      beaconId: beacon.id,
-      externalId: beacon.external_id,
-      name: beacon.name,
-    });
-
-    await db.query(
-      `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6)`,
-      ['beacon', beacon.id, 'registered', { name: beacon.name, status: beacon.status }, 'system', request.requestId]
-    );
-
-    return {
-      beaconId: beacon.id,
-      externalId: beacon.external_id,
-      name: beacon.name,
-      status: beacon.status,
-      capabilities: beacon.capabilities,
-      _links: {
-        self: { href: `/beacons/${beacon.id}` },
-        sessions: { href: '/beacons/sessions', title: 'Poll for sessions to respond to' },
-        submitOffer: { href: '/sessions/{sessionId}/offers', methods: ['POST'] },
-      },
-    };
-  } catch (error) {
-    app.log.error(error);
-    reply.code(500);
-    return { error: 'registration_failed', message: safeError(error, 'Registration failed') };
-  }
-});
-
-app.get('/beacons/:beaconId', async (request, reply) => {
-  const { beaconId } = request.params;
-
-  // beaconId can be a UUID (internal) or a string (external_id).
-  // Validate length to prevent abuse — external IDs should be reasonable.
-  if (!beaconId || beaconId.length > 255) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid beaconId format.' };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    const result = await db.query('SELECT * FROM beacons WHERE id::text = $1 OR external_id = $1', [beaconId]);
-    if (result.rows.length === 0) {
-      reply.code(404);
-      return { error: 'not_found', message: 'Beacon not found' };
-    }
-
-    const beacon = result.rows[0];
-    return {
-      beaconId: beacon.id,
-      externalId: beacon.external_id,
-      name: beacon.name,
-      status: beacon.status,
-      capabilities: beacon.capabilities,
-      createdAt: beacon.created_at,
-      _links: { self: { href: `/beacons/${beacon.id}` } },
-    };
-  } catch (error) {
-    reply.code(500);
-    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
-  }
-});
-
-// Beacon polls for sessions matching their capabilities
-app.get('/beacons/sessions', async (request, reply) => {
-  const { status, limit } = request.query;
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    // Return sessions that are waiting for offers
-    const result = await db.query(
-      `SELECT id, scout_id, status, raw_intent, parsed_intent, constraints, created_at
-       FROM sessions
-       WHERE status IN ('created', 'market_forming', 'collecting_offers')
-       ORDER BY created_at DESC
-       LIMIT $1`,
-      [parseInt(limit) || 20]
-    );
-
-    // Structured activity logging (at debug level)
-    request.log.debug({
-      event: 'beacon.poll',
-      beaconId: request.query.beaconId,
-      sessionCount: result.rows.length,
-    });
-
-    return {
-      sessions: result.rows.map(s => ({
-        sessionId: s.id,
-        status: s.status,
-        intent: { raw: s.raw_intent, parsed: s.parsed_intent },
-        constraints: s.constraints,
-        createdAt: s.created_at,
-        _links: {
-          submitOffer: { href: `/sessions/${s.id}/offers`, methods: ['POST'] },
-        },
-      })),
-      _links: { self: { href: '/beacons/sessions' } },
-    };
-  } catch (error) {
-    reply.code(500);
-    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
-  }
-});
-
-// =============================================================================
-// Session Endpoints (Core Commerce Flow)
-// =============================================================================
-
-app.post('/sessions', { preHandler: verifyAgent }, async (request, reply) => {
-  const { intent, constraints } = request.body || {};
-
-  if (!intent) {
-    reply.code(400);
-    return { error: 'missing_intent', message: 'Please provide an intent describing what you want' };
-  }
-
-  // Input validation: intent must be a reasonable string
-  if (typeof intent !== 'string' || intent.length > 2000) {
-    reply.code(400);
-    return { error: 'invalid_intent', message: 'Intent must be a string under 2000 characters' };
-  }
-
-  // Constraints must be a plain object if provided
-  if (constraints !== undefined && constraints !== null) {
-    if (typeof constraints !== 'object' || Array.isArray(constraints)) {
-      reply.code(400);
-      return { error: 'invalid_constraints', message: 'Constraints must be a JSON object' };
-    }
-    // Cap constraints size to prevent abuse
-    const constraintsStr = JSON.stringify(constraints);
-    if (constraintsStr.length > 10000) {
-      reply.code(400);
-      return { error: 'invalid_constraints', message: 'Constraints object too large (max 10KB)' };
-    }
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  // Agent identity comes from Ed25519 signature verification (verifyAgent preHandler).
-  // request.agent is set by createSignatureVerifier — contains { id, status }.
-  // No more accepting scoutId/agentId from the request body.
-  const authenticatedAgentId = request.agent?.id || null;
-
-  try {
-    // Parse intent using structured extraction (Alpha — regex-based, no LLM)
-    // Phase 2 will replace with Granite LLM via Replicate
-    const parsedIntent = parseIntent(intent, constraints);
-
-    const result = await db.query(
-      `INSERT INTO sessions (agent_id, status, raw_intent, parsed_intent, constraints)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, status, created_at`,
-      [authenticatedAgentId, 'collecting_offers', intent, parsedIntent, constraints || {}]
-    );
-
-    const session = result.rows[0];
-
-    // Match registered beacons against parsed intent
-    const matchedBeacons = await matchBeacons(db, parsedIntent);
-
-    // Store matched beacon IDs in session context
-    if (matchedBeacons.length > 0) {
-      await db.query(
-        `UPDATE sessions SET context = $1 WHERE id = $2`,
-        [{ matched_beacons: matchedBeacons.map(b => ({ id: b.beaconId, name: b.name, score: b.score })) }, session.id]
-      );
-    }
-
-    // Structured activity logging
-    request.log.info({
-      event: 'session.created',
-      sessionId: session.id,
-      agentId: authenticatedAgentId,
-      intent: parsedIntent,
-    });
-
-    await db.query(
-      `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6)`,
-      ['session', session.id, 'created', { status: 'collecting_offers', intent, matchedBeacons: matchedBeacons.length, agentId: authenticatedAgentId }, authenticatedAgentId || 'anonymous', request.requestId]
-    );
-
-    return {
-      sessionId: session.id,
-      status: 'collecting_offers',
-      intent: parsedIntent,
-      matchedBeacons: matchedBeacons.map(b => ({
-        beaconId: b.beaconId,
-        name: b.name,
-        score: b.score,
-      })),
-      _links: {
-        self: { href: `/sessions/${session.id}` },
-        offers: { href: `/sessions/${session.id}/offers` },
-        cancel: { href: `/sessions/${session.id}/cancel`, methods: ['POST'] },
-      },
-    };
-  } catch (error) {
-    app.log.error(error);
-    reply.code(500);
-    return { error: 'session_creation_failed', message: safeError(error, 'Session creation failed') };
-  }
-});
-
-app.get('/sessions/:sessionId', async (request, reply) => {
-  const { sessionId } = request.params;
-
-  // SECURITY: Validate UUID format
-  if (!isValidUUID(sessionId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    const result = await db.query('SELECT * FROM sessions WHERE id = $1', [sessionId]);
-    if (result.rows.length === 0) {
-      reply.code(404);
-      return { error: 'not_found', message: 'Session not found' };
-    }
-
-    const session = result.rows[0];
-
-    // Check if there are offers
-    const offersResult = await db.query(
-      'SELECT COUNT(*) as count FROM offers WHERE session_id = $1 AND status = $2',
-      [sessionId, 'pending']
-    );
-    const hasOffers = parseInt(offersResult.rows[0].count) > 0;
-
-    // Update status if offers are available
-    let status = session.status;
-    if (hasOffers && (status === 'market_forming' || status === 'collecting_offers')) {
-      status = 'offers_available';
-      await db.query('UPDATE sessions SET status = $1 WHERE id = $2', [status, sessionId]);
-    }
-
-    const links = {
-      self: { href: `/sessions/${sessionId}` },
-      cancel: { href: `/sessions/${sessionId}/cancel`, methods: ['POST'] },
-    };
-
-    if (hasOffers || status === 'offers_available') {
-      links.offers = { href: `/sessions/${sessionId}/offers` };
-      links.commit = { href: `/sessions/${sessionId}/commit`, methods: ['POST'] };
-    }
-
-    // If committed, look up the transaction ID
-    let transactionId = null;
-    if (status === 'committed' || status === 'fulfilled' || status === 'completed') {
-      const txResult = await db.query('SELECT id FROM transactions WHERE session_id = $1 LIMIT 1', [sessionId]);
-      if (txResult.rows.length > 0) {
-        transactionId = txResult.rows[0].id;
-        links.transaction = { href: `/transactions/${transactionId}` };
+  app.addHook('preHandler', async (request, reply) => {
+    const params = request.params || {};
+    for (const [key, value] of Object.entries(params)) {
+      if (key.endsWith('Id') && key !== 'beaconId' && value) {
+        if (!isValidUUID(value)) {
+          reply.code(400);
+          return { error: 'invalid_parameter', message: `Invalid ${key} format. Expected UUID.` };
+        }
       }
     }
+  });
 
-    return {
-      sessionId: session.id,
-      status,
-      transactionId,
-      intent: session.parsed_intent,
-      rawIntent: session.raw_intent,
-      constraints: session.constraints,
-      context: session.context,
-      createdAt: session.created_at,
-      _links: links,
-    };
-  } catch (error) {
-    reply.code(500);
-    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
-  }
-});
+  // V1 HATEOAS root
+  app.get('/', async (request) => ({
+    name: 'AURA Core API',
+    version: 'v1',
+    _links: {
+      self: { href: versionedHref(request, '/') },
+      agents: { href: versionedHref(request, '/agents/register'), title: 'Register agent (Scout or Beacon)', methods: ['POST'] },
+      sessions: { href: versionedHref(request, '/sessions'), title: 'Commerce sessions', methods: ['GET', 'POST'] },
+      beacons: { href: versionedHref(request, '/beacons'), title: 'Beacon management' },
+      docs: { href: 'https://aura-labs.ai/developers', title: 'API Documentation' },
+    },
+  }));
 
-// =============================================================================
-// Offer Endpoints
-// =============================================================================
+  // =============================================================================
+  // Scout Endpoints: REMOVED (DEC-015 / Fix #2)
+  //
+  // Legacy scout registration stored API keys as plaintext (apiKey.slice(-8)).
+  // Scouts now register via POST /agents/register with Ed25519 proof-of-possession,
+  // the same identity model as beacons. One auth system, one identity model.
+  //
+  // Scout lookup is available via GET /agents/:agentId (universal agent endpoint).
+  // =============================================================================
 
-// Beacon submits an offer to a session
-app.post('/sessions/:sessionId/offers', { preHandler: verifyAgent }, async (request, reply) => {
-  const { sessionId } = request.params;
-  const { beaconId, product, unitPrice, quantity, totalPrice, currency, deliveryDate, terms, metadata } = request.body || {};
+  // =============================================================================
+  // Agent Endpoints (Universal Identity — Scouts and Beacons)
+  // =============================================================================
 
-  // SECURITY: Validate UUID format for sessionId
-  if (!isValidUUID(sessionId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
-  }
+  /**
+   * Register a new agent with cryptographic identity.
+   *
+   * The agent generates an Ed25519 key pair locally, then proves possession
+   * of the private key by signing the request body. The public key becomes
+   * the agent's permanent identity anchor.
+   *
+   * Request body: { publicKey, type, manifest }
+   * Header: X-Agent-Signature (base64 Ed25519 signature of the JSON body)
+   */
+  app.post('/agents/register', async (request, reply) => {
+    const { publicKey, type, manifest } = request.body || {};
 
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable', message: 'Database not configured' };
+    }
 
-  if (!beaconId || !product) {
-    reply.code(400);
-    return { error: 'missing_fields', message: 'beaconId and product are required' };
-  }
+    // Validate required fields
+    if (!publicKey) {
+      reply.code(400);
+      return { error: 'missing_field', message: 'publicKey is required (base64-encoded Ed25519 public key)' };
+    }
 
-  // Normalise product: column is JSONB, so wrap plain strings
-  const productJsonb = typeof product === 'string' ? { name: product } : product;
+    if (!type || !['scout', 'beacon'].includes(type)) {
+      reply.code(400);
+      return { error: 'invalid_type', message: 'type must be "scout" or "beacon"' };
+    }
 
-  // SECURITY: Validate price and quantity are positive
-  if (typeof unitPrice === 'number' && unitPrice < 0) {
-    reply.code(400);
-    return { error: 'invalid_price', message: 'unitPrice must be a positive number' };
-  }
-  if (typeof quantity === 'number' && quantity < 1) {
-    reply.code(400);
-    return { error: 'invalid_quantity', message: 'quantity must be a positive integer' };
-  }
+    // SECURITY: Validate public key is exactly 32 bytes (Ed25519)
+    const keyBytes = Buffer.from(publicKey, 'base64');
+    if (keyBytes.length !== 32) {
+      reply.code(400);
+      return { error: 'invalid_key', message: 'publicKey must be a 32-byte Ed25519 public key (base64-encoded)' };
+    }
 
-  try {
-    // ATOMIC: Acquire a dedicated client for the transaction
-    const client = await db.connect();
-    let offer, beacon;
+    // SECURITY: Verify proof-of-possession signature
+    const signature = request.headers['x-agent-signature'];
+    if (!signature) {
+      reply.code(400);
+      return { error: 'missing_signature', message: 'X-Agent-Signature header is required (sign the JSON body with your private key)' };
+    }
+
+    // Reconstruct the raw body for signature verification
+    const rawBody = JSON.stringify(request.body);
+    const signatureValid = verifyRegistrationSignature(publicKey, signature, rawBody);
+
+    if (!signatureValid) {
+      reply.code(401);
+      return { error: 'invalid_signature', message: 'Proof-of-possession failed. Signature does not match the provided public key.' };
+    }
 
     try {
-      await client.query('BEGIN');
+      const fingerprint = computeKeyFingerprint(publicKey);
 
-      // Lock session to prevent concurrent state changes
-      const sessionResult = await client.query(
-        'SELECT * FROM sessions WHERE id = $1 FOR UPDATE',
-        [sessionId]
-      );
-      if (sessionResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        reply.code(404);
-        return { error: 'session_not_found' };
-      }
-
-      const session = sessionResult.rows[0];
-      if (!['created', 'market_forming', 'collecting_offers', 'offers_available'].includes(session.status)) {
-        await client.query('ROLLBACK');
-        reply.code(400);
-        return { error: 'session_not_accepting_offers', message: `Session status is ${session.status}` };
-      }
-
-      // Verify beacon exists
-      const beaconResult = await client.query('SELECT * FROM beacons WHERE id::text = $1 OR external_id = $1', [beaconId]);
-      if (beaconResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        reply.code(404);
-        return { error: 'beacon_not_found' };
-      }
-      beacon = beaconResult.rows[0];
-
-      // SECURITY: Reject offers from inactive/suspended beacons
-      if (beacon.status !== 'active') {
-        await client.query('ROLLBACK');
-        reply.code(403);
-        return { error: 'beacon_inactive', message: `Beacon status is ${beacon.status}` };
-      }
-
-      // Calculate total if not provided
-      const calculatedTotal = totalPrice || (unitPrice * quantity);
-
-      const result = await client.query(
-        `INSERT INTO offers (session_id, beacon_id, product, unit_price, quantity, total_price, currency, delivery_date, terms, metadata)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING id, status, created_at`,
-        [sessionId, beacon.id, productJsonb, unitPrice, quantity, calculatedTotal, currency || 'USD', deliveryDate, terms || {}, metadata || {}]
-      );
-
-      offer = result.rows[0];
-
-      // Update session status atomically
-      await client.query('UPDATE sessions SET status = $1 WHERE id = $2', ['offers_available', sessionId]);
-
-      await client.query('COMMIT');
-    } catch (innerError) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw innerError;
-    } finally {
-      client.release();
-    }
-
-    // Structured activity logging (outside transaction)
-    request.log.info({
-      event: 'offer.submitted',
-      sessionId,
-      offerId: offer.id,
-      beaconId: beacon.id,
-      unitPrice,
-      quantity,
-    });
-
-    return {
-      offerId: offer.id,
-      sessionId,
-      beaconId: beacon.id,
-      status: offer.status,
-      createdAt: offer.created_at,
-      _links: {
-        self: { href: `/sessions/${sessionId}/offers/${offer.id}` },
-        session: { href: `/sessions/${sessionId}` },
-      },
-    };
-  } catch (error) {
-    app.log.error(error);
-    reply.code(500);
-    return { error: 'offer_submission_failed', message: safeError(error, 'Offer submission failed') };
-  }
-});
-
-// Scout retrieves offers for a session
-app.get('/sessions/:sessionId/offers', async (request, reply) => {
-  const { sessionId } = request.params;
-
-  // SECURITY: Validate UUID format
-  if (!isValidUUID(sessionId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    const result = await db.query(
-      `SELECT o.*, b.name as beacon_name, b.external_id as beacon_external_id
-       FROM offers o
-       JOIN beacons b ON o.beacon_id = b.id
-       WHERE o.session_id = $1 AND o.status = 'pending'
-       ORDER BY o.created_at DESC`,
-      [sessionId]
-    );
-
-    return {
-      sessionId,
-      offers: result.rows.map(o => ({
-        id: o.id,
-        beaconId: o.beacon_id,
-        beaconName: o.beacon_name,
-        product: o.product,
-        unitPrice: parseFloat(o.unit_price),
-        quantity: o.quantity,
-        totalPrice: parseFloat(o.total_price),
-        currency: o.currency,
-        deliveryDate: o.delivery_date,
-        terms: o.terms,
-        metadata: o.metadata,
-        createdAt: o.created_at,
-      })),
-      _links: {
-        self: { href: `/sessions/${sessionId}/offers` },
-        session: { href: `/sessions/${sessionId}` },
-        commit: { href: `/sessions/${sessionId}/commit`, methods: ['POST'] },
-      },
-    };
-  } catch (error) {
-    reply.code(500);
-    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
-  }
-});
-
-// =============================================================================
-// Transaction Commitment
-// =============================================================================
-
-app.post('/sessions/:sessionId/commit', { preHandler: verifyAgent }, async (request, reply) => {
-  const { sessionId } = request.params;
-  const { offerId, idempotencyKey } = request.body || {};
-
-  // SECURITY: Validate UUID format
-  if (!isValidUUID(sessionId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  if (!offerId) {
-    reply.code(400);
-    return { error: 'missing_offer_id', message: 'offerId is required' };
-  }
-
-  // SECURITY: Validate offerId is UUID
-  if (!isValidUUID(offerId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid offerId format. Expected UUID.' };
-  }
-
-  try {
-    // TRUE IDEMPOTENCY: If idempotency key provided, return existing transaction
-    if (idempotencyKey) {
+      // Check if this key is already registered
       const existing = await db.query(
-        `SELECT t.*, b.name as beacon_name
-         FROM transactions t JOIN beacons b ON t.beacon_id = b.id
-         WHERE t.idempotency_key = $1`,
-        [idempotencyKey]
+        'SELECT id, status FROM agents WHERE public_key = $1',
+        [publicKey]
       );
+
       if (existing.rows.length > 0) {
-        const tx = existing.rows[0];
+        const existingAgent = existing.rows[0];
+
+        // SECURITY: Don't allow re-registration of revoked keys
+        if (existingAgent.status === 'revoked') {
+          reply.code(403);
+          return { error: 'key_revoked', message: 'This public key has been revoked and cannot be re-registered' };
+        }
+
+        // Idempotent: return existing agent for active/suspended keys
         return {
-          transactionId: tx.id,
-          sessionId: tx.session_id,
-          offerId: tx.offer_id,
-          beaconId: tx.beacon_id,
-          beaconName: tx.beacon_name,
-          status: tx.status,
-          finalTerms: tx.final_terms,
-          createdAt: tx.created_at,
+          agentId: existingAgent.id,
+          status: existingAgent.status,
+          keyId: fingerprint,
           _links: {
-            self: { href: `/transactions/${tx.id}` },
-            session: { href: `/sessions/${tx.session_id}` },
+            self: { href: versionedHref(request, `/agents/${existingAgent.id}`) },
+            sessions: { href: versionedHref(request, '/sessions'), methods: ['POST'] },
           },
         };
       }
+
+      const result = await db.query(
+        `INSERT INTO agents (type, public_key, key_fingerprint, manifest)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, status, registered_at`,
+        [type, publicKey, fingerprint, manifest || {}]
+      );
+
+      const agent = result.rows[0];
+
+      await db.query(
+        `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        ['agent', agent.id, 'registered', { type, status: agent.status, keyId: fingerprint }, 'self']
+      );
+
+      return {
+        agentId: agent.id,
+        status: agent.status,
+        keyId: fingerprint,
+        registeredAt: agent.registered_at,
+        _links: {
+          self: { href: versionedHref(request, `/agents/${agent.id}`) },
+          sessions: { href: versionedHref(request, '/sessions'), methods: ['POST'] },
+        },
+      };
+    } catch (error) {
+      app.log.error(error);
+      reply.code(500);
+      return { error: 'registration_failed', message: safeError(error, 'Registration failed') };
+    }
+  });
+
+  /**
+   * Get agent details by ID
+   */
+  app.get('/agents/:agentId', async (request, reply) => {
+    const { agentId } = request.params;
+
+    if (!isValidUUID(agentId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid agentId format. Expected UUID.' };
     }
 
-    // ATOMIC COMMIT: Acquire a dedicated client for the transaction
-    const client = await db.connect();
-    let transaction, offer, session;
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
 
     try {
-      await client.query('BEGIN');
+      const result = await db.query('SELECT * FROM agents WHERE id = $1', [agentId]);
+      if (result.rows.length === 0) {
+        reply.code(404);
+        return { error: 'not_found', message: 'Agent not found' };
+      }
 
-      // Lock the session row — serializes concurrent commits
-      const sessionResult = await client.query(
-        'SELECT * FROM sessions WHERE id = $1 FOR UPDATE',
+      const agent = result.rows[0];
+      return {
+        agentId: agent.id,
+        type: agent.type,
+        status: agent.status,
+        keyId: agent.key_fingerprint,
+        manifest: agent.manifest,
+        registeredAt: agent.registered_at,
+        lastSeenAt: agent.last_seen_at,
+        _links: {
+          self: { href: versionedHref(request, `/agents/${agent.id}`) },
+          sessions: { href: versionedHref(request, '/sessions'), methods: ['POST'] },
+        },
+      };
+    } catch (error) {
+      reply.code(500);
+      return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
+    }
+  });
+
+  /**
+   * Revoke an agent's identity.
+   *
+   * Once revoked, the agent's public key is permanently blacklisted.
+   * All future signed requests from this agent will be rejected with 403.
+   * This is the enforcement mechanism for behavioral violations
+   * (e.g., tit-for-tat protocol violations, market manipulation).
+   *
+   * SECURITY: Requires authenticated agent identity (Ed25519 signature).
+   * Per DEC-015, agent revocation is a policy agent responsibility.
+   * The calling agent must be authenticated via verifyAgent preHandler.
+   */
+  app.post('/agents/:agentId/revoke', { preHandler: verifyAgent }, async (request, reply) => {
+    const { agentId } = request.params;
+    const { reason } = request.body || {};
+
+    if (!isValidUUID(agentId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid agentId format. Expected UUID.' };
+    }
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    try {
+      const result = await db.query(
+        `UPDATE agents SET status = 'revoked', revoked_at = NOW()
+         WHERE id = $1 AND status != 'revoked'
+         RETURNING id, status, revoked_at`,
+        [agentId]
+      );
+
+      if (result.rows.length === 0) {
+        reply.code(404);
+        return { error: 'not_found', message: 'Agent not found or already revoked' };
+      }
+
+      const agent = result.rows[0];
+
+      await db.query(
+        `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        ['agent', agent.id, 'revoked', { status: 'revoked', reason: reason || 'unspecified' }, request.agent?.id || 'system']
+      );
+
+      return {
+        agentId: agent.id,
+        status: 'revoked',
+        revokedAt: agent.revoked_at,
+        _links: { self: { href: versionedHref(request, `/agents/${agent.id}`) } },
+      };
+    } catch (error) {
+      reply.code(500);
+      return { error: 'revocation_failed', message: safeError(error, 'Revocation failed') };
+    }
+  });
+
+  // =============================================================================
+  // Beacon Endpoints
+  // =============================================================================
+
+  app.post('/beacons/register', async (request, reply) => {
+    const { externalId, name, description, endpointUrl, capabilities, metadata } = request.body || {};
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    if (!externalId || !name) {
+      reply.code(400);
+      return { error: 'missing_fields', message: 'externalId and name are required' };
+    }
+
+    try {
+      const result = await db.query(
+        `INSERT INTO beacons (external_id, name, description, endpoint_url, capabilities, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (external_id) DO UPDATE SET
+           name = EXCLUDED.name,
+           description = EXCLUDED.description,
+           endpoint_url = EXCLUDED.endpoint_url,
+           capabilities = EXCLUDED.capabilities,
+           metadata = EXCLUDED.metadata,
+           updated_at = NOW()
+         RETURNING id, external_id, name, status, capabilities, created_at`,
+        [externalId, name, description, endpointUrl, capabilities || {}, metadata || {}]
+      );
+
+      const beacon = result.rows[0];
+
+      // Structured activity logging
+      request.log.info({
+        event: 'beacon.registered',
+        beaconId: beacon.id,
+        externalId: beacon.external_id,
+        name: beacon.name,
+      });
+
+      await db.query(
+        `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['beacon', beacon.id, 'registered', { name: beacon.name, status: beacon.status }, 'system', request.requestId]
+      );
+
+      return {
+        beaconId: beacon.id,
+        externalId: beacon.external_id,
+        name: beacon.name,
+        status: beacon.status,
+        capabilities: beacon.capabilities,
+        _links: {
+          self: { href: versionedHref(request, `/beacons/${beacon.id}`) },
+          sessions: { href: versionedHref(request, '/beacons/sessions'), title: 'Poll for sessions to respond to' },
+          submitOffer: { href: versionedHref(request, '/sessions/{sessionId}/offers'), methods: ['POST'] },
+        },
+      };
+    } catch (error) {
+      app.log.error(error);
+      reply.code(500);
+      return { error: 'registration_failed', message: safeError(error, 'Registration failed') };
+    }
+  });
+
+  app.get('/beacons/:beaconId', async (request, reply) => {
+    const { beaconId } = request.params;
+
+    // beaconId can be a UUID (internal) or a string (external_id).
+    // Validate length to prevent abuse — external IDs should be reasonable.
+    if (!beaconId || beaconId.length > 255) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid beaconId format.' };
+    }
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    try {
+      const result = await db.query('SELECT * FROM beacons WHERE id::text = $1 OR external_id = $1', [beaconId]);
+      if (result.rows.length === 0) {
+        reply.code(404);
+        return { error: 'not_found', message: 'Beacon not found' };
+      }
+
+      const beacon = result.rows[0];
+      return {
+        beaconId: beacon.id,
+        externalId: beacon.external_id,
+        name: beacon.name,
+        status: beacon.status,
+        capabilities: beacon.capabilities,
+        createdAt: beacon.created_at,
+        _links: { self: { href: versionedHref(request, `/beacons/${beacon.id}`) } },
+      };
+    } catch (error) {
+      reply.code(500);
+      return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
+    }
+  });
+
+  // Beacon polls for sessions matching their capabilities
+  app.get('/beacons/sessions', async (request, reply) => {
+    const { status, limit } = request.query;
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    try {
+      // Return sessions that are waiting for offers
+      const result = await db.query(
+        `SELECT id, scout_id, status, raw_intent, parsed_intent, constraints, created_at
+         FROM sessions
+         WHERE status IN ('created', 'market_forming', 'collecting_offers')
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [parseInt(limit) || 20]
+      );
+
+      // Structured activity logging (at debug level)
+      request.log.debug({
+        event: 'beacon.poll',
+        beaconId: request.query.beaconId,
+        sessionCount: result.rows.length,
+      });
+
+      return {
+        sessions: result.rows.map(s => ({
+          sessionId: s.id,
+          status: s.status,
+          intent: { raw: s.raw_intent, parsed: s.parsed_intent },
+          constraints: s.constraints,
+          createdAt: s.created_at,
+          _links: {
+            submitOffer: { href: versionedHref(request, `/sessions/${s.id}/offers`), methods: ['POST'] },
+          },
+        })),
+        _links: { self: { href: versionedHref(request, '/beacons/sessions') } },
+      };
+    } catch (error) {
+      reply.code(500);
+      return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
+    }
+  });
+
+  // =============================================================================
+  // Session Endpoints (Core Commerce Flow)
+  // =============================================================================
+
+  app.post('/sessions', { preHandler: verifyAgent }, async (request, reply) => {
+    const { intent, constraints } = request.body || {};
+
+    if (!intent) {
+      reply.code(400);
+      return { error: 'missing_intent', message: 'Please provide an intent describing what you want' };
+    }
+
+    // Input validation: intent must be a reasonable string
+    if (typeof intent !== 'string' || intent.length > 2000) {
+      reply.code(400);
+      return { error: 'invalid_intent', message: 'Intent must be a string under 2000 characters' };
+    }
+
+    // Constraints must be a plain object if provided
+    if (constraints !== undefined && constraints !== null) {
+      if (typeof constraints !== 'object' || Array.isArray(constraints)) {
+        reply.code(400);
+        return { error: 'invalid_constraints', message: 'Constraints must be a JSON object' };
+      }
+      // Cap constraints size to prevent abuse
+      const constraintsStr = JSON.stringify(constraints);
+      if (constraintsStr.length > 10000) {
+        reply.code(400);
+        return { error: 'invalid_constraints', message: 'Constraints object too large (max 10KB)' };
+      }
+    }
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    // Agent identity comes from Ed25519 signature verification (verifyAgent preHandler).
+    // request.agent is set by createSignatureVerifier — contains { id, status }.
+    // No more accepting scoutId/agentId from the request body.
+    const authenticatedAgentId = request.agent?.id || null;
+
+    try {
+      // Parse intent using structured extraction (Alpha — regex-based, no LLM)
+      // Phase 2 will replace with Granite LLM via Replicate
+      const parsedIntent = parseIntent(intent, constraints);
+
+      const result = await db.query(
+        `INSERT INTO sessions (agent_id, status, raw_intent, parsed_intent, constraints)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, status, created_at`,
+        [authenticatedAgentId, 'collecting_offers', intent, parsedIntent, constraints || {}]
+      );
+
+      const session = result.rows[0];
+
+      // Match registered beacons against parsed intent
+      const matchedBeacons = await matchBeacons(db, parsedIntent);
+
+      // Store matched beacon IDs in session context
+      if (matchedBeacons.length > 0) {
+        await db.query(
+          `UPDATE sessions SET context = $1 WHERE id = $2`,
+          [{ matched_beacons: matchedBeacons.map(b => ({ id: b.beaconId, name: b.name, score: b.score })) }, session.id]
+        );
+      }
+
+      // Structured activity logging
+      request.log.info({
+        event: 'session.created',
+        sessionId: session.id,
+        agentId: authenticatedAgentId,
+        intent: parsedIntent,
+      });
+
+      await db.query(
+        `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['session', session.id, 'created', { status: 'collecting_offers', intent, matchedBeacons: matchedBeacons.length, agentId: authenticatedAgentId }, authenticatedAgentId || 'anonymous', request.requestId]
+      );
+
+      return {
+        sessionId: session.id,
+        status: 'collecting_offers',
+        intent: parsedIntent,
+        matchedBeacons: matchedBeacons.map(b => ({
+          beaconId: b.beaconId,
+          name: b.name,
+          score: b.score,
+        })),
+        _links: {
+          self: { href: versionedHref(request, `/sessions/${session.id}`) },
+          offers: { href: versionedHref(request, `/sessions/${session.id}/offers`) },
+          cancel: { href: versionedHref(request, `/sessions/${session.id}/cancel`), methods: ['POST'] },
+        },
+      };
+    } catch (error) {
+      app.log.error(error);
+      reply.code(500);
+      return { error: 'session_creation_failed', message: safeError(error, 'Session creation failed') };
+    }
+  });
+
+  app.get('/sessions/:sessionId', async (request, reply) => {
+    const { sessionId } = request.params;
+
+    // SECURITY: Validate UUID format
+    if (!isValidUUID(sessionId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
+    }
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    try {
+      const result = await db.query('SELECT * FROM sessions WHERE id = $1', [sessionId]);
+      if (result.rows.length === 0) {
+        reply.code(404);
+        return { error: 'not_found', message: 'Session not found' };
+      }
+
+      const session = result.rows[0];
+
+      // Check if there are offers
+      const offersResult = await db.query(
+        'SELECT COUNT(*) as count FROM offers WHERE session_id = $1 AND status = $2',
+        [sessionId, 'pending']
+      );
+      const hasOffers = parseInt(offersResult.rows[0].count) > 0;
+
+      // Update status if offers are available
+      let status = session.status;
+      if (hasOffers && (status === 'market_forming' || status === 'collecting_offers')) {
+        status = 'offers_available';
+        await db.query('UPDATE sessions SET status = $1 WHERE id = $2', [status, sessionId]);
+      }
+
+      const links = {
+        self: { href: versionedHref(request, `/sessions/${sessionId}`) },
+        cancel: { href: versionedHref(request, `/sessions/${sessionId}/cancel`), methods: ['POST'] },
+      };
+
+      if (hasOffers || status === 'offers_available') {
+        links.offers = { href: versionedHref(request, `/sessions/${sessionId}/offers`) };
+        links.commit = { href: versionedHref(request, `/sessions/${sessionId}/commit`), methods: ['POST'] };
+      }
+
+      // If committed, look up the transaction ID
+      let transactionId = null;
+      if (status === 'committed' || status === 'fulfilled' || status === 'completed') {
+        const txResult = await db.query('SELECT id FROM transactions WHERE session_id = $1 LIMIT 1', [sessionId]);
+        if (txResult.rows.length > 0) {
+          transactionId = txResult.rows[0].id;
+          links.transaction = { href: versionedHref(request, `/transactions/${transactionId}`) };
+        }
+      }
+
+      return {
+        sessionId: session.id,
+        status,
+        transactionId,
+        intent: session.parsed_intent,
+        rawIntent: session.raw_intent,
+        constraints: session.constraints,
+        context: session.context,
+        createdAt: session.created_at,
+        _links: links,
+      };
+    } catch (error) {
+      reply.code(500);
+      return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
+    }
+  });
+
+  // =============================================================================
+  // Offer Endpoints
+  // =============================================================================
+
+  // Beacon submits an offer to a session
+  app.post('/sessions/:sessionId/offers', { preHandler: verifyAgent }, async (request, reply) => {
+    const { sessionId } = request.params;
+    const { beaconId, product, unitPrice, quantity, totalPrice, currency, deliveryDate, terms, metadata } = request.body || {};
+
+    // SECURITY: Validate UUID format for sessionId
+    if (!isValidUUID(sessionId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
+    }
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    if (!beaconId || !product) {
+      reply.code(400);
+      return { error: 'missing_fields', message: 'beaconId and product are required' };
+    }
+
+    // Normalise product: column is JSONB, so wrap plain strings
+    const productJsonb = typeof product === 'string' ? { name: product } : product;
+
+    // SECURITY: Validate price and quantity are positive
+    if (typeof unitPrice === 'number' && unitPrice < 0) {
+      reply.code(400);
+      return { error: 'invalid_price', message: 'unitPrice must be a positive number' };
+    }
+    if (typeof quantity === 'number' && quantity < 1) {
+      reply.code(400);
+      return { error: 'invalid_quantity', message: 'quantity must be a positive integer' };
+    }
+
+    try {
+      // ATOMIC: Acquire a dedicated client for the transaction
+      const client = await db.connect();
+      let offer, beacon;
+
+      try {
+        await client.query('BEGIN');
+
+        // Lock session to prevent concurrent state changes
+        const sessionResult = await client.query(
+          'SELECT * FROM sessions WHERE id = $1 FOR UPDATE',
+          [sessionId]
+        );
+        if (sessionResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          reply.code(404);
+          return { error: 'session_not_found' };
+        }
+
+        const session = sessionResult.rows[0];
+        if (!['created', 'market_forming', 'collecting_offers', 'offers_available'].includes(session.status)) {
+          await client.query('ROLLBACK');
+          reply.code(400);
+          return { error: 'session_not_accepting_offers', message: `Session status is ${session.status}` };
+        }
+
+        // Verify beacon exists
+        const beaconResult = await client.query('SELECT * FROM beacons WHERE id::text = $1 OR external_id = $1', [beaconId]);
+        if (beaconResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          reply.code(404);
+          return { error: 'beacon_not_found' };
+        }
+        beacon = beaconResult.rows[0];
+
+        // SECURITY: Reject offers from inactive/suspended beacons
+        if (beacon.status !== 'active') {
+          await client.query('ROLLBACK');
+          reply.code(403);
+          return { error: 'beacon_inactive', message: `Beacon status is ${beacon.status}` };
+        }
+
+        // Calculate total if not provided
+        const calculatedTotal = totalPrice || (unitPrice * quantity);
+
+        const result = await client.query(
+          `INSERT INTO offers (session_id, beacon_id, product, unit_price, quantity, total_price, currency, delivery_date, terms, metadata)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           RETURNING id, status, created_at`,
+          [sessionId, beacon.id, productJsonb, unitPrice, quantity, calculatedTotal, currency || 'USD', deliveryDate, terms || {}, metadata || {}]
+        );
+
+        offer = result.rows[0];
+
+        // Update session status atomically
+        await client.query('UPDATE sessions SET status = $1 WHERE id = $2', ['offers_available', sessionId]);
+
+        await client.query('COMMIT');
+      } catch (innerError) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw innerError;
+      } finally {
+        client.release();
+      }
+
+      // Structured activity logging (outside transaction)
+      request.log.info({
+        event: 'offer.submitted',
+        sessionId,
+        offerId: offer.id,
+        beaconId: beacon.id,
+        unitPrice,
+        quantity,
+      });
+
+      return {
+        offerId: offer.id,
+        sessionId,
+        beaconId: beacon.id,
+        status: offer.status,
+        createdAt: offer.created_at,
+        _links: {
+          self: { href: versionedHref(request, `/sessions/${sessionId}/offers/${offer.id}`) },
+          session: { href: versionedHref(request, `/sessions/${sessionId}`) },
+        },
+      };
+    } catch (error) {
+      app.log.error(error);
+      reply.code(500);
+      return { error: 'offer_submission_failed', message: safeError(error, 'Offer submission failed') };
+    }
+  });
+
+  // Scout retrieves offers for a session
+  app.get('/sessions/:sessionId/offers', async (request, reply) => {
+    const { sessionId } = request.params;
+
+    // SECURITY: Validate UUID format
+    if (!isValidUUID(sessionId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
+    }
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    try {
+      const result = await db.query(
+        `SELECT o.*, b.name as beacon_name, b.external_id as beacon_external_id
+         FROM offers o
+         JOIN beacons b ON o.beacon_id = b.id
+         WHERE o.session_id = $1 AND o.status = 'pending'
+         ORDER BY o.created_at DESC`,
         [sessionId]
       );
-      if (sessionResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        reply.code(404);
-        return { error: 'session_not_found' };
-      }
 
-      session = sessionResult.rows[0];
-
-      // SECURITY: Reject if already committed (after acquiring lock)
-      if (session.status === 'committed' || session.status === 'completed' || session.status === 'cancelled') {
-        await client.query('ROLLBACK');
-        reply.code(400);
-        return { error: 'session_not_committable', message: `Session status is ${session.status}` };
-      }
-
-      // Lock the offer row too
-      const offerResult = await client.query(
-        'SELECT o.*, b.name as beacon_name, b.endpoint_url as beacon_endpoint_url FROM offers o JOIN beacons b ON o.beacon_id = b.id WHERE o.id = $1 AND o.session_id = $2 FOR UPDATE OF o',
-        [offerId, sessionId]
-      );
-      if (offerResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        reply.code(404);
-        return { error: 'offer_not_found' };
-      }
-
-      offer = offerResult.rows[0];
-
-      // Create transaction (atomic with session/offer updates)
-      // Use agent_id from the authenticated request; fall back to session's agent_id or legacy scout_id
-      const commitAgentId = request.agent?.id || session.agent_id || null;
-      const txResult = await client.query(
-        `INSERT INTO transactions (session_id, offer_id, beacon_id, agent_id, scout_id, status, final_terms, idempotency_key)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, status, created_at`,
-        [sessionId, offerId, offer.beacon_id, commitAgentId, session.scout_id, 'committed', {
-          product: offer.product,
-          totalPrice: offer.total_price,
-          currency: offer.currency,
-          deliveryDate: offer.delivery_date,
-          terms: offer.terms,
-        }, idempotencyKey || null]
-      );
-
-      transaction = txResult.rows[0];
-
-      // Update session and offer status — all within the same transaction
-      await client.query('UPDATE sessions SET status = $1 WHERE id = $2', ['committed', sessionId]);
-      await client.query('UPDATE offers SET status = $1 WHERE id = $2', ['accepted', offerId]);
-      await client.query('UPDATE offers SET status = $1 WHERE session_id = $2 AND id != $3', ['rejected', sessionId, offerId]);
-
-      // Audit log — inside the transaction for consistency
-      await client.query(
-        `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6)`,
-        ['transaction', transaction.id, 'committed', { offerId, beaconId: offer.beacon_id, agentId: commitAgentId }, commitAgentId || session.scout_id || 'anonymous', request.requestId]
-      );
-
-      await client.query('COMMIT');
-    } catch (innerError) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw innerError;
-    } finally {
-      client.release();
-    }
-
-    // Structured activity logging (outside transaction)
-    request.log.info({
-      event: 'session.committed',
-      sessionId,
-      offerId,
-      transactionId: transaction.id,
-    });
-
-    // Dispatch webhook to beacon (fire-and-forget, outside transaction)
-    if (offer.beacon_endpoint_url) {
-      dispatchWebhook(
-        { id: offer.beacon_id, endpoint_url: offer.beacon_endpoint_url, name: offer.beacon_name },
-        'transaction.committed',
-        {
-          transactionId: transaction.id,
-          sessionId,
-          offerId,
-          finalTerms: {
-            product: offer.product,
-            totalPrice: parseFloat(offer.total_price),
-            currency: offer.currency,
-            deliveryDate: offer.delivery_date,
-          },
+      return {
+        sessionId,
+        offers: result.rows.map(o => ({
+          id: o.id,
+          beaconId: o.beacon_id,
+          beaconName: o.beacon_name,
+          product: o.product,
+          unitPrice: parseFloat(o.unit_price),
+          quantity: o.quantity,
+          totalPrice: parseFloat(o.total_price),
+          currency: o.currency,
+          deliveryDate: o.delivery_date,
+          terms: o.terms,
+          metadata: o.metadata,
+          createdAt: o.created_at,
+        })),
+        _links: {
+          self: { href: versionedHref(request, `/sessions/${sessionId}/offers`) },
+          session: { href: versionedHref(request, `/sessions/${sessionId}`) },
+          commit: { href: versionedHref(request, `/sessions/${sessionId}/commit`), methods: ['POST'] },
         },
-        app.log
-      );
+      };
+    } catch (error) {
+      reply.code(500);
+      return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
+    }
+  });
+
+  // =============================================================================
+  // Transaction Commitment
+  // =============================================================================
+
+  app.post('/sessions/:sessionId/commit', { preHandler: verifyAgent }, async (request, reply) => {
+    const { sessionId } = request.params;
+    const { offerId, idempotencyKey } = request.body || {};
+
+    // SECURITY: Validate UUID format
+    if (!isValidUUID(sessionId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
     }
 
-    return {
-      transactionId: transaction.id,
-      sessionId,
-      offerId,
-      beaconId: offer.beacon_id,
-      beaconName: offer.beacon_name,
-      status: transaction.status,
-      finalTerms: {
-        product: offer.product,
-        totalPrice: parseFloat(offer.total_price),
-        currency: offer.currency,
-        deliveryDate: offer.delivery_date,
-      },
-      createdAt: transaction.created_at,
-      _links: {
-        self: { href: `/transactions/${transaction.id}` },
-        session: { href: `/sessions/${sessionId}` },
-      },
-    };
-  } catch (error) {
-    app.log.error(error);
-    if (error.code === '23505') { // unique constraint violation (idempotency key race)
-      // Another request won the race — look up and return the existing transaction
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    if (!offerId) {
+      reply.code(400);
+      return { error: 'missing_offer_id', message: 'offerId is required' };
+    }
+
+    // SECURITY: Validate offerId is UUID
+    if (!isValidUUID(offerId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid offerId format. Expected UUID.' };
+    }
+
+    try {
+      // TRUE IDEMPOTENCY: If idempotency key provided, return existing transaction
       if (idempotencyKey) {
         const existing = await db.query(
           `SELECT t.*, b.name as beacon_name
@@ -1404,376 +1275,534 @@ app.post('/sessions/:sessionId/commit', { preHandler: verifyAgent }, async (requ
         if (existing.rows.length > 0) {
           const tx = existing.rows[0];
           return {
-            transactionId: tx.id, sessionId: tx.session_id, offerId: tx.offer_id,
-            beaconId: tx.beacon_id, beaconName: tx.beacon_name,
-            status: tx.status, finalTerms: tx.final_terms, createdAt: tx.created_at,
-            _links: { self: { href: `/transactions/${tx.id}` }, session: { href: `/sessions/${tx.session_id}` } },
+            transactionId: tx.id,
+            sessionId: tx.session_id,
+            offerId: tx.offer_id,
+            beaconId: tx.beacon_id,
+            beaconName: tx.beacon_name,
+            status: tx.status,
+            finalTerms: tx.final_terms,
+            createdAt: tx.created_at,
+            _links: {
+              self: { href: versionedHref(request, `/transactions/${tx.id}`) },
+              session: { href: versionedHref(request, `/sessions/${tx.session_id}`) },
+            },
           };
         }
       }
-      reply.code(409);
-      return { error: 'duplicate_transaction', message: 'Transaction with this idempotency key already exists' };
+
+      // ATOMIC COMMIT: Acquire a dedicated client for the transaction
+      const client = await db.connect();
+      let transaction, offer, session;
+
+      try {
+        await client.query('BEGIN');
+
+        // Lock the session row — serializes concurrent commits
+        const sessionResult = await client.query(
+          'SELECT * FROM sessions WHERE id = $1 FOR UPDATE',
+          [sessionId]
+        );
+        if (sessionResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          reply.code(404);
+          return { error: 'session_not_found' };
+        }
+
+        session = sessionResult.rows[0];
+
+        // SECURITY: Reject if already committed (after acquiring lock)
+        if (session.status === 'committed' || session.status === 'completed' || session.status === 'cancelled') {
+          await client.query('ROLLBACK');
+          reply.code(400);
+          return { error: 'session_not_committable', message: `Session status is ${session.status}` };
+        }
+
+        // Lock the offer row too
+        const offerResult = await client.query(
+          'SELECT o.*, b.name as beacon_name, b.endpoint_url as beacon_endpoint_url FROM offers o JOIN beacons b ON o.beacon_id = b.id WHERE o.id = $1 AND o.session_id = $2 FOR UPDATE OF o',
+          [offerId, sessionId]
+        );
+        if (offerResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          reply.code(404);
+          return { error: 'offer_not_found' };
+        }
+
+        offer = offerResult.rows[0];
+
+        // Create transaction (atomic with session/offer updates)
+        // Use agent_id from the authenticated request; fall back to session's agent_id or legacy scout_id
+        const commitAgentId = request.agent?.id || session.agent_id || null;
+        const txResult = await client.query(
+          `INSERT INTO transactions (session_id, offer_id, beacon_id, agent_id, scout_id, status, final_terms, idempotency_key)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING id, status, created_at`,
+          [sessionId, offerId, offer.beacon_id, commitAgentId, session.scout_id, 'committed', {
+            product: offer.product,
+            totalPrice: offer.total_price,
+            currency: offer.currency,
+            deliveryDate: offer.delivery_date,
+            terms: offer.terms,
+          }, idempotencyKey || null]
+        );
+
+        transaction = txResult.rows[0];
+
+        // Update session and offer status — all within the same transaction
+        await client.query('UPDATE sessions SET status = $1 WHERE id = $2', ['committed', sessionId]);
+        await client.query('UPDATE offers SET status = $1 WHERE id = $2', ['accepted', offerId]);
+        await client.query('UPDATE offers SET status = $1 WHERE session_id = $2 AND id != $3', ['rejected', sessionId, offerId]);
+
+        // Audit log — inside the transaction for consistency
+        await client.query(
+          `INSERT INTO audit_log (entity_type, entity_id, action, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+          ['transaction', transaction.id, 'committed', { offerId, beaconId: offer.beacon_id, agentId: commitAgentId }, commitAgentId || session.scout_id || 'anonymous', request.requestId]
+        );
+
+        await client.query('COMMIT');
+      } catch (innerError) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw innerError;
+      } finally {
+        client.release();
+      }
+
+      // Structured activity logging (outside transaction)
+      request.log.info({
+        event: 'session.committed',
+        sessionId,
+        offerId,
+        transactionId: transaction.id,
+      });
+
+      // Dispatch webhook to beacon (fire-and-forget, outside transaction)
+      if (offer.beacon_endpoint_url) {
+        dispatchWebhook(
+          { id: offer.beacon_id, endpoint_url: offer.beacon_endpoint_url, name: offer.beacon_name },
+          'transaction.committed',
+          {
+            transactionId: transaction.id,
+            sessionId,
+            offerId,
+            finalTerms: {
+              product: offer.product,
+              totalPrice: parseFloat(offer.total_price),
+              currency: offer.currency,
+              deliveryDate: offer.delivery_date,
+            },
+          },
+          app.log
+        );
+      }
+
+      return {
+        transactionId: transaction.id,
+        sessionId,
+        offerId,
+        beaconId: offer.beacon_id,
+        beaconName: offer.beacon_name,
+        status: transaction.status,
+        finalTerms: {
+          product: offer.product,
+          totalPrice: parseFloat(offer.total_price),
+          currency: offer.currency,
+          deliveryDate: offer.delivery_date,
+        },
+        createdAt: transaction.created_at,
+        _links: {
+          self: { href: versionedHref(request, `/transactions/${transaction.id}`) },
+          session: { href: versionedHref(request, `/sessions/${sessionId}`) },
+        },
+      };
+    } catch (error) {
+      app.log.error(error);
+      if (error.code === '23505') { // unique constraint violation (idempotency key race)
+        // Another request won the race — look up and return the existing transaction
+        if (idempotencyKey) {
+          const existing = await db.query(
+            `SELECT t.*, b.name as beacon_name
+             FROM transactions t JOIN beacons b ON t.beacon_id = b.id
+             WHERE t.idempotency_key = $1`,
+            [idempotencyKey]
+          );
+          if (existing.rows.length > 0) {
+            const tx = existing.rows[0];
+            return {
+              transactionId: tx.id, sessionId: tx.session_id, offerId: tx.offer_id,
+              beaconId: tx.beacon_id, beaconName: tx.beacon_name,
+              status: tx.status, finalTerms: tx.final_terms, createdAt: tx.created_at,
+              _links: { self: { href: versionedHref(request, `/transactions/${tx.id}`) }, session: { href: versionedHref(request, `/sessions/${tx.session_id}`) } },
+            };
+          }
+        }
+        reply.code(409);
+        return { error: 'duplicate_transaction', message: 'Transaction with this idempotency key already exists' };
+      }
+      reply.code(500);
+      return { error: 'commit_failed', message: safeError(error, 'Transaction commit failed') };
     }
-    reply.code(500);
-    return { error: 'commit_failed', message: safeError(error, 'Transaction commit failed') };
-  }
-});
+  });
 
-// Cancel session
-app.post('/sessions/:sessionId/cancel', async (request, reply) => {
-  const { sessionId } = request.params;
+  // Cancel session
+  app.post('/sessions/:sessionId/cancel', async (request, reply) => {
+    const { sessionId } = request.params;
 
-  // SECURITY: Validate UUID format
-  if (!isValidUUID(sessionId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    const result = await db.query(
-      'UPDATE sessions SET status = $1 WHERE id = $2 AND status NOT IN ($3, $4) RETURNING id, status',
-      ['cancelled', sessionId, 'committed', 'completed']
-    );
-
-    if (result.rows.length === 0) {
+    // SECURITY: Validate UUID format
+    if (!isValidUUID(sessionId)) {
       reply.code(400);
-      return { error: 'cannot_cancel', message: 'Session not found or already committed/completed' };
+      return { error: 'invalid_parameter', message: 'Invalid sessionId format. Expected UUID.' };
     }
 
-    return {
-      sessionId,
-      status: 'cancelled',
-      _links: { self: { href: `/sessions/${sessionId}` } },
-    };
-  } catch (error) {
-    reply.code(500);
-    return { error: 'cancel_failed', message: safeError(error, 'Cancellation failed') };
-  }
-});
-
-// =============================================================================
-// Transaction Endpoints
-// =============================================================================
-
-// Get transaction details (Scout or Beacon can query)
-app.get('/transactions/:transactionId', async (request, reply) => {
-  const { transactionId } = request.params;
-
-  if (!isValidUUID(transactionId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid transactionId format. Expected UUID.' };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    const result = await db.query(
-      `SELECT t.*, b.name as beacon_name, b.external_id as beacon_external_id
-       FROM transactions t
-       JOIN beacons b ON t.beacon_id = b.id
-       WHERE t.id = $1`,
-      [transactionId]
-    );
-
-    if (result.rows.length === 0) {
-      reply.code(404);
-      return { error: 'not_found', message: 'Transaction not found' };
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
     }
-
-    const tx = result.rows[0];
-
-    return {
-      transactionId: tx.id,
-      sessionId: tx.session_id,
-      offerId: tx.offer_id,
-      beaconId: tx.beacon_id,
-      beaconName: tx.beacon_name,
-      agentId: tx.agent_id || tx.scout_id,
-      scoutId: tx.scout_id,  // Legacy — use agentId
-      status: tx.status,
-      finalTerms: tx.final_terms,
-      paymentStatus: tx.payment_status,
-      paymentReference: tx.payment_reference,
-      fulfillmentStatus: tx.fulfillment_status,
-      fulfillmentReference: tx.fulfillment_reference,
-      createdAt: tx.created_at,
-      updatedAt: tx.updated_at,
-      completedAt: tx.completed_at,
-      _links: {
-        self: { href: `/transactions/${tx.id}` },
-        session: { href: `/sessions/${tx.session_id}` },
-        fulfillment: { href: `/transactions/${tx.id}/fulfillment`, methods: ['PUT'] },
-        payment: { href: `/transactions/${tx.id}/payment`, methods: ['PUT'] },
-      },
-    };
-  } catch (error) {
-    app.log.error(error);
-    reply.code(500);
-    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
-  }
-});
-
-// Beacon reports fulfillment status
-app.put('/transactions/:transactionId/fulfillment', { preHandler: verifyAgent }, async (request, reply) => {
-  const { transactionId } = request.params;
-  const { fulfillmentStatus, fulfillmentReference, metadata } = request.body || {};
-
-  if (!isValidUUID(transactionId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid transactionId format. Expected UUID.' };
-  }
-
-  if (!fulfillmentStatus) {
-    reply.code(400);
-    return { error: 'missing_fields', message: 'fulfillmentStatus is required' };
-  }
-
-  const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'failed'];
-  if (!validStatuses.includes(fulfillmentStatus)) {
-    reply.code(400);
-    return { error: 'invalid_status', message: `fulfillmentStatus must be one of: ${validStatuses.join(', ')}` };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    // ATOMIC: Lock transaction row to prevent concurrent fulfillment/payment races
-    const client = await db.connect();
-    let tx, newStatus;
 
     try {
-      await client.query('BEGIN');
+      const result = await db.query(
+        'UPDATE sessions SET status = $1 WHERE id = $2 AND status NOT IN ($3, $4) RETURNING id, status',
+        ['cancelled', sessionId, 'committed', 'completed']
+      );
 
-      const txResult = await client.query(
-        'SELECT * FROM transactions WHERE id = $1 FOR UPDATE',
+      if (result.rows.length === 0) {
+        reply.code(400);
+        return { error: 'cannot_cancel', message: 'Session not found or already committed/completed' };
+      }
+
+      return {
+        sessionId,
+        status: 'cancelled',
+        _links: { self: { href: versionedHref(request, `/sessions/${sessionId}`) } },
+      };
+    } catch (error) {
+      reply.code(500);
+      return { error: 'cancel_failed', message: safeError(error, 'Cancellation failed') };
+    }
+  });
+
+  // =============================================================================
+  // Transaction Endpoints
+  // =============================================================================
+
+  // Get transaction details (Scout or Beacon can query)
+  app.get('/transactions/:transactionId', async (request, reply) => {
+    const { transactionId } = request.params;
+
+    if (!isValidUUID(transactionId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid transactionId format. Expected UUID.' };
+    }
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    try {
+      const result = await db.query(
+        `SELECT t.*, b.name as beacon_name, b.external_id as beacon_external_id
+         FROM transactions t
+         JOIN beacons b ON t.beacon_id = b.id
+         WHERE t.id = $1`,
         [transactionId]
       );
-      if (txResult.rows.length === 0) {
-        await client.query('ROLLBACK');
+
+      if (result.rows.length === 0) {
         reply.code(404);
         return { error: 'not_found', message: 'Transaction not found' };
       }
 
-      tx = txResult.rows[0];
+      const tx = result.rows[0];
 
-      // Auto-transition transaction status
-      newStatus = tx.status;
-      if (fulfillmentStatus === 'delivered') {
-        // Also check if payment already charged → completed
-        newStatus = tx.payment_status === 'charged' ? 'completed' : 'fulfilled';
-      }
+      return {
+        transactionId: tx.id,
+        sessionId: tx.session_id,
+        offerId: tx.offer_id,
+        beaconId: tx.beacon_id,
+        beaconName: tx.beacon_name,
+        agentId: tx.agent_id || tx.scout_id,
+        scoutId: tx.scout_id,  // Legacy — use agentId
+        status: tx.status,
+        finalTerms: tx.final_terms,
+        paymentStatus: tx.payment_status,
+        paymentReference: tx.payment_reference,
+        fulfillmentStatus: tx.fulfillment_status,
+        fulfillmentReference: tx.fulfillment_reference,
+        createdAt: tx.created_at,
+        updatedAt: tx.updated_at,
+        completedAt: tx.completed_at,
+        _links: {
+          self: { href: versionedHref(request, `/transactions/${tx.id}`) },
+          session: { href: versionedHref(request, `/sessions/${tx.session_id}`) },
+          fulfillment: { href: versionedHref(request, `/transactions/${tx.id}/fulfillment`), methods: ['PUT'] },
+          payment: { href: versionedHref(request, `/transactions/${tx.id}/payment`), methods: ['PUT'] },
+        },
+      };
+    } catch (error) {
+      app.log.error(error);
+      reply.code(500);
+      return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
+    }
+  });
 
-      await client.query(
-        `UPDATE transactions
-         SET fulfillment_status = $1, fulfillment_reference = $2,
-             status = $3, updated_at = NOW()
-         WHERE id = $4`,
-        [fulfillmentStatus, fulfillmentReference || null, newStatus, transactionId]
-      );
+  // Beacon reports fulfillment status
+  app.put('/transactions/:transactionId/fulfillment', { preHandler: verifyAgent }, async (request, reply) => {
+    const { transactionId } = request.params;
+    const { fulfillmentStatus, fulfillmentReference, metadata } = request.body || {};
 
-      // Audit log inside transaction
-      await client.query(
-        `INSERT INTO audit_log (entity_type, entity_id, action, previous_state, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        ['transaction', transactionId, 'fulfillment_updated',
-         { fulfillmentStatus: tx.fulfillment_status, status: tx.status },
-         { fulfillmentStatus, status: newStatus },
-         tx.beacon_id,
-         request.requestId]
-      );
-
-      await client.query('COMMIT');
-    } catch (innerError) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw innerError;
-    } finally {
-      client.release();
+    if (!isValidUUID(transactionId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid transactionId format. Expected UUID.' };
     }
 
-    // Structured activity logging (outside transaction)
-    request.log.info({
-      event: 'fulfillment.updated',
-      transactionId,
-      status: fulfillmentStatus,
-    });
+    if (!fulfillmentStatus) {
+      reply.code(400);
+      return { error: 'missing_fields', message: 'fulfillmentStatus is required' };
+    }
 
-    // Dispatch webhook (fire-and-forget, outside transaction)
-    const beaconResult = await db.query('SELECT id, endpoint_url, name FROM beacons WHERE id = $1', [tx.beacon_id]);
-    if (beaconResult.rows.length > 0) {
-      dispatchWebhook(beaconResult.rows[0], 'fulfillment.updated', {
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'failed'];
+    if (!validStatuses.includes(fulfillmentStatus)) {
+      reply.code(400);
+      return { error: 'invalid_status', message: `fulfillmentStatus must be one of: ${validStatuses.join(', ')}` };
+    }
+
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
+
+    try {
+      // ATOMIC: Lock transaction row to prevent concurrent fulfillment/payment races
+      const client = await db.connect();
+      let tx, newStatus;
+
+      try {
+        await client.query('BEGIN');
+
+        const txResult = await client.query(
+          'SELECT * FROM transactions WHERE id = $1 FOR UPDATE',
+          [transactionId]
+        );
+        if (txResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          reply.code(404);
+          return { error: 'not_found', message: 'Transaction not found' };
+        }
+
+        tx = txResult.rows[0];
+
+        // Auto-transition transaction status
+        newStatus = tx.status;
+        if (fulfillmentStatus === 'delivered') {
+          // Also check if payment already charged → completed
+          newStatus = tx.payment_status === 'charged' ? 'completed' : 'fulfilled';
+        }
+
+        await client.query(
+          `UPDATE transactions
+           SET fulfillment_status = $1, fulfillment_reference = $2,
+               status = $3, updated_at = NOW()
+           WHERE id = $4`,
+          [fulfillmentStatus, fulfillmentReference || null, newStatus, transactionId]
+        );
+
+        // Audit log inside transaction
+        await client.query(
+          `INSERT INTO audit_log (entity_type, entity_id, action, previous_state, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          ['transaction', transactionId, 'fulfillment_updated',
+           { fulfillmentStatus: tx.fulfillment_status, status: tx.status },
+           { fulfillmentStatus, status: newStatus },
+           tx.beacon_id,
+           request.requestId]
+        );
+
+        await client.query('COMMIT');
+      } catch (innerError) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw innerError;
+      } finally {
+        client.release();
+      }
+
+      // Structured activity logging (outside transaction)
+      request.log.info({
+        event: 'fulfillment.updated',
         transactionId,
-        sessionId: tx.session_id,
+        status: fulfillmentStatus,
+      });
+
+      // Dispatch webhook (fire-and-forget, outside transaction)
+      const beaconResult = await db.query('SELECT id, endpoint_url, name FROM beacons WHERE id = $1', [tx.beacon_id]);
+      if (beaconResult.rows.length > 0) {
+        dispatchWebhook(beaconResult.rows[0], 'fulfillment.updated', {
+          transactionId,
+          sessionId: tx.session_id,
+          fulfillmentStatus,
+          fulfillmentReference: fulfillmentReference || null,
+          status: newStatus,
+        }, app.log);
+      }
+
+      return {
+        transactionId,
+        status: newStatus,
         fulfillmentStatus,
         fulfillmentReference: fulfillmentReference || null,
-        status: newStatus,
-      }, app.log);
+        updatedAt: new Date().toISOString(),
+        _links: {
+          self: { href: versionedHref(request, `/transactions/${transactionId}`) },
+          session: { href: versionedHref(request, `/sessions/${tx.session_id}`) },
+        },
+      };
+    } catch (error) {
+      app.log.error(error);
+      reply.code(500);
+      return { error: 'update_failed', message: safeError(error, 'Update failed') };
+    }
+  });
+
+  // Beacon or payment processor reports payment status
+  app.put('/transactions/:transactionId/payment', { preHandler: verifyAgent }, async (request, reply) => {
+    const { transactionId } = request.params;
+    const { paymentStatus, paymentReference, amount, currency } = request.body || {};
+
+    if (!isValidUUID(transactionId)) {
+      reply.code(400);
+      return { error: 'invalid_parameter', message: 'Invalid transactionId format. Expected UUID.' };
     }
 
-    return {
-      transactionId,
-      status: newStatus,
-      fulfillmentStatus,
-      fulfillmentReference: fulfillmentReference || null,
-      updatedAt: new Date().toISOString(),
-      _links: {
-        self: { href: `/transactions/${transactionId}` },
-        session: { href: `/sessions/${tx.session_id}` },
-      },
-    };
-  } catch (error) {
-    app.log.error(error);
-    reply.code(500);
-    return { error: 'update_failed', message: safeError(error, 'Update failed') };
-  }
-});
+    if (!paymentStatus) {
+      reply.code(400);
+      return { error: 'missing_fields', message: 'paymentStatus is required' };
+    }
 
-// Beacon or payment processor reports payment status
-app.put('/transactions/:transactionId/payment', { preHandler: verifyAgent }, async (request, reply) => {
-  const { transactionId } = request.params;
-  const { paymentStatus, paymentReference, amount, currency } = request.body || {};
+    const validStatuses = ['pending', 'authorized', 'charged', 'refunded', 'failed'];
+    if (!validStatuses.includes(paymentStatus)) {
+      reply.code(400);
+      return { error: 'invalid_status', message: `paymentStatus must be one of: ${validStatuses.join(', ')}` };
+    }
 
-  if (!isValidUUID(transactionId)) {
-    reply.code(400);
-    return { error: 'invalid_parameter', message: 'Invalid transactionId format. Expected UUID.' };
-  }
-
-  if (!paymentStatus) {
-    reply.code(400);
-    return { error: 'missing_fields', message: 'paymentStatus is required' };
-  }
-
-  const validStatuses = ['pending', 'authorized', 'charged', 'refunded', 'failed'];
-  if (!validStatuses.includes(paymentStatus)) {
-    reply.code(400);
-    return { error: 'invalid_status', message: `paymentStatus must be one of: ${validStatuses.join(', ')}` };
-  }
-
-  if (!db) {
-    reply.code(503);
-    return { error: 'database_unavailable' };
-  }
-
-  try {
-    // ATOMIC: Lock transaction row to prevent concurrent payment/fulfillment races
-    const client = await db.connect();
-    let tx, newStatus;
+    if (!db) {
+      reply.code(503);
+      return { error: 'database_unavailable' };
+    }
 
     try {
-      await client.query('BEGIN');
+      // ATOMIC: Lock transaction row to prevent concurrent payment/fulfillment races
+      const client = await db.connect();
+      let tx, newStatus;
 
-      const txResult = await client.query(
-        'SELECT * FROM transactions WHERE id = $1 FOR UPDATE',
-        [transactionId]
-      );
-      if (txResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        reply.code(404);
-        return { error: 'not_found', message: 'Transaction not found' };
+      try {
+        await client.query('BEGIN');
+
+        const txResult = await client.query(
+          'SELECT * FROM transactions WHERE id = $1 FOR UPDATE',
+          [transactionId]
+        );
+        if (txResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          reply.code(404);
+          return { error: 'not_found', message: 'Transaction not found' };
+        }
+
+        tx = txResult.rows[0];
+
+        // Auto-transition: if fulfilled + charged → completed
+        newStatus = tx.status;
+        if (paymentStatus === 'charged' && tx.fulfillment_status === 'delivered') {
+          newStatus = 'completed';
+        }
+
+        await client.query(
+          `UPDATE transactions
+           SET payment_status = $1, payment_reference = $2,
+               status = $3, updated_at = NOW()
+           WHERE id = $4`,
+          [paymentStatus, paymentReference || null, newStatus, transactionId]
+        );
+
+        // Audit log inside transaction
+        await client.query(
+          `INSERT INTO audit_log (entity_type, entity_id, action, previous_state, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          ['transaction', transactionId, 'payment_updated',
+           { paymentStatus: tx.payment_status, status: tx.status },
+           { paymentStatus, status: newStatus },
+           tx.beacon_id,
+           request.requestId]
+        );
+
+        await client.query('COMMIT');
+      } catch (innerError) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw innerError;
+      } finally {
+        client.release();
       }
 
-      tx = txResult.rows[0];
-
-      // Auto-transition: if fulfilled + charged → completed
-      newStatus = tx.status;
-      if (paymentStatus === 'charged' && tx.fulfillment_status === 'delivered') {
-        newStatus = 'completed';
+      // Dispatch webhook (fire-and-forget, outside transaction)
+      const beaconResult = await db.query('SELECT id, endpoint_url, name FROM beacons WHERE id = $1', [tx.beacon_id]);
+      if (beaconResult.rows.length > 0) {
+        dispatchWebhook(beaconResult.rows[0], 'payment.updated', {
+          transactionId,
+          sessionId: tx.session_id,
+          paymentStatus,
+          paymentReference: paymentReference || null,
+          status: newStatus,
+        }, app.log);
       }
 
-      await client.query(
-        `UPDATE transactions
-         SET payment_status = $1, payment_reference = $2,
-             status = $3, updated_at = NOW()
-         WHERE id = $4`,
-        [paymentStatus, paymentReference || null, newStatus, transactionId]
-      );
-
-      // Audit log inside transaction
-      await client.query(
-        `INSERT INTO audit_log (entity_type, entity_id, action, previous_state, new_state, changed_by, request_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        ['transaction', transactionId, 'payment_updated',
-         { paymentStatus: tx.payment_status, status: tx.status },
-         { paymentStatus, status: newStatus },
-         tx.beacon_id,
-         request.requestId]
-      );
-
-      await client.query('COMMIT');
-    } catch (innerError) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw innerError;
-    } finally {
-      client.release();
-    }
-
-    // Dispatch webhook (fire-and-forget, outside transaction)
-    const beaconResult = await db.query('SELECT id, endpoint_url, name FROM beacons WHERE id = $1', [tx.beacon_id]);
-    if (beaconResult.rows.length > 0) {
-      dispatchWebhook(beaconResult.rows[0], 'payment.updated', {
+      return {
         transactionId,
-        sessionId: tx.session_id,
+        status: newStatus,
         paymentStatus,
         paymentReference: paymentReference || null,
-        status: newStatus,
-      }, app.log);
+        updatedAt: new Date().toISOString(),
+        _links: {
+          self: { href: versionedHref(request, `/transactions/${transactionId}`) },
+          session: { href: versionedHref(request, `/sessions/${tx.session_id}`) },
+        },
+      };
+    } catch (error) {
+      app.log.error(error);
+      reply.code(500);
+      return { error: 'update_failed', message: safeError(error, 'Update failed') };
     }
-
-    return {
-      transactionId,
-      status: newStatus,
-      paymentStatus,
-      paymentReference: paymentReference || null,
-      updatedAt: new Date().toISOString(),
-      _links: {
-        self: { href: `/transactions/${transactionId}` },
-        session: { href: `/sessions/${tx.session_id}` },
-      },
-    };
-  } catch (error) {
-    app.log.error(error);
-    reply.code(500);
-    return { error: 'update_failed', message: safeError(error, 'Update failed') };
-  }
-});
-
-// =============================================================================
-// WebSocket Endpoints (keeping for future real-time support)
-// =============================================================================
-
-app.get('/ws/scout', { websocket: true }, (connection) => {
-  connection.socket.on('message', (message) => {
-    const data = JSON.parse(message.toString());
-    app.log.info({ type: 'scout_message', data });
-    connection.socket.send(JSON.stringify({ type: 'ack', received: data }));
   });
-  connection.socket.send(JSON.stringify({
-    type: 'connected',
-    message: 'Connected to AURA Core as Scout',
-    note: 'WebSocket support is for future real-time updates. Use REST API for MVP.',
-  }));
-});
 
-app.get('/ws/beacon', { websocket: true }, (connection) => {
-  connection.socket.on('message', (message) => {
-    const data = JSON.parse(message.toString());
-    app.log.info({ type: 'beacon_message', data });
-    connection.socket.send(JSON.stringify({ type: 'ack', received: data }));
+  // =============================================================================
+  // WebSocket Endpoints (keeping for future real-time support)
+  // =============================================================================
+
+  app.get('/ws/scout', { websocket: true }, (connection) => {
+    connection.socket.on('message', (message) => {
+      const data = JSON.parse(message.toString());
+      app.log.info({ type: 'scout_message', data });
+      connection.socket.send(JSON.stringify({ type: 'ack', received: data }));
+    });
+    connection.socket.send(JSON.stringify({
+      type: 'connected',
+      message: 'Connected to AURA Core as Scout',
+      note: 'WebSocket support is for future real-time updates. Use REST API for MVP.',
+    }));
   });
-  connection.socket.send(JSON.stringify({
-    type: 'connected',
-    message: 'Connected to AURA Core as Beacon',
-    note: 'WebSocket support is for future real-time updates. Use REST API for MVP.',
-  }));
-});
+
+  app.get('/ws/beacon', { websocket: true }, (connection) => {
+    connection.socket.on('message', (message) => {
+      const data = JSON.parse(message.toString());
+      app.log.info({ type: 'beacon_message', data });
+      connection.socket.send(JSON.stringify({ type: 'ack', received: data }));
+    });
+    connection.socket.send(JSON.stringify({
+      type: 'connected',
+      message: 'Connected to AURA Core as Beacon',
+      note: 'WebSocket support is for future real-time updates. Use REST API for MVP.',
+    }));
+  });
+}
+
+// Register versioned routes
+app.register(businessRoutesV1, { prefix: '/v1' });
 
 // =============================================================================
 // Start Server

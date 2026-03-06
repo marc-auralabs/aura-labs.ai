@@ -20,12 +20,72 @@ https://aura-labsai-production.up.railway.app
 
 All API requests use the base URL above. Request/response content type is `application/json`.
 
+## API Versioning
+
+The API uses URL-path versioning. The version is a declared value in the URL path that agents include in every request:
+
+```
+https://aura-labsai-production.up.railway.app/v1/sessions
+https://aura-labsai-production.up.railway.app/v1/agents/register
+```
+
+**Current version:** `v1` (stable)
+
+### Version Discovery
+
+`GET /` is unversioned and returns available API versions:
+
+```json
+{
+  "name": "AURA Core API",
+  "versions": {
+    "v1": { "status": "current", "href": "/v1", "deprecated": false }
+  },
+  "_links": {
+    "self": { "href": "/" },
+    "health": { "href": "/health" },
+    "current": { "href": "/v1" }
+  }
+}
+```
+
+`GET /v1` returns the HATEOAS navigation root for v1:
+
+```json
+{
+  "name": "AURA Core API",
+  "version": "v1",
+  "_links": {
+    "self": { "href": "/v1/" },
+    "agents": { "href": "/v1/agents/register", "methods": ["POST"] },
+    "sessions": { "href": "/v1/sessions", "methods": ["GET", "POST"] },
+    "beacons": { "href": "/v1/beacons" }
+  }
+}
+```
+
+### HATEOAS Version Propagation
+
+All `_links.href` values in API responses include the version prefix. When an agent follows links from a response, it automatically stays within its declared API version. This means agents that discover the API via HATEOAS never need to construct versioned URLs manually — the version propagates through the link graph.
+
+### Unversioned Endpoints
+
+Health checks and version discovery are intentionally unversioned:
+
+- `GET /` — version discovery
+- `GET /health` — system health
+- `GET /health/ready` — readiness probe
+
+### SDK Version Targeting
+
+SDKs declare their target API version internally. The Beacon SDK, Scout SDK, and MCP Server Scout all include an `API_VERSION` constant (`/v1`) that is prepended to all request paths. When a new API version ships, a new SDK major version will target it.
+
 ## Authentication
 
 ### Agent Authentication (Recommended)
 Agent requests use Ed25519 signatures as defined in DEC-009 specification:
 
-1. Register agent with public key and signature proof via `POST /agents/register`
+1. Register agent with public key and signature proof via `POST /v1/agents/register`
 2. Include agent signature in request headers for authenticated operations
 3. No API keys needed for basic demo/dev scenarios
 
@@ -104,33 +164,48 @@ Readiness probe (typically for Kubernetes).
 }
 ```
 
-### Root
+### Root & Version Discovery
 
 #### GET /
-API root information with available endpoints.
+API version discovery (unversioned).
 
 **Response:**
 ```json
 {
-  "name": "AURA API",
-  "version": "1.0.0",
-  "endpoints": [
-    "/agents/register",
-    "/sessions",
-    "/beacons/register",
-    "..."
-  ],
+  "name": "AURA Core API",
+  "versions": {
+    "v1": { "status": "current", "href": "/v1", "deprecated": false }
+  },
   "_links": {
-    "agents": { "href": "/agents" },
-    "sessions": { "href": "/sessions" },
-    "beacons": { "href": "/beacons" }
+    "self": { "href": "/" },
+    "health": { "href": "/health" },
+    "current": { "href": "/v1", "title": "Current API version" },
+    "docs": { "href": "https://aura-labs.ai/developers" }
+  }
+}
+```
+
+#### GET /v1
+HATEOAS navigation root for API v1.
+
+**Response:**
+```json
+{
+  "name": "AURA Core API",
+  "version": "v1",
+  "_links": {
+    "self": { "href": "/v1/" },
+    "agents": { "href": "/v1/agents/register", "title": "Register agent", "methods": ["POST"] },
+    "sessions": { "href": "/v1/sessions", "title": "Commerce sessions", "methods": ["GET", "POST"] },
+    "beacons": { "href": "/v1/beacons", "title": "Beacon management" },
+    "docs": { "href": "https://aura-labs.ai/developers" }
   }
 }
 ```
 
 ### Agent Identity (Ed25519)
 
-#### POST /agents/register
+#### POST /v1/agents/register
 Register an agent with Ed25519 public key and signature proof.
 
 **Request:**
@@ -152,13 +227,13 @@ Register an agent with Ed25519 public key and signature proof.
   "publicKey": "base64-encoded-ed25519-public-key",
   "createdAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/agents/{agentId}" },
-    "revoke": { "href": "/agents/{agentId}/revoke" }
+    "self": { "href": "/v1/agents/{agentId}" },
+    "revoke": { "href": "/v1/agents/{agentId}/revoke" }
   }
 }
 ```
 
-#### GET /agents/:agentId
+#### GET /v1/agents/:agentId
 Get agent details by ID.
 
 **Response:** `200 OK`
@@ -173,12 +248,12 @@ Get agent details by ID.
   "createdAt": "2026-03-03T00:00:00Z",
   "revokedAt": null,
   "_links": {
-    "self": { "href": "/agents/{agentId}" }
+    "self": { "href": "/v1/agents/{agentId}" }
   }
 }
 ```
 
-#### POST /agents/:agentId/revoke
+#### POST /v1/agents/:agentId/revoke
 Revoke an agent (invalidates future signatures).
 
 **Response:** `200 OK`
@@ -187,7 +262,7 @@ Revoke an agent (invalidates future signatures).
   "agentId": "uuid",
   "revokedAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/agents/{agentId}" }
+    "self": { "href": "/v1/agents/{agentId}" }
   }
 }
 ```
@@ -196,13 +271,13 @@ Revoke an agent (invalidates future signatures).
 
 Scouts register via the universal agent endpoint using Ed25519 proof-of-possession. The legacy `/scouts/register` endpoint has been removed (DEC-015).
 
-#### POST /agents/register (type: "scout")
+#### POST /v1/agents/register (type: "scout")
 
 See **Agent Registration** section above for the full request/response format. Scouts and beacons use the same registration flow with `type: "scout"` or `type: "beacon"` respectively.
 
 ### Beacon Registration
 
-#### POST /beacons/register
+#### POST /v1/beacons/register
 Register a Beacon (seller) with capabilities and webhook endpoint.
 
 **Request:**
@@ -225,13 +300,13 @@ Register a Beacon (seller) with capabilities and webhook endpoint.
   "endpointUrl": "https://beacon.example.com/webhook",
   "createdAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/beacons/{beaconId}" },
-    "sessions": { "href": "/beacons/sessions" }
+    "self": { "href": "/v1/beacons/{beaconId}" },
+    "sessions": { "href": "/v1/beacons/sessions" }
   }
 }
 ```
 
-#### GET /beacons/:beaconId
+#### GET /v1/beacons/:beaconId
 Get Beacon details by ID.
 
 **Response:** `200 OK`
@@ -244,12 +319,12 @@ Get Beacon details by ID.
   "endpointUrl": "https://beacon.example.com/webhook",
   "createdAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/beacons/{beaconId}" }
+    "self": { "href": "/v1/beacons/{beaconId}" }
   }
 }
 ```
 
-#### GET /beacons/sessions
+#### GET /v1/beacons/sessions
 Get available sessions for Beacons to poll and respond to.
 
 **Response:** `200 OK`
@@ -262,20 +337,20 @@ Get available sessions for Beacons to poll and respond to.
       "scoutId": "uuid",
       "createdAt": "2026-03-03T00:00:00Z",
       "_links": {
-        "self": { "href": "/sessions/{sessionId}" },
-        "submit-offer": { "href": "/sessions/{sessionId}/offers", "method": "POST" }
+        "self": { "href": "/v1/sessions/{sessionId}" },
+        "submit-offer": { "href": "/v1/sessions/{sessionId}/offers", "method": "POST" }
       }
     }
   ],
   "_links": {
-    "self": { "href": "/beacons/sessions" }
+    "self": { "href": "/v1/beacons/sessions" }
   }
 }
 ```
 
 ### Sessions (Commerce Flow)
 
-#### POST /sessions
+#### POST /v1/sessions
 Create a new commerce session with NLP-parsed intent. AURA matches intent to compatible Beacons.
 
 **Request:**
@@ -301,15 +376,15 @@ Agent identity comes from Ed25519 signature verification (X-Agent-ID, X-Signatur
   "state": "open",
   "createdAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/sessions/{sessionId}" },
-    "offers": { "href": "/sessions/{sessionId}/offers" },
-    "commit": { "href": "/sessions/{sessionId}/commit", "method": "POST" },
-    "cancel": { "href": "/sessions/{sessionId}/cancel", "method": "POST" }
+    "self": { "href": "/v1/sessions/{sessionId}" },
+    "offers": { "href": "/v1/sessions/{sessionId}/offers" },
+    "commit": { "href": "/v1/sessions/{sessionId}/commit", "method": "POST" },
+    "cancel": { "href": "/v1/sessions/{sessionId}/cancel", "method": "POST" }
   }
 }
 ```
 
-#### GET /sessions/:sessionId
+#### GET /v1/sessions/:sessionId
 Get session state, offers, and transaction details.
 
 **Response:** `200 OK`
@@ -331,15 +406,15 @@ Get session state, offers, and transaction details.
   "transactionId": null,
   "createdAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/sessions/{sessionId}" },
-    "offers": { "href": "/sessions/{sessionId}/offers" },
-    "commit": { "href": "/sessions/{sessionId}/commit", "method": "POST" },
-    "cancel": { "href": "/sessions/{sessionId}/cancel", "method": "POST" }
+    "self": { "href": "/v1/sessions/{sessionId}" },
+    "offers": { "href": "/v1/sessions/{sessionId}/offers" },
+    "commit": { "href": "/v1/sessions/{sessionId}/commit", "method": "POST" },
+    "cancel": { "href": "/v1/sessions/{sessionId}/cancel", "method": "POST" }
   }
 }
 ```
 
-#### POST /sessions/:sessionId/offers
+#### POST /v1/sessions/:sessionId/offers
 Submit an offer from a Beacon in response to a session.
 
 **Request:**
@@ -369,12 +444,12 @@ Submit an offer from a Beacon in response to a session.
   },
   "createdAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/sessions/{sessionId}/offers/{offerId}" }
+    "self": { "href": "/v1/sessions/{sessionId}/offers/{offerId}" }
   }
 }
 ```
 
-#### GET /sessions/:sessionId/offers
+#### GET /v1/sessions/:sessionId/offers
 List all offers in a session.
 
 **Response:** `200 OK`
@@ -397,12 +472,12 @@ List all offers in a session.
     }
   ],
   "_links": {
-    "self": { "href": "/sessions/{sessionId}/offers" }
+    "self": { "href": "/v1/sessions/{sessionId}/offers" }
   }
 }
 ```
 
-#### POST /sessions/:sessionId/commit
+#### POST /v1/sessions/:sessionId/commit
 Commit to an offer, creating a transaction. Required to have at least one offer in the session.
 
 **Request:**
@@ -427,16 +502,16 @@ Commit to an offer, creating a transaction. Required to have at least one offer 
   "fulfillmentStatus": "pending",
   "createdAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/transactions/{transactionId}" },
-    "update-fulfillment": { "href": "/transactions/{transactionId}/fulfillment", "method": "PUT" },
-    "update-payment": { "href": "/transactions/{transactionId}/payment", "method": "PUT" }
+    "self": { "href": "/v1/transactions/{transactionId}" },
+    "update-fulfillment": { "href": "/v1/transactions/{transactionId}/fulfillment", "method": "PUT" },
+    "update-payment": { "href": "/v1/transactions/{transactionId}/payment", "method": "PUT" }
   }
 }
 ```
 
 Note: `agentId` is the primary identifier. `scoutId` is included for legacy compatibility.
 
-#### POST /sessions/:sessionId/cancel
+#### POST /v1/sessions/:sessionId/cancel
 Cancel an open session.
 
 **Response:** `200 OK`
@@ -446,14 +521,14 @@ Cancel an open session.
   "state": "cancelled",
   "cancelledAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/sessions/{sessionId}" }
+    "self": { "href": "/v1/sessions/{sessionId}" }
   }
 }
 ```
 
 ### Transactions (Post-Transaction Lifecycle)
 
-#### GET /transactions/:transactionId
+#### GET /v1/transactions/:transactionId
 Get full transaction details including fulfillment and payment status.
 
 **Response:** `200 OK`
@@ -474,14 +549,14 @@ Get full transaction details including fulfillment and payment status.
   "fulfilledAt": null,
   "completedAt": null,
   "_links": {
-    "self": { "href": "/transactions/{transactionId}" },
-    "update-fulfillment": { "href": "/transactions/{transactionId}/fulfillment", "method": "PUT" },
-    "update-payment": { "href": "/transactions/{transactionId}/payment", "method": "PUT" }
+    "self": { "href": "/v1/transactions/{transactionId}" },
+    "update-fulfillment": { "href": "/v1/transactions/{transactionId}/fulfillment", "method": "PUT" },
+    "update-payment": { "href": "/v1/transactions/{transactionId}/payment", "method": "PUT" }
   }
 }
 ```
 
-#### PUT /transactions/:transactionId/fulfillment
+#### PUT /v1/transactions/:transactionId/fulfillment
 Update fulfillment status. Auto-transitions transaction to 'fulfilled' when status is 'delivered'.
 
 **Request:**
@@ -502,7 +577,7 @@ Update fulfillment status. Auto-transitions transaction to 'fulfilled' when stat
   "fulfilledAt": null,
   "updatedAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/transactions/{transactionId}" }
+    "self": { "href": "/v1/transactions/{transactionId}" }
   }
 }
 ```
@@ -515,12 +590,12 @@ When fulfillmentStatus becomes 'delivered', the transaction automatically transi
   "state": "fulfilled",
   "fulfilledAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/transactions/{transactionId}" }
+    "self": { "href": "/v1/transactions/{transactionId}" }
   }
 }
 ```
 
-#### PUT /transactions/:transactionId/payment
+#### PUT /v1/transactions/:transactionId/payment
 Update payment status. Auto-transitions transaction to 'completed' when both payment is 'charged' AND fulfillment is already 'delivered'.
 
 **Request:**
@@ -539,7 +614,7 @@ Update payment status. Auto-transitions transaction to 'completed' when both pay
   "completedAt": null,
   "updatedAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/transactions/{transactionId}" }
+    "self": { "href": "/v1/transactions/{transactionId}" }
   }
 }
 ```
@@ -553,17 +628,17 @@ When paymentStatus becomes 'charged' AND fulfillmentStatus is already 'delivered
   "state": "completed",
   "completedAt": "2026-03-03T00:00:00Z",
   "_links": {
-    "self": { "href": "/transactions/{transactionId}" }
+    "self": { "href": "/v1/transactions/{transactionId}" }
   }
 }
 ```
 
 ### WebSocket (Placeholder)
 
-#### GET /ws/scout
+#### GET /v1/ws/scout
 WebSocket endpoint for Scouts. Currently a basic placeholder with limited functionality.
 
-#### GET /ws/beacon
+#### GET /v1/ws/beacon
 WebSocket endpoint for Beacons. Currently a basic placeholder with limited functionality.
 
 ## Transaction Lifecycle Diagram
