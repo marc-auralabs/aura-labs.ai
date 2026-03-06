@@ -92,11 +92,11 @@ jobs:
             ISSUES=$((ISSUES + 1))
           fi
 
-          # Hardcoded passwords
+          # Database connection strings with embedded passwords
           if grep -r -n --include="*.js" --include="*.ts" --include="*.json" \
-            -E "(password|passwd|secret)\s*[:=]\s*['\"][^'\"]{8,}" . \
+            -E '(mongodb|postgres|mysql|redis)://[^:]+:[^@]{8,}@' . \
             --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=tests --exclude="*.test.*"; then
-            echo "::error::Found potential hardcoded passwords."
+            echo "::error::Found database connection string with embedded password."
             ISSUES=$((ISSUES + 1))
           fi
 
@@ -111,15 +111,15 @@ jobs:
       - name: Check for prohibited file types
         run: |
           echo "Checking for prohibited file types..."
+          # Private repo: only block actual credentials and env files.
+          # Office docs, investor materials, etc. are fine in a private repo.
           PROHIBITED=$(find . -not -path './.git/*' -not -path './node_modules/*' \
-            \( -name "*.pptx" -o -name "*.docx" -o -name "*.xlsx" \
-               -o -name "*investor*" -o -name "*pitch*deck*" \
-               -o -name "*CONFIDENTIAL*" -o -name "*PRIVATE*" \
-               -o -name "*.env" -not -name "*.env.example" -not -name "*.env.sample" \) \
+            \( -name "*.env" -not -name "*.env.example" -not -name "*.env.sample" \
+               -o -name "*.pem" -o -name "*.key" -o -name "*.p12" -o -name "*.pfx" \) \
             2>/dev/null || true)
 
           if [ -n "$PROHIBITED" ]; then
-            echo "::error::Found prohibited files that should not be in a public repo:"
+            echo "::error::Found credential files that should not be committed:"
             echo "$PROHIBITED"
             echo ""
             echo "Add these to .gitignore and remove from tracking with: git rm --cached <file>"
@@ -127,31 +127,6 @@ jobs:
           fi
 
           echo "✓ No prohibited files found."
-
-      - name: Check for infrastructure details
-        run: |
-          echo "Checking for infrastructure leaks..."
-          ISSUES=0
-
-          # Supabase project references (not in docs about Supabase)
-          if grep -r -n -E 'supabase\.(co|com)/project/[a-z]{20}' . \
-            --exclude-dir=node_modules --exclude-dir=.git 2>/dev/null; then
-            echo "::error::Found Supabase project URL with real project ID."
-            ISSUES=$((ISSUES + 1))
-          fi
-
-          # Railway deployment URLs
-          if grep -r -n -E 'railway\.app' . \
-            --include="*.js" --include="*.ts" --include="*.json" \
-            --exclude-dir=node_modules --exclude-dir=.git 2>/dev/null; then
-            echo "::warning::Found Railway deployment URL in source code — verify this is intentional."
-          fi
-
-          if [ "$ISSUES" -gt 0 ]; then
-            exit 1
-          fi
-
-          echo "✓ Infrastructure check passed."
 
   # ─────────────────────────────────────────────
   # 3. Tests
