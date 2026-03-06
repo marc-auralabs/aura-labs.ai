@@ -85,9 +85,10 @@ jobs:
             ISSUES=$((ISSUES + 1))
           fi
 
-          # Private keys
+          # Private keys (exclude test files — they contain format assertions, not real keys)
           if grep -r -n --include="*.js" --include="*.ts" --include="*.json" --include="*.md" \
-            -E 'BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY' . --exclude-dir=node_modules --exclude-dir=.git; then
+            -E 'BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY' . \
+            --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=tests --exclude="*.test.*"; then
             echo "::error::Found private key material."
             ISSUES=$((ISSUES + 1))
           fi
