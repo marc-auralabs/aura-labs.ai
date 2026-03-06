@@ -36,13 +36,13 @@ const config = {
 let db = null;
 
 if (config.databaseUrl) {
-  // SSL configuration: validate certificates in production (prevents MITM).
-  // In development, allow disabling SSL entirely for local Postgres.
-  const sslConfig = config.env === 'production'
-    ? { rejectUnauthorized: true }
-    : config.databaseUrl.includes('localhost') || config.databaseUrl.includes('127.0.0.1')
-      ? false
-      : { rejectUnauthorized: true };
+  // SSL configuration:
+  // - Local dev (localhost/127.0.0.1): no SSL
+  // - Cloud (Railway, Supabase): SSL enabled, rejectUnauthorized off
+  //   because Railway/Supabase use self-signed or internal CA certs.
+  //   Traffic is encrypted; Railway's internal network handles trust.
+  const isLocal = config.databaseUrl.includes('localhost') || config.databaseUrl.includes('127.0.0.1');
+  const sslConfig = isLocal ? false : { rejectUnauthorized: false };
 
   db = new Pool({
     connectionString: config.databaseUrl,
