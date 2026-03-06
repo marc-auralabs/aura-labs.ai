@@ -10,17 +10,24 @@
  * When a KeyManager is set, all requests are signed with the agent's
  * private key and include X-Agent-Id, X-Agent-Signature, and
  * X-Agent-Timestamp headers.
+ *
+ * Adds correlation IDs (X-Request-ID) to every request for end-to-end tracing.
+ * Reports request timing and outcomes to the activity logger when provided.
  */
 
+import { randomUUID } from 'crypto';
 import { ConnectionError, AuthenticationError, ScoutError } from './errors.js';
+import { ScoutActivityEventTypes } from './activity.js';
 
 export class ScoutClient {
   #config;
   #keyManager = null;
   #agentId = null;
+  #activityLogger;
 
-  constructor(config) {
+  constructor(config, activityLogger = null) {
     this.#config = config;
+    this.#activityLogger = activityLogger;
   }
 
   /**
@@ -81,11 +88,13 @@ export class ScoutClient {
    */
   async #request(method, path, body = null, extraHeaders = {}) {
     const url = `${this.#config.coreUrl}${path}`;
+    const requestId = randomUUID();
     const bodyString = body ? JSON.stringify(body) : null;
 
     const headers = {
       'Content-Type': 'application/json',
       'X-Scout-SDK': '@aura-labs/scout/0.1.0',
+      'X-Request-ID': requestId,
       ...extraHeaders,
     };
 
@@ -113,44 +122,85 @@ export class ScoutClient {
       options.body = bodyString;
     }
 
+    // Record request start
+    let completeTimer;
+    if (this.#activityLogger) {
+      completeTimer = this.#activityLogger.startTimer(ScoutActivityEventTypes.REQUEST_COMPLETE, {
+        correlationId: requestId,
+        metadata: { method, path, url },
+      });
+      this.#activityLogger.record(ScoutActivityEventTypes.REQUEST_START, {
+        correlationId: requestId,
+        metadata: { method, path, url },
+      });
+    }
+
     try {
       const response = await fetch(url, options);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
+        const errorMsg = error.message || `Request failed with status ${response.status}`;
+
+        // Record failure
+        if (this.#activityLogger) {
+          this.#activityLogger.record(ScoutActivityEventTypes.REQUEST_FAILED, {
+            correlationId: requestId,
+            success: false,
+            error: errorMsg,
+            metadata: { method, path, statusCode: response.status },
+          });
+        }
 
         if (response.status === 401) {
-          throw new AuthenticationError(error.message || 'Authentication failed');
+          throw new AuthenticationError(errorMsg);
         }
 
         if (response.status === 403) {
-          throw new AuthenticationError(error.message || 'Access denied');
+          throw new AuthenticationError(errorMsg);
         }
 
         if (response.status === 404) {
-          throw new ScoutError(
-            error.message || 'Resource not found',
-            'NOT_FOUND'
-          );
+          throw new ScoutError(errorMsg, 'NOT_FOUND');
         }
 
-        throw new ScoutError(
-          error.message || `Request failed with status ${response.status}`,
-          error.code || 'REQUEST_FAILED'
-        );
+        throw new ScoutError(errorMsg, error.code || 'REQUEST_FAILED');
       }
 
-      return response.json();
+      const result = await response.json();
+
+      // Record success
+      if (completeTimer) {
+        completeTimer({
+          success: true,
+          metadata: { method, path, statusCode: response.status },
+        });
+      }
+
+      return result;
     } catch (error) {
-      if (error instanceof ScoutError) {
-        throw error;
+      if (error instanceof ScoutError) throw error;
+
+      const isTimeout = error.name === 'AbortError' || error.name === 'TimeoutError';
+      const errorMsg = isTimeout
+        ? `Request timed out after ${this.#config.timeout}ms`
+        : `Failed to connect to AURA Core: ${error.message}`;
+
+      // Record failure
+      if (this.#activityLogger) {
+        this.#activityLogger.record(ScoutActivityEventTypes.REQUEST_FAILED, {
+          correlationId: requestId,
+          success: false,
+          error: errorMsg,
+          metadata: { method, path, timeout: isTimeout },
+        });
       }
 
-      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-        throw new ConnectionError(`Request timed out after ${this.#config.timeout}ms`);
+      if (isTimeout) {
+        throw new ConnectionError(errorMsg);
       }
 
-      throw new ConnectionError(`Failed to connect to AURA Core: ${error.message}`);
+      throw new ConnectionError(errorMsg);
     }
   }
 

@@ -1,14 +1,22 @@
 /**
  * Beacon HTTP Client
+ *
+ * Handles all HTTP communication with AURA Core.
+ * Adds correlation IDs (X-Request-ID) to every request for end-to-end tracing.
+ * Reports request timing and outcomes to the activity logger when provided.
  */
 
+import { randomUUID } from 'crypto';
 import { ConnectionError, BeaconError } from './errors.js';
+import { ActivityEventTypes } from './activity.js';
 
 export class BeaconClient {
   #config;
+  #activityLogger;
 
-  constructor(config) {
+  constructor(config, activityLogger = null) {
     this.#config = config;
+    this.#activityLogger = activityLogger;
   }
 
   async get(path) {
@@ -25,10 +33,12 @@ export class BeaconClient {
 
   async #request(method, path, body = null) {
     const url = `${this.#config.coreUrl}${path}`;
+    const requestId = randomUUID();
 
     const headers = {
       'Content-Type': 'application/json',
       'X-Beacon-SDK': '@aura-labs/beacon/0.1.0',
+      'X-Request-ID': requestId,
     };
 
     if (this.#config.beaconId) {
@@ -45,26 +55,73 @@ export class BeaconClient {
       options.body = JSON.stringify(body);
     }
 
+    // Record request start
+    let completeTimer;
+    if (this.#activityLogger) {
+      completeTimer = this.#activityLogger.startTimer(ActivityEventTypes.REQUEST_COMPLETE, {
+        correlationId: requestId,
+        metadata: { method, path, url },
+      });
+      this.#activityLogger.record(ActivityEventTypes.REQUEST_START, {
+        correlationId: requestId,
+        metadata: { method, path, url },
+      });
+    }
+
     try {
       const response = await fetch(url, options);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new BeaconError(
-          error.message || `Request failed with status ${response.status}`,
-          error.code || 'REQUEST_FAILED'
-        );
+        const errorMsg = error.message || `Request failed with status ${response.status}`;
+
+        // Record failure
+        if (this.#activityLogger) {
+          this.#activityLogger.record(ActivityEventTypes.REQUEST_FAILED, {
+            correlationId: requestId,
+            success: false,
+            error: errorMsg,
+            metadata: { method, path, statusCode: response.status },
+          });
+        }
+
+        throw new BeaconError(errorMsg, error.code || 'REQUEST_FAILED');
       }
 
-      return response.json();
+      const result = await response.json();
+
+      // Record success
+      if (completeTimer) {
+        completeTimer({
+          success: true,
+          metadata: { method, path, statusCode: response.status },
+        });
+      }
+
+      return result;
     } catch (error) {
       if (error instanceof BeaconError) throw error;
 
-      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-        throw new ConnectionError(`Request timed out after ${this.#config.timeout}ms`);
+      const isTimeout = error.name === 'AbortError' || error.name === 'TimeoutError';
+      const errorMsg = isTimeout
+        ? `Request timed out after ${this.#config.timeout}ms`
+        : `Failed to connect to AURA Core: ${error.message}`;
+
+      // Record failure
+      if (this.#activityLogger) {
+        this.#activityLogger.record(ActivityEventTypes.REQUEST_FAILED, {
+          correlationId: requestId,
+          success: false,
+          error: errorMsg,
+          metadata: { method, path, timeout: isTimeout },
+        });
       }
 
-      throw new ConnectionError(`Failed to connect to AURA Core: ${error.message}`);
+      if (isTimeout) {
+        throw new ConnectionError(errorMsg);
+      }
+
+      throw new ConnectionError(errorMsg);
     }
   }
 

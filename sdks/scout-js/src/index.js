@@ -41,6 +41,7 @@ import {
   ConstraintError,
   OfferError,
 } from './errors.js';
+import { ScoutActivityLogger, ScoutActivityEventTypes } from './activity.js';
 
 // Protocol Integrations
 import { MCPClient } from './mcp/client.js';
@@ -75,6 +76,7 @@ export class Scout {
   #registered = false;
   #agentId = null;
   #readyPromise = null;
+  #activity;
 
   /**
    * @param {ScoutConfig} config
@@ -83,6 +85,7 @@ export class Scout {
    * @param {number} [config.timeout] - Request timeout in ms
    * @param {object} [config.storage] - Storage adapter with get/set/remove methods
    * @param {object} [config.constraints] - Default constraints for all sessions
+   * @param {object} [config.logger] - External logger instance (optional)
    */
   constructor(config = {}) {
     this.#config = {
@@ -97,7 +100,21 @@ export class Scout {
       storage: this.#config.storage,
     });
 
-    this.#client = new ScoutClient(this.#config);
+    // Initialize activity logger
+    this.#activity = new ScoutActivityLogger({
+      maxEvents: this.#config.maxActivityEvents || 5000,
+      logger: this.#config.logger || null,
+      scoutContext: {},
+    });
+
+    this.#client = new ScoutClient(this.#config, this.#activity);
+
+    this.#activity.record(ScoutActivityEventTypes.SCOUT_CREATED, {
+      metadata: {
+        coreUrl: this.#config.coreUrl,
+        timeout: this.#config.timeout,
+      },
+    });
   }
 
   /**
@@ -114,12 +131,19 @@ export class Scout {
     // Deduplicate concurrent ready() calls
     if (this.#readyPromise) return this.#readyPromise;
 
+    const finish = this.#activity.startTimer(ScoutActivityEventTypes.SCOUT_READY);
+
     this.#readyPromise = this.#initialize();
     try {
       await this.#readyPromise;
+      finish({ success: true });
       return this;
     } catch (error) {
       this.#readyPromise = null;
+      this.#activity.record(ScoutActivityEventTypes.SCOUT_READY_FAILED, {
+        success: false,
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -141,46 +165,68 @@ export class Scout {
       return { agentId: this.#agentId };
     }
 
-    // Ensure keys are initialized
-    if (!this.#keyManager.isInitialized) {
-      await this.#keyManager.init();
+    const finish = this.#activity.startTimer(ScoutActivityEventTypes.SCOUT_REGISTERED);
+
+    try {
+      // Ensure keys are initialized
+      if (!this.#keyManager.isInitialized) {
+        await this.#keyManager.init();
+      }
+
+      const publicKey = this.#keyManager.publicKey;
+
+      // Build registration body
+      const body = {
+        publicKey,
+        type: 'scout',
+        manifest: {
+          name: metadata.name || 'AURA Scout',
+          version: '0.1.0',
+          platform: metadata.platform || 'node-sdk',
+          sdkVersion: '0.1.0',
+          capabilities: ['intent', 'compare', 'mandate.sign'],
+          protocolVersions: ['ap2-v1', 'tap-v1'],
+          ...metadata,
+        },
+      };
+
+      // Sign the body for proof-of-possession
+      const bodyString = JSON.stringify(body);
+      const signature = this.#keyManager.sign(bodyString);
+
+      const result = await this.#client.postSigned('/agents/register', body, {
+        'X-Agent-Signature': signature,
+      });
+
+      this.#agentId = result.agentId;
+      this.#registered = true;
+
+      // Persist agentId for next launch
+      await this.#keyManager.setAgentId(this.#agentId);
+
+      // Configure client to sign subsequent requests
+      this.#client.setKeyManager(this.#keyManager, this.#agentId);
+
+      // Update activity context with assigned agentId
+      this.#activity.setScoutContext({
+        agentId: this.#agentId,
+      });
+
+      finish({
+        success: true,
+        metadata: {
+          agentId: this.#agentId,
+        },
+      });
+
+      return { agentId: this.#agentId };
+    } catch (error) {
+      this.#activity.record(ScoutActivityEventTypes.SCOUT_REGISTRATION_FAILED, {
+        success: false,
+        error: error.message,
+      });
+      throw error;
     }
-
-    const publicKey = this.#keyManager.publicKey;
-
-    // Build registration body
-    const body = {
-      publicKey,
-      type: 'scout',
-      manifest: {
-        name: metadata.name || 'AURA Scout',
-        version: '0.1.0',
-        platform: metadata.platform || 'node-sdk',
-        sdkVersion: '0.1.0',
-        capabilities: ['intent', 'compare', 'mandate.sign'],
-        protocolVersions: ['ap2-v1', 'tap-v1'],
-        ...metadata,
-      },
-    };
-
-    // Sign the body for proof-of-possession
-    const bodyString = JSON.stringify(body);
-    const signature = this.#keyManager.sign(bodyString);
-
-    const result = await this.#client.postSigned('/agents/register', body, {
-      'X-Agent-Signature': signature,
-    });
-
-    this.#agentId = result.agentId;
-    this.#registered = true;
-
-    // Persist agentId for next launch
-    await this.#keyManager.setAgentId(this.#agentId);
-
-    // Configure client to sign subsequent requests
-    this.#client.setKeyManager(this.#keyManager, this.#agentId);
-
-    return { agentId: this.#agentId };
   }
 
   /**
@@ -217,32 +263,53 @@ export class Scout {
       await this.ready();
     }
 
-    // Merge session-specific constraints with defaults
-    const constraints = {
-      ...this.#config.constraints,
-      ...options,
-    };
-
-    const response = await this.#client.post('/sessions', {
-      intent,
-      agentId: this.#agentId,
-      constraints: {
-        maxBudget: constraints.maxBudget,
-        deliveryBy: constraints.deliveryBy,
-        hardConstraints: constraints.hardConstraints,
-        softPreferences: constraints.softPreferences,
-      },
+    const finish = this.#activity.startTimer(ScoutActivityEventTypes.INTENT_CREATED, {
+      metadata: { intentText: intent.substring(0, 100) },
     });
 
-    const sessionConfig = {
-      ...this.#config,
-      constraints,
-    };
+    try {
+      // Merge session-specific constraints with defaults
+      const constraints = {
+        ...this.#config.constraints,
+        ...options,
+      };
 
-    const session = new Session(response, this.#client, sessionConfig);
-    this.#sessions.set(session.id, session);
+      const response = await this.#client.post('/sessions', {
+        intent,
+        agentId: this.#agentId,
+        constraints: {
+          maxBudget: constraints.maxBudget,
+          deliveryBy: constraints.deliveryBy,
+          hardConstraints: constraints.hardConstraints,
+          softPreferences: constraints.softPreferences,
+        },
+      });
 
-    return session;
+      const sessionConfig = {
+        ...this.#config,
+        constraints,
+        activityLogger: this.#activity,
+      };
+
+      const session = new Session(response, this.#client, sessionConfig);
+      this.#sessions.set(session.id, session);
+
+      finish({
+        success: true,
+        metadata: {
+          sessionId: session.id,
+        },
+      });
+
+      return session;
+    } catch (error) {
+      this.#activity.record(ScoutActivityEventTypes.INTENT_FAILED, {
+        success: false,
+        error: error.message,
+        metadata: { intentText: intent.substring(0, 100) },
+      });
+      throw error;
+    }
   }
 
   /**
@@ -256,11 +323,33 @@ export class Scout {
       return this.#sessions.get(sessionId);
     }
 
-    const response = await this.#client.get(`/sessions/${sessionId}`);
-    const session = new Session(response, this.#client, this.#config);
-    this.#sessions.set(session.id, session);
+    const finish = this.#activity.startTimer(ScoutActivityEventTypes.SESSION_RESUMED, {
+      sessionId,
+    });
 
-    return session;
+    try {
+      const response = await this.#client.get(`/sessions/${sessionId}`);
+      const sessionConfig = {
+        ...this.#config,
+        activityLogger: this.#activity,
+      };
+      const session = new Session(response, this.#client, sessionConfig);
+      this.#sessions.set(session.id, session);
+
+      finish({
+        success: true,
+        sessionId,
+      });
+
+      return session;
+    } catch (error) {
+      this.#activity.record(ScoutActivityEventTypes.SESSION_RESUME_FAILED, {
+        sessionId,
+        success: false,
+        error: error.message,
+      });
+      throw error;
+    }
   }
 
   /**
@@ -312,6 +401,27 @@ export class Scout {
     return this.#client.coreUrl;
   }
 
+  /**
+   * Access the activity logger for observability
+   *
+   * @example
+   * ```js
+   * // Subscribe to events
+   * scout.activity.on('intent.created', (event) => {
+   *   console.log(`Intent created in ${event.durationMs}ms`);
+   * });
+   *
+   * // Get summary stats
+   * const stats = scout.activity.getSummary();
+   *
+   * // Query recent errors
+   * const errors = scout.activity.getEvents({ type: '*.error' });
+   * ```
+   */
+  get activity() {
+    return this.#activity;
+  }
+
   // ─── Private ────────────────────────────────────────────────────────
 
   async #initialize() {
@@ -343,6 +453,7 @@ export {
   ConstraintError,
   OfferError,
 } from './errors.js';
+export { ScoutActivityLogger, ScoutActivityEventTypes, ActivityEvent } from './activity.js';
 
 // =========================================================================
 // Protocol Integrations

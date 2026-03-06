@@ -6,6 +6,7 @@
  */
 
 import { SessionError, OfferError, ConstraintError } from './errors.js';
+import { ScoutActivityEventTypes } from './activity.js';
 
 /**
  * Session states
@@ -31,12 +32,23 @@ export class Session {
   #offers = [];
   #constraints;
   #pollInterval = null;
+  #activityLogger = null;
 
   constructor(data, client, config) {
     this.#data = data;
     this.#client = client;
     this.#config = config;
     this.#constraints = new Constraints(config.constraints || {});
+    this.#activityLogger = config.activityLogger || null;
+
+    if (this.#activityLogger) {
+      this.#activityLogger.record(ScoutActivityEventTypes.SESSION_CREATED, {
+        sessionId: this.id,
+        metadata: {
+          status: this.status,
+        },
+      });
+    }
   }
 
   /**
@@ -90,6 +102,16 @@ export class Session {
    */
   async refresh() {
     this.#data = await this.#client.get(`/sessions/${this.id}`);
+
+    if (this.#activityLogger) {
+      this.#activityLogger.record(ScoutActivityEventTypes.SESSION_REFRESHED, {
+        sessionId: this.id,
+        metadata: {
+          status: this.status,
+        },
+      });
+    }
+
     return this;
   }
 
@@ -105,22 +127,44 @@ export class Session {
     const { timeout = 30000, interval = 2000 } = options;
     const startTime = Date.now();
 
-    while (Date.now() - startTime < timeout) {
-      await this.refresh();
+    const finish = this.#activityLogger?.startTimer(ScoutActivityEventTypes.WAIT_FOR_OFFERS, {
+      sessionId: this.id,
+      metadata: { timeout, interval },
+    });
 
-      if (this.status === SessionStatus.OFFERS_AVAILABLE) {
-        this.#offers = await this.#fetchOffers();
-        return this.#offers;
+    try {
+      while (Date.now() - startTime < timeout) {
+        await this.refresh();
+
+        if (this.status === SessionStatus.OFFERS_AVAILABLE) {
+          this.#offers = await this.#fetchOffers();
+
+          finish?.({
+            success: true,
+            metadata: {
+              offersCount: this.#offers.length,
+            },
+          });
+
+          return this.#offers;
+        }
+
+        if (!this.isActive) {
+          throw new SessionError(`Session is no longer active: ${this.status}`);
+        }
+
+        await this.#sleep(interval);
       }
 
-      if (!this.isActive) {
-        throw new SessionError(`Session is no longer active: ${this.status}`);
-      }
-
-      await this.#sleep(interval);
+      throw new SessionError('Timed out waiting for offers', 'TIMEOUT');
+    } catch (error) {
+      this.#activityLogger?.record(ScoutActivityEventTypes.WAIT_FOR_OFFERS_FAILED, {
+        sessionId: this.id,
+        success: false,
+        error: error.message,
+      });
+      throw error;
     }
-
-    throw new SessionError('Timed out waiting for offers', 'TIMEOUT');
   }
 
   /**
@@ -175,21 +219,62 @@ export class Session {
       );
     }
 
-    const response = await this.#client.post(`/sessions/${this.id}/commit`, {
-      offerId,
+    const finish = this.#activityLogger?.startTimer(ScoutActivityEventTypes.SESSION_COMMITTED, {
+      sessionId: this.id,
+      metadata: {
+        offerId,
+        offerPrice: offer.totalPrice,
+      },
     });
 
-    this.#data.status = SessionStatus.COMMITTED;
+    try {
+      const response = await this.#client.post(`/sessions/${this.id}/commit`, {
+        offerId,
+      });
 
-    return new Transaction(response, this.#client);
+      this.#data.status = SessionStatus.COMMITTED;
+
+      const transaction = new Transaction(response, this.#client, this.#activityLogger);
+
+      finish?.({
+        success: true,
+        metadata: {
+          transactionId: transaction.id,
+        },
+      });
+
+      return transaction;
+    } catch (error) {
+      this.#activityLogger?.record(ScoutActivityEventTypes.SESSION_COMMIT_FAILED, {
+        sessionId: this.id,
+        success: false,
+        error: error.message,
+        metadata: { offerId },
+      });
+      throw error;
+    }
   }
 
   /**
    * Cancel the session
    */
   async cancel() {
-    await this.#client.post(`/sessions/${this.id}/cancel`);
-    this.#data.status = SessionStatus.CANCELLED;
+    try {
+      await this.#client.post(`/sessions/${this.id}/cancel`);
+      this.#data.status = SessionStatus.CANCELLED;
+
+      this.#activityLogger?.record(ScoutActivityEventTypes.SESSION_CANCELLED, {
+        sessionId: this.id,
+        success: true,
+      });
+    } catch (error) {
+      this.#activityLogger?.record(ScoutActivityEventTypes.SESSION_CANCEL_FAILED, {
+        sessionId: this.id,
+        success: false,
+        error: error.message,
+      });
+      throw error;
+    }
   }
 
   /**
@@ -384,10 +469,23 @@ export class Offer {
 export class Transaction {
   #data;
   #client;
+  #activityLogger;
 
-  constructor(data, client) {
+  constructor(data, client, activityLogger = null) {
     this.#data = data;
     this.#client = client;
+    this.#activityLogger = activityLogger;
+
+    if (this.#activityLogger) {
+      this.#activityLogger.record(ScoutActivityEventTypes.TRANSACTION_CREATED, {
+        transactionId: this.id,
+        metadata: {
+          status: this.status,
+          paymentStatus: this.paymentStatus,
+          fulfillmentStatus: this.fulfillmentStatus,
+        },
+      });
+    }
   }
 
   get id() { return this.#data.transactionId; }
@@ -403,6 +501,18 @@ export class Transaction {
    */
   async refresh() {
     this.#data = await this.#client.get(`/transactions/${this.id}`);
+
+    if (this.#activityLogger) {
+      this.#activityLogger.record(ScoutActivityEventTypes.TRANSACTION_REFRESHED, {
+        transactionId: this.id,
+        metadata: {
+          status: this.status,
+          paymentStatus: this.paymentStatus,
+          fulfillmentStatus: this.fulfillmentStatus,
+        },
+      });
+    }
+
     return this;
   }
 
@@ -419,21 +529,44 @@ export class Transaction {
     const { timeout = 300000, interval = 5000 } = options;
     const startTime = Date.now();
 
-    while (Date.now() - startTime < timeout) {
-      await this.refresh();
+    const finish = this.#activityLogger?.startTimer(ScoutActivityEventTypes.WAIT_FOR_FULFILLMENT, {
+      transactionId: this.id,
+      metadata: { timeout, interval },
+    });
 
-      if (this.fulfillmentStatus === 'delivered') {
-        return this;
+    try {
+      while (Date.now() - startTime < timeout) {
+        await this.refresh();
+
+        if (this.fulfillmentStatus === 'delivered') {
+          finish?.({
+            success: true,
+            metadata: {
+              fulfillmentStatus: this.fulfillmentStatus,
+            },
+          });
+          return this;
+        }
+
+        if (this.fulfillmentStatus === 'failed') {
+          throw new Error(`Transaction fulfillment failed: ${this.id}`);
+        }
+
+        await this.#sleep(interval);
       }
 
-      if (this.fulfillmentStatus === 'failed') {
-        throw new Error(`Transaction fulfillment failed: ${this.id}`);
-      }
-
-      await this.#sleep(interval);
+      throw new Error(`Timed out waiting for transaction fulfillment: ${this.id}`);
+    } catch (error) {
+      this.#activityLogger?.record(ScoutActivityEventTypes.WAIT_FOR_FULFILLMENT_FAILED, {
+        transactionId: this.id,
+        success: false,
+        error: error.message,
+        metadata: {
+          fulfillmentStatus: this.fulfillmentStatus,
+        },
+      });
+      throw error;
     }
-
-    throw new Error(`Timed out waiting for transaction fulfillment: ${this.id}`);
   }
 
   /**
