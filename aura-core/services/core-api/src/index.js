@@ -305,11 +305,12 @@ async function runMigrations() {
       CREATE INDEX IF NOT EXISTS idx_agents_type ON agents(type);
     `);
 
-    // Incremental migration: add agent_id columns to existing tables
+    // Incremental migrations: add columns to existing tables
     // Safe to re-run — ADD COLUMN IF NOT EXISTS is idempotent
     await db.query(`
       ALTER TABLE sessions ADD COLUMN IF NOT EXISTS agent_id UUID REFERENCES agents(id);
       ALTER TABLE transactions ADD COLUMN IF NOT EXISTS agent_id UUID REFERENCES agents(id);
+      ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS request_id VARCHAR(255);
       CREATE INDEX IF NOT EXISTS idx_sessions_agent_id ON sessions(agent_id);
       CREATE INDEX IF NOT EXISTS idx_transactions_agent_id ON transactions(agent_id);
     `);
