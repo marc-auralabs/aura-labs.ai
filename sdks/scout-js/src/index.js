@@ -154,8 +154,8 @@ export class Scout {
    * Called automatically by ready(), but can be called explicitly
    * to re-register or update metadata.
    *
-   * Uses the new /agents/register endpoint with Ed25519 proof-of-possession.
-   * Falls back to legacy /scouts/register if apiKey is provided.
+   * Uses /agents/register with Ed25519 proof-of-possession.
+   * The legacy /scouts/register endpoint has been removed (DEC-015).
    *
    * @param {object} metadata - Optional metadata about this Scout
    * @returns {Promise<{agentId: string}>}
@@ -274,9 +274,10 @@ export class Scout {
         ...options,
       };
 
+      // Agent identity is conveyed via Ed25519 signature headers, not the body.
+      // The server extracts agent ID from the verified X-Agent-Id header.
       const response = await this.#client.post('/sessions', {
         intent,
-        agentId: this.#agentId,
         constraints: {
           maxBudget: constraints.maxBudget,
           deliveryBy: constraints.deliveryBy,

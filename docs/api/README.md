@@ -147,49 +147,13 @@ Revoke an agent (invalidates future signatures).
 }
 ```
 
-### Scout Registration (Legacy)
+### Scout Registration
 
-#### POST /scouts/register
-Register a Scout (buyer) in the marketplace.
+Scouts register via the universal agent endpoint using Ed25519 proof-of-possession. The legacy `/scouts/register` endpoint has been removed (DEC-015).
 
-**Request:**
-```json
-{
-  "name": "Scout Name",
-  "email": "scout@example.com",
-  "metadata": {}
-}
-```
+#### POST /agents/register (type: "scout")
 
-**Response:** `201 Created`
-```json
-{
-  "scoutId": "uuid",
-  "name": "Scout Name",
-  "email": "scout@example.com",
-  "createdAt": "2026-03-03T00:00:00Z",
-  "_links": {
-    "self": { "href": "/scouts/{scoutId}" },
-    "sessions": { "href": "/sessions" }
-  }
-}
-```
-
-#### GET /scouts/:scoutId
-Get Scout details by ID.
-
-**Response:** `200 OK`
-```json
-{
-  "scoutId": "uuid",
-  "name": "Scout Name",
-  "email": "scout@example.com",
-  "createdAt": "2026-03-03T00:00:00Z",
-  "_links": {
-    "self": { "href": "/scouts/{scoutId}" }
-  }
-}
-```
+See **Agent Registration** section above for the full request/response format. Scouts and beacons use the same registration flow with `type: "scout"` or `type: "beacon"` respectively.
 
 ### Beacon Registration
 
