@@ -227,7 +227,6 @@ async function runMigrations() {
       );
       CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
       CREATE INDEX IF NOT EXISTS idx_sessions_scout_id ON sessions(scout_id);
-      CREATE INDEX IF NOT EXISTS idx_sessions_agent_id ON sessions(agent_id);
 
       -- OFFERS (Beacon Responses)
       CREATE TABLE IF NOT EXISTS offers (
@@ -271,7 +270,6 @@ async function runMigrations() {
       );
       CREATE INDEX IF NOT EXISTS idx_transactions_session_id ON transactions(session_id);
       CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
-      CREATE INDEX IF NOT EXISTS idx_transactions_agent_id ON transactions(agent_id);
 
       -- AUDIT LOG
       CREATE TABLE IF NOT EXISTS audit_log (
