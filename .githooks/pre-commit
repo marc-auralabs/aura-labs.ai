@@ -1,8 +1,8 @@
 #!/bin/bash
-# Pre-commit hook for a PUBLIC repository.
+# Pre-commit hook for a PRIVATE repository.
 #
-# Primary concern: is this appropriate for public visibility?
-# Everything committed here is visible to the entire internet.
+# Primary concern: no secrets, no prohibited file types.
+# Directory allowlisting removed — repo is private (DEC-015).
 #
 # Install: git config core.hooksPath .githooks
 
@@ -19,49 +19,6 @@ if [ -z "$STAGED" ]; then
 fi
 
 ISSUES=0
-
-# ══════════════════════════════════════════════
-# PUBLIC APPROPRIATENESS CHECK
-# This is the most important check. Only these
-# directories belong in the public repo:
-#
-#   sdks/         — Public SDKs for developers
-#   beacons/      — Reference beacon implementations
-#   scouts/       — Reference scout implementations
-#   schemas/      — Protocol JSON schemas
-#   examples/     — Example code
-#   docs/         — Documentation
-#   brand/        — Brand assets
-#   fonts/        — Web fonts
-#   portal/       — Developer portal
-#   .github/      — CI, templates, governance
-#   .githooks/    — Git hooks
-#   *.html        — Website pages (root level)
-#   *.png         — Logo images (root level)
-#   *.md          — Root-level docs (README, etc.)
-#
-# Everything else needs explicit justification.
-# ══════════════════════════════════════════════
-
-ALLOWED_PATTERNS='^(sdks/|beacons/|scouts/|schemas/|examples/|docs/|brand/|fonts/|portal/|\.github/|\.githooks/)'
-ALLOWED_ROOT='^[^/]*\.(html|png|md|json)$|^\.gitignore$|^CNAME$|^LICENSE$|^package\.json$'
-
-NEW_FILES=$(echo "$STAGED" | grep -v -E "$ALLOWED_PATTERNS" | grep -v -E "$ALLOWED_ROOT" || true)
-
-if [ -n "$NEW_FILES" ]; then
-  echo -e "${RED}${BOLD}✗ PUBLIC REPO CHECK: Files outside allowed directories${NC}"
-  echo -e "${RED}  This is a PUBLIC repository. The following files are not in${NC}"
-  echo -e "${RED}  an approved public directory:${NC}"
-  echo ""
-  echo "$NEW_FILES" | while read -r f; do echo "    $f"; done
-  echo ""
-  echo -e "  ${YELLOW}Allowed directories: sdks/, beacons/, scouts/, schemas/,"
-  echo -e "  examples/, docs/, brand/, fonts/, portal/, .github/, .githooks/${NC}"
-  echo ""
-  echo -e "  If this file genuinely belongs in the public repo, add its"
-  echo -e "  path pattern to .githooks/pre-commit ALLOWED_PATTERNS."
-  ISSUES=$((ISSUES + 1))
-fi
 
 # ── Prohibited file types ─────────────────────────────────
 PROHIBITED=$(echo "$STAGED" | grep -iE '\.(pptx|docx|xlsx|pem|key|p12|pfx)$' || true)
@@ -131,10 +88,9 @@ fi
 if [ "$ISSUES" -gt 0 ]; then
   echo ""
   echo -e "${RED}${BOLD}Commit blocked — $ISSUES issue(s) found.${NC}"
-  echo -e "This is a ${BOLD}public${NC} repository. Everything committed is visible to everyone."
   echo "Use --no-verify to bypass (not recommended)."
   exit 1
 fi
 
-echo -e "${GREEN}✓ All checks passed — safe for public repo.${NC}"
+echo -e "${GREEN}✓ All checks passed.${NC}"
 exit 0

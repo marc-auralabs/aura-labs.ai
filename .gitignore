@@ -1,20 +1,9 @@
 # ──────────────────────────────────────────────
-# SOURCE CODE — NOT FOR PUBLIC REPOSITORY
-# The public repo contains SDKs, docs, schemas,
-# reference implementations, and website only.
+# PRIVATE REPO — source code is tracked.
+# Previously ignored when repo was public.
 # ──────────────────────────────────────────────
-aura-core/
-core/
-apps/
-scripts/
-demo.sh
 
-# Security audit reports (detailed findings)
-docs/security/SECURITY_AUDIT_REPORT.md
-docs/security/CRITICAL_FIXES_GUIDE.md
-docs/security/AUDIT_SUMMARY.txt
-
-# Claude project skills (internal tooling)
+# Claude project context (session-specific, not code)
 .claude/
 
 # ──────────────────────────────────────────────
@@ -60,9 +49,18 @@ hidden_content_updated.html
 SUPABASE_SETUP.md
 supabase-schema.sql
 
-# Architecture Decision Records & Decision Log
+# Private decision records (if any)
 docs/decisions/PRIVATE-*.md
-docs/decisions/DECISION_LOG.md
+
+# ──────────────────────────────────────────────
+# SHELL SCRIPTS & DEV UTILITIES
+# ──────────────────────────────────────────────
+*.sh
+scripts/
+
+# Xcode user data (machine-specific)
+*.xcuserstate
+xcuserdata/
 
 # ──────────────────────────────────────────────
 # STANDARD IGNORES

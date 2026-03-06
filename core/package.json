@@ -1,0 +1,22 @@
+{
+  "name": "@aura-labs/core-mock",
+  "version": "0.1.0",
+  "description": "Mock AURA Core server for development and testing",
+  "main": "src/mock-aura-core.js",
+  "scripts": {
+    "start": "node src/mock-aura-core.js",
+    "dev": "node --watch src/mock-aura-core.js"
+  },
+  "keywords": ["aura", "agentic-commerce", "mock-server"],
+  "author": "AURA Labs",
+  "license": "BUSL-1.1",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "uuid": "^9.0.0",
+    "ws": "^8.14.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
