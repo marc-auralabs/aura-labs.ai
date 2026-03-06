@@ -59,7 +59,23 @@ const app = Fastify({
 });
 
 // Register plugins
-await app.register(cors, { origin: true });
+// CORS: restrict to known origins. Server-side agents (SDKs) don't use CORS.
+// Browser clients (Chrome extension, portal, local dev) need explicit origins.
+const ALLOWED_ORIGINS = [
+  config.env === 'production' && 'https://aura-labs.ai',
+  config.env === 'production' && 'https://www.aura-labs.ai',
+  config.env === 'production' && /^chrome-extension:\/\//,   // Scout Chrome extension
+  config.env !== 'production' && /^http:\/\/localhost(:\d+)?$/,
+].filter(Boolean);
+
+await app.register(cors, {
+  origin: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : false,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Agent-ID', 'X-Signature', 'X-Timestamp', 'X-Beacon-ID'],
+  exposedHeaders: ['X-Request-ID'],
+  maxAge: 600,    // Cache preflight for 10 minutes
+  credentials: false,
+});
 await app.register(helmet, { contentSecurityPolicy: false });
 await app.register(websocket);
 
