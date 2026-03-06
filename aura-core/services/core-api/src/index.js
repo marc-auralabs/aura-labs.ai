@@ -23,6 +23,19 @@ import { dispatchWebhook } from './lib/webhook-dispatcher.js';
 
 const { Pool } = pg;
 
+// Safe error messages — never leak internal details in production
+function safeError(error, fallbackMessage = 'An internal error occurred') {
+  if (process.env.NODE_ENV !== 'production') return error.message;
+  // Only return known safe error messages; everything else gets the fallback
+  const safePatterns = [
+    /not found/i, /invalid/i, /required/i, /already exists/i,
+    /expired/i, /unauthorized/i, /forbidden/i, /missing/i,
+  ];
+  if (safePatterns.some(p => p.test(error.message))) return error.message;
+  console.error('Suppressed error detail:', error.message);
+  return fallbackMessage;
+}
+
 // Configuration from environment
 const config = {
   port: parseInt(process.env.PORT || '3000'),
@@ -76,7 +89,26 @@ await app.register(cors, {
   maxAge: 600,    // Cache preflight for 10 minutes
   credentials: false,
 });
-await app.register(helmet, { contentSecurityPolicy: false });
+await app.register(helmet, {
+  // CSP not needed for a JSON API (no HTML served)
+  contentSecurityPolicy: false,
+  // Prevent MIME-type sniffing
+  noSniff: true,
+  // Not an HTML frame target
+  frameguard: { action: 'deny' },
+  // Force HTTPS in production
+  hsts: config.env === 'production'
+    ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+    : false,
+  // Hide powered-by header
+  hidePoweredBy: true,
+  // Prevent IE from executing downloads in site context
+  ieNoOpen: true,
+  // Disable DNS prefetching
+  dnsPrefetchControl: { allow: false },
+  // Don't send referrer
+  referrerPolicy: { policy: 'no-referrer' },
+});
 await app.register(websocket);
 
 // =============================================================================
@@ -194,7 +226,7 @@ async function checkDatabase() {
     await db.query('SELECT 1');
     return { status: 'healthy' };
   } catch (error) {
-    return { status: 'unhealthy', error: error.message };
+    return { status: 'unhealthy', error: safeError(error, 'Database check failed') };
   }
 }
 
@@ -555,7 +587,7 @@ app.post('/agents/register', async (request, reply) => {
   } catch (error) {
     app.log.error(error);
     reply.code(500);
-    return { error: 'registration_failed', message: error.message };
+    return { error: 'registration_failed', message: safeError(error, 'Registration failed') };
   }
 });
 
@@ -598,7 +630,7 @@ app.get('/agents/:agentId', async (request, reply) => {
     };
   } catch (error) {
     reply.code(500);
-    return { error: 'fetch_failed', message: error.message };
+    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
   }
 });
 
@@ -657,7 +689,7 @@ app.post('/agents/:agentId/revoke', { preHandler: verifyAgent }, async (request,
     };
   } catch (error) {
     reply.code(500);
-    return { error: 'revocation_failed', message: error.message };
+    return { error: 'revocation_failed', message: safeError(error, 'Revocation failed') };
   }
 });
 
@@ -723,7 +755,7 @@ app.post('/beacons/register', async (request, reply) => {
   } catch (error) {
     app.log.error(error);
     reply.code(500);
-    return { error: 'registration_failed', message: error.message };
+    return { error: 'registration_failed', message: safeError(error, 'Registration failed') };
   }
 });
 
@@ -761,7 +793,7 @@ app.get('/beacons/:beaconId', async (request, reply) => {
     };
   } catch (error) {
     reply.code(500);
-    return { error: 'fetch_failed', message: error.message };
+    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
   }
 });
 
@@ -807,7 +839,7 @@ app.get('/beacons/sessions', async (request, reply) => {
     };
   } catch (error) {
     reply.code(500);
-    return { error: 'fetch_failed', message: error.message };
+    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
   }
 });
 
@@ -889,7 +921,7 @@ app.post('/sessions', { preHandler: verifyAgent }, async (request, reply) => {
   } catch (error) {
     app.log.error(error);
     reply.code(500);
-    return { error: 'session_creation_failed', message: error.message };
+    return { error: 'session_creation_failed', message: safeError(error, 'Session creation failed') };
   }
 });
 
@@ -963,7 +995,7 @@ app.get('/sessions/:sessionId', async (request, reply) => {
     };
   } catch (error) {
     reply.code(500);
-    return { error: 'fetch_failed', message: error.message };
+    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
   }
 });
 
@@ -1094,7 +1126,7 @@ app.post('/sessions/:sessionId/offers', { preHandler: verifyAgent }, async (requ
   } catch (error) {
     app.log.error(error);
     reply.code(500);
-    return { error: 'offer_submission_failed', message: error.message };
+    return { error: 'offer_submission_failed', message: safeError(error, 'Offer submission failed') };
   }
 });
 
@@ -1147,7 +1179,7 @@ app.get('/sessions/:sessionId/offers', async (request, reply) => {
     };
   } catch (error) {
     reply.code(500);
-    return { error: 'fetch_failed', message: error.message };
+    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
   }
 });
 
@@ -1358,7 +1390,7 @@ app.post('/sessions/:sessionId/commit', { preHandler: verifyAgent }, async (requ
       return { error: 'duplicate_transaction', message: 'Transaction with this idempotency key already exists' };
     }
     reply.code(500);
-    return { error: 'commit_failed', message: error.message };
+    return { error: 'commit_failed', message: safeError(error, 'Transaction commit failed') };
   }
 });
 
@@ -1395,7 +1427,7 @@ app.post('/sessions/:sessionId/cancel', async (request, reply) => {
     };
   } catch (error) {
     reply.code(500);
-    return { error: 'cancel_failed', message: error.message };
+    return { error: 'cancel_failed', message: safeError(error, 'Cancellation failed') };
   }
 });
 
@@ -1460,7 +1492,7 @@ app.get('/transactions/:transactionId', async (request, reply) => {
   } catch (error) {
     app.log.error(error);
     reply.code(500);
-    return { error: 'fetch_failed', message: error.message };
+    return { error: 'fetch_failed', message: safeError(error, 'Resource fetch failed') };
   }
 });
 
@@ -1576,7 +1608,7 @@ app.put('/transactions/:transactionId/fulfillment', { preHandler: verifyAgent },
   } catch (error) {
     app.log.error(error);
     reply.code(500);
-    return { error: 'update_failed', message: error.message };
+    return { error: 'update_failed', message: safeError(error, 'Update failed') };
   }
 });
 
@@ -1684,7 +1716,7 @@ app.put('/transactions/:transactionId/payment', { preHandler: verifyAgent }, asy
   } catch (error) {
     app.log.error(error);
     reply.code(500);
-    return { error: 'update_failed', message: error.message };
+    return { error: 'update_failed', message: safeError(error, 'Update failed') };
   }
 });
 
