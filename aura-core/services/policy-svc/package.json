@@ -1,0 +1,20 @@
+{
+  "name": "@aura-labs/policy-svc",
+  "version": "0.1.0",
+  "description": "AURA Policy Agent Service — Independent observer layer for platform health",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test src/**/*.test.js"
+  },
+  "dependencies": {
+    "fastify": "^4.25.0",
+    "pg": "^8.12.0",
+    "nanoid": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

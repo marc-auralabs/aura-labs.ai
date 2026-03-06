@@ -1,0 +1,19 @@
+{
+  "name": "@aura/core-worker",
+  "version": "0.1.0",
+  "description": "AURA Core Worker - Session management and protocol execution",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "fastify": "^4.26.0",
+    "pg": "^8.11.3",
+    "redis": "^4.6.12",
+    "nanoid": "^5.0.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

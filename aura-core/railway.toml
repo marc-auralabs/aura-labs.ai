@@ -1,0 +1,11 @@
+# AURA Core - Railway Project Configuration
+#
+# This project uses Railway's monorepo support.
+# Each service in /services has its own railway.toml
+#
+# Environments:
+#   - development (default)
+#   - production
+
+[project]
+name = "aura-core"
