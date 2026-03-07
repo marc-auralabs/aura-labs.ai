@@ -292,12 +292,8 @@
 
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script>
-        // Initialize Supabase client
-        const SUPABASE_URL = 'https://umoukcmojqnsgwfywovk.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         // Check if already logged in
         async function checkExistingSession() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -370,27 +366,6 @@
             }
         });
 
-        // Magic Link / Passwordless option
-        async function sendMagicLink() {
-            const email = document.getElementById('email').value;
-            if (!email) {
-                alert('Please enter your email address first.');
-                return;
-            }
-
-            const { error } = await supabaseClient.auth.signInWithOtp({
-                email: email,
-                options: {
-                    emailRedirectTo: window.location.origin + '/portal/'
-                }
-            });
-
-            if (error) {
-                alert('Error sending magic link: ' + error.message);
-            } else {
-                alert('Magic link sent! Check your email to sign in.');
-            }
-        }
     </script>
 </body>
 </html>

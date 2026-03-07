@@ -562,18 +562,18 @@
             <div class="sidebar-section">
                 <div class="sidebar-section-title">Documentation</div>
                 <ul class="sidebar-nav">
-                    <li><a href="../docs/QUICKSTART.md"><span class="icon">🚀</span> Quickstart</a></li>
+                    <li><a href="../docs.html#docs/QUICKSTART.md"><span class="icon">🚀</span> Quickstart</a></li>
                     <li><a href="../docs/architecture/flows.html"><span class="icon">🔄</span> System Flows</a></li>
-                    <li><a href="../docs/protocol/PROTOCOL_SPECIFICATION.md"><span class="icon">📡</span> Protocol Spec</a></li>
-                    <li><a href="../docs/api/README.md"><span class="icon">⚡</span> API Reference</a></li>
+                    <li><a href="../docs.html#docs/protocol/PROTOCOL_SPECIFICATION.md"><span class="icon">📡</span> Protocol Spec</a></li>
+                    <li><a href="../docs.html#docs/api/README.md"><span class="icon">⚡</span> API Reference</a></li>
                 </ul>
             </div>
 
             <div class="sidebar-section">
                 <div class="sidebar-section-title">SDKs</div>
                 <ul class="sidebar-nav">
-                    <li><a href="../docs/scout/README.md"><span class="icon">🔍</span> Scout SDK</a></li>
-                    <li><a href="../docs/beacon/README.md"><span class="icon">💡</span> Beacon SDK</a></li>
+                    <li><a href="../docs.html#docs/scout/README.md"><span class="icon">🔍</span> Scout SDK</a></li>
+                    <li><a href="../docs.html#docs/beacon/README.md"><span class="icon">💡</span> Beacon SDK</a></li>
                     <li><a href="../schemas/"><span class="icon">📋</span> JSON Schemas</a></li>
                 </ul>
             </div>
@@ -582,8 +582,8 @@
                 <div class="sidebar-section-title">Resources</div>
                 <ul class="sidebar-nav">
                     <li><a href="../examples/"><span class="icon">💻</span> Examples</a></li>
-                    <li><a href="../docs/tutorials/"><span class="icon">📖</span> Tutorials</a></li>
-                    <li><a href="../CHANGELOG.md"><span class="icon">📝</span> Changelog</a></li>
+                    <li><a href="../docs.html#docs/tutorials/README.md"><span class="icon">📖</span> Tutorials</a></li>
+                    <li><a href="../docs.html#CHANGELOG.md"><span class="icon">📝</span> Changelog</a></li>
                 </ul>
             </div>
 
@@ -624,7 +624,7 @@
             </div>
 
             <div class="quick-actions">
-                <a href="../docs/QUICKSTART.md" class="action-card">
+                <a href="../docs.html#docs/QUICKSTART.md" class="action-card">
                     <div class="icon">🚀</div>
                     <h3>Get Started</h3>
                     <p>Follow the quickstart guide to build your first Scout or Beacon in 15 minutes.</p>
@@ -660,19 +660,19 @@
             <div class="section-card">
                 <h2>Documentation</h2>
                 <div class="docs-grid">
-                    <a href="../docs/protocol/PROTOCOL_SPECIFICATION.md" class="doc-link">
+                    <a href="../docs.html#docs/protocol/PROTOCOL_SPECIFICATION.md" class="doc-link">
                         <span class="icon">📡</span>
                         <span>Protocol Specification</span>
                     </a>
-                    <a href="../docs/scout/README.md" class="doc-link">
+                    <a href="../docs.html#docs/scout/README.md" class="doc-link">
                         <span class="icon">🔍</span>
                         <span>Scout SDK</span>
                     </a>
-                    <a href="../docs/beacon/README.md" class="doc-link">
+                    <a href="../docs.html#docs/beacon/README.md" class="doc-link">
                         <span class="icon">💡</span>
                         <span>Beacon SDK</span>
                     </a>
-                    <a href="../docs/api/README.md" class="doc-link">
+                    <a href="../docs.html#docs/api/README.md" class="doc-link">
                         <span class="icon">⚡</span>
                         <span>REST API</span>
                     </a>
@@ -680,7 +680,7 @@
                         <span class="icon">📋</span>
                         <span>JSON Schemas</span>
                     </a>
-                    <a href="../docs/tutorials/" class="doc-link">
+                    <a href="../docs.html#docs/tutorials/README.md" class="doc-link">
                         <span class="icon">📖</span>
                         <span>Tutorials</span>
                     </a>
@@ -691,12 +691,8 @@
 
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../supabase-config.js"></script>
     <script>
-        // Initialize Supabase client
-        const SUPABASE_URL = 'https://umoukcmojqnsgwfywovk.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         // Global state
         let currentUser = null;
         let currentApiKey = null;

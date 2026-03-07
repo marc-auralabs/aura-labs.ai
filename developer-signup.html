@@ -512,7 +512,7 @@
                         <div class="checkbox-group">
                             <input type="checkbox" id="terms" name="terms" required>
                             <label for="terms">
-                                I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>, and acknowledge the <a href="LICENSE">Business Source License</a>.
+                                I agree to the <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>, and acknowledge the <a href="LICENSE">Business Source License</a>.
                             </label>
                         </div>
 
@@ -599,12 +599,8 @@
 
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script>
-        // Initialize Supabase client
-        const SUPABASE_URL = 'https://umoukcmojqnsgwfywovk.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_xBHe_p-j_zGTOsUGNbCPTw_SAS64X5l';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         // Entropy calculation
         const MIN_ENTROPY_BITS = 50;
 

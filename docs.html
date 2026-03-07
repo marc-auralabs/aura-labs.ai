@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - AURA</title>
+    <meta name="description" content="AURA developer documentation: API reference, SDK guides, protocol specification, tutorials, and integration guides.">
+    <meta property="og:title" content="Documentation - AURA">
+    <meta property="og:description" content="AURA developer documentation: API reference, SDK guides, protocol specification, tutorials, and integration guides.">
+    <meta property="og:type" content="website">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --text-muted: #7c7c99;
+            --bg-white: #ffffff;
+            --bg-cream: #fafaf8;
+            --bg-dark: #12121a;
+            --border: #e8e8ed;
+            --accent: #5046e5;
+            --accent-hover: #4338ca;
+            --accent-light: #7c73f7;
+            --accent-bg: #f0efff;
+            --sidebar-width: 280px;
+            --header-height: 56px;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-white);
+            color: var(--text-primary);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Header ── */
+        .docs-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+        }
+
+        .docs-header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .docs-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .logo-link svg { width: 28px; height: 28px; }
+
+        .logo-link span {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        .header-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+        }
+
+        .header-title {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .docs-header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .docs-header-right a {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .docs-header-right a:hover { color: var(--text-primary); }
+
+        .btn-sm {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.875rem;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            text-decoration: none;
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-sm:hover { background: var(--accent-hover); }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+
+        /* ── Layout ── */
+        .docs-layout {
+            display: flex;
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* ── Sidebar ── */
+        .docs-sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--bg-cream);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 1.25rem 0;
+            z-index: 50;
+        }
+
+        .sidebar-section {
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-heading {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 0.375rem 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-left: 2px solid transparent;
+            transition: all 0.1s;
+            cursor: pointer;
+        }
+
+        .sidebar-link:hover {
+            color: var(--text-primary);
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .sidebar-link.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-bg);
+            font-weight: 500;
+        }
+
+        .sidebar-link.indent {
+            padding-left: 2.5rem;
+            font-size: 0.8125rem;
+        }
+
+        /* ── Content ── */
+        .docs-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            min-width: 0;
+        }
+
+        .docs-content-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2.5rem 3rem 4rem;
+        }
+
+        /* ── Markdown Rendering ── */
+        .markdown-body h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .markdown-body h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            margin-top: 2.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .markdown-body h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-body h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.0625rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-body p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .markdown-body a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .markdown-body a:hover { text-decoration: underline; }
+
+        .markdown-body ul, .markdown-body ol {
+            margin-bottom: 1rem;
+            padding-left: 1.75rem;
+            color: var(--text-secondary);
+        }
+
+        .markdown-body li { margin-bottom: 0.375rem; }
+
+        .markdown-body code {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8125rem;
+            background: var(--bg-cream);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .markdown-body pre {
+            background: var(--bg-dark);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .markdown-body pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: #e2e8f0;
+            font-size: 0.8125rem;
+            line-height: 1.7;
+        }
+
+        .markdown-body blockquote {
+            border-left: 3px solid var(--accent);
+            margin: 1.5rem 0;
+            padding: 0.75rem 1.25rem;
+            background: var(--accent-bg);
+            border-radius: 0 8px 8px 0;
+        }
+
+        .markdown-body blockquote p {
+            color: var(--text-primary);
+            margin-bottom: 0;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+        }
+
+        .markdown-body th {
+            background: var(--bg-cream);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .markdown-body td {
+            padding: 0.625rem 1rem;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .markdown-body hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+
+        .markdown-body img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .markdown-body strong { color: var(--text-primary); }
+
+        /* ── Loading / Error ── */
+        .loading-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .error-state h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-state p { color: var(--text-muted); }
+
+        /* ── Breadcrumb ── */
+        .breadcrumb {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .breadcrumb a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover { color: var(--accent); }
+
+        .breadcrumb span { margin: 0 0.375rem; }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .docs-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.2s;
+                z-index: 90;
+            }
+
+            .docs-sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+            }
+
+            .docs-content { margin-left: 0; }
+
+            .docs-content-inner {
+                padding: 2rem 1.5rem;
+            }
+
+            .menu-toggle { display: block; }
+
+            .docs-header-right a.hide-mobile { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="docs-header">
+        <div class="docs-header-inner">
+            <div class="docs-header-left">
+                <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                <a href="index.html" class="logo-link">
+                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AURA logo">
+                        <circle cx="24" cy="24" r="22" fill="#3730a3"/>
+                        <circle cx="24" cy="24" r="16" fill="#5046e5"/>
+                        <circle cx="24" cy="24" r="10" fill="#818cf8"/>
+                        <circle cx="24" cy="24" r="5" fill="#c7d2fe"/>
+                    </svg>
+                    <span>AURA</span>
+                </a>
+                <div class="header-divider"></div>
+                <span class="header-title">Documentation</span>
+            </div>
+            <div class="docs-header-right">
+                <a href="developers.html" class="hide-mobile">Developers</a>
+                <a href="architecture.html" class="hide-mobile">Architecture</a>
+                <a href="portal/" class="btn-sm">Portal</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="docs-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="docs-sidebar" id="sidebar" aria-label="Documentation navigation">
+            <div class="sidebar-section">
+                <div class="sidebar-heading">Getting Started</div>
+                <a class="sidebar-link" data-doc="docs/QUICKSTART.md">Quickstart</a>
+                <a class="sidebar-link" data-doc="docs/getting-started/README.md">Getting Started Guide</a>
+                <a class="sidebar-link" data-doc="docs/faq.md">FAQ</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-heading">Architecture</div>
+                <a class="sidebar-link" data-doc="docs/ARCHITECTURE.md">Overview</a>
+                <a class="sidebar-link" data-doc="docs/architecture/README.md">System Architecture</a>
+                <a class="sidebar-link" data-doc="docs/architecture/COMPONENT_REGISTRY.md">Component Registry</a>
+                <a class="sidebar-link" data-doc="docs/architecture/NEUTRAL_BROKER.md">Neutral Broker</a>
+                <a class="sidebar-link" data-doc="docs/architecture/DEPLOYMENT.md">Deployment</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-heading">Protocol</div>
+                <a class="sidebar-link" data-doc="docs/protocol/README.md">Protocol Overview</a>
+                <a class="sidebar-link" data-doc="docs/protocol/PROTOCOL_SPECIFICATION.md">Full Specification</a>
+                <a class="sidebar-link" data-doc="docs/protocol/REPUTATION_SPECIFICATION.md">Reputation System</a>
+                <a class="sidebar-link" data-doc="docs/architecture/PROTOCOL_INTEGRATION.md">Integration Points</a>
+                <a class="sidebar-link" data-doc="docs/architecture/PROTOCOL_NEGOTIATION.md">Negotiation</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-heading">API Reference</div>
+                <a class="sidebar-link" data-doc="docs/api/README.md">REST API</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-heading">Scout SDK</div>
+                <a class="sidebar-link" data-doc="docs/scout/README.md">Scout Guide</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/scout-basics.md">Basics</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/scout-preferences.md">User Preferences</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/scout-negotiation.md">Negotiation</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/scout-consent.md">Consent Flows</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-heading">Beacon SDK</div>
+                <a class="sidebar-link" data-doc="docs/beacon/README.md">Beacon Guide</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/beacon-basics.md">Basics</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/beacon-pricing.md">Dynamic Pricing</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/beacon-inventory.md">Inventory</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/beacon-transactions.md">Transactions</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/beacon-analytics.md">Analytics</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/beacon-multistore.md">Multi-store</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/beacon-observability.md">Observability</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-heading">Integrations</div>
+                <a class="sidebar-link" data-doc="docs/integration-guides/README.md">Integration Overview</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/integration-react.md">React</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/integration-mobile.md">Mobile</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/integration-shopify.md">Shopify</a>
+                <a class="sidebar-link indent" data-doc="docs/tutorials/integration-woocommerce.md">WooCommerce</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-heading">Best Practices</div>
+                <a class="sidebar-link" data-doc="docs/tutorials/best-practices-security.md">Security</a>
+                <a class="sidebar-link" data-doc="docs/tutorials/best-practices-errors.md">Error Handling</a>
+                <a class="sidebar-link" data-doc="docs/tutorials/best-practices-performance.md">Performance</a>
+                <a class="sidebar-link" data-doc="docs/tutorials/best-practices-testing.md">Testing</a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-heading">Reference</div>
+                <a class="sidebar-link" data-doc="CHANGELOG.md">Changelog</a>
+                <a class="sidebar-link" data-doc="CONTRIBUTING.md">Contributing</a>
+                <a class="sidebar-link" data-doc="SECURITY.md">Security Policy</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="docs-content">
+            <div class="docs-content-inner">
+                <div class="breadcrumb" id="breadcrumb">
+                    <a href="docs.html">Docs</a>
+                </div>
+                <article class="markdown-body" id="content">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Loading documentation...</p>
+                    </div>
+                </article>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+    <script>
+        // ── Configuration ──
+        const DEFAULT_DOC = 'docs/QUICKSTART.md';
+        const contentEl = document.getElementById('content');
+        const breadcrumbEl = document.getElementById('breadcrumb');
+        const sidebar = document.getElementById('sidebar');
+
+        // Friendly names for breadcrumb
+        const sectionNames = {
+            'docs': 'Docs',
+            'architecture': 'Architecture',
+            'protocol': 'Protocol',
+            'api': 'API Reference',
+            'scout': 'Scout SDK',
+            'beacon': 'Beacon SDK',
+            'tutorials': 'Tutorials',
+            'integration-guides': 'Integrations',
+            'getting-started': 'Getting Started',
+            'security': 'Security',
+            'decisions': 'Decisions'
+        };
+
+        // ── Marked configuration ──
+        marked.setOptions({
+            gfm: true,
+            breaks: false,
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            }
+        });
+
+        // ── Navigation ──
+        function getDocFromHash() {
+            const hash = window.location.hash.slice(1);
+            return hash || DEFAULT_DOC;
+        }
+
+        function navigateTo(docPath) {
+            window.location.hash = docPath;
+        }
+
+        async function loadDoc(docPath) {
+            // Show loading
+            contentEl.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading documentation...</p></div>';
+
+            // Update active sidebar link
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.classList.toggle('active', link.dataset.doc === docPath);
+            });
+
+            // Scroll active link into view in sidebar
+            const activeLink = document.querySelector('.sidebar-link.active');
+            if (activeLink) {
+                activeLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+
+            // Update breadcrumb
+            updateBreadcrumb(docPath);
+
+            try {
+                const response = await fetch(docPath);
+                if (!response.ok) throw new Error('Not found');
+
+                let markdown = await response.text();
+
+                // Render markdown to HTML
+                const html = marked.parse(markdown);
+                contentEl.innerHTML = html;
+
+                // Apply syntax highlighting to code blocks
+                contentEl.querySelectorAll('pre code').forEach(block => {
+                    hljs.highlightElement(block);
+                });
+
+                // Rewrite internal .md links to use the docs viewer
+                contentEl.querySelectorAll('a[href]').forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && href.endsWith('.md') && !href.startsWith('http')) {
+                        // Resolve relative path
+                        const resolved = resolveRelativePath(docPath, href);
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            navigateTo(resolved);
+                        });
+                    }
+                });
+
+                // Scroll to top
+                window.scrollTo(0, 0);
+
+                // Close sidebar on mobile after navigation
+                if (window.innerWidth <= 900) {
+                    sidebar.classList.remove('open');
+                }
+
+            } catch (err) {
+                contentEl.innerHTML = '<div class="error-state"><h2>Document not found</h2><p>The requested documentation page could not be loaded. Try selecting a page from the sidebar.</p></div>';
+            }
+        }
+
+        function resolveRelativePath(currentDoc, relativePath) {
+            // Get directory of current doc
+            const parts = currentDoc.split('/');
+            parts.pop(); // Remove filename
+            const dir = parts.join('/');
+
+            // Handle ../ paths
+            const segments = (dir ? dir + '/' + relativePath : relativePath).split('/');
+            const resolved = [];
+            for (const seg of segments) {
+                if (seg === '..') resolved.pop();
+                else if (seg !== '.') resolved.push(seg);
+            }
+            return resolved.join('/');
+        }
+
+        function updateBreadcrumb(docPath) {
+            const parts = docPath.replace('.md', '').split('/');
+            let html = '<a href="docs.html">Docs</a>';
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                const name = sectionNames[part] || part.replace(/[-_]/g, ' ').replace(/README/i, 'Overview').replace(/\b\w/g, c => c.toUpperCase());
+                html += '<span>/</span>' + name;
+            }
+
+            breadcrumbEl.innerHTML = html;
+        }
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+        }
+
+        // ── Event Listeners ──
+
+        // Sidebar link clicks
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(link.dataset.doc);
+            });
+        });
+
+        // Hash change (back/forward navigation)
+        window.addEventListener('hashchange', () => {
+            loadDoc(getDocFromHash());
+        });
+
+        // Close sidebar on outside click (mobile)
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 900 && sidebar.classList.contains('open')) {
+                if (!sidebar.contains(e.target) && !e.target.closest('.menu-toggle')) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+
+        // ── Initial Load ──
+        loadDoc(getDocFromHash());
+    </script>
+</body>
+</html>

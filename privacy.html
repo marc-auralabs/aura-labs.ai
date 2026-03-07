@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - AURA</title>
+    <meta name="description" content="Privacy Policy for the AURA developer platform.">
+    <meta property="og:title" content="Privacy Policy - AURA">
+    <meta property="og:description" content="Privacy Policy for the AURA developer platform.">
+    <meta property="og:type" content="website">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --text-muted: #7c7c99;
+            --bg-white: #ffffff;
+            --bg-cream: #fafaf8;
+            --bg-dark: #12121a;
+            --border: #e8e8ed;
+            --accent: #5046e5;
+            --accent-hover: #4338ca;
+            --accent-bg: #f0efff;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-cream);
+            color: var(--text-primary);
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header {
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            padding: 1.25rem 2rem;
+        }
+
+        .header-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .back-link {
+            font-size: 0.875rem;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .back-link:hover { text-decoration: underline; }
+
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem 2rem 4rem;
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .last-updated {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        p { margin-bottom: 1rem; color: var(--text-secondary); }
+
+        ul {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        li { margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-inner">
+            <a href="index.html" class="logo">AURA</a>
+            <a href="index.html" class="back-link">&larr; Back to home</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last updated: March 2026</p>
+
+        <h2>1. Overview</h2>
+        <p>AURA Labs ("we", "us") operates the AURA developer platform, including the AURA Core API, developer portal, and related services. This policy describes how we collect, use, and protect information when you use our platform.</p>
+
+        <h2>2. Information We Collect</h2>
+        <p>When you register for a developer account, we collect:</p>
+        <ul>
+            <li>Email address and display name</li>
+            <li>Authentication credentials (managed securely via Supabase Auth)</li>
+            <li>API usage data including request counts, endpoints called, and error rates</li>
+            <li>Agent registration data including public keys and capability manifests</li>
+        </ul>
+        <p>When agents transact through AURA Core, we process:</p>
+        <ul>
+            <li>Intent data (natural language queries submitted by Scout agents)</li>
+            <li>Session and transaction metadata (IDs, timestamps, status transitions)</li>
+            <li>Offer data submitted by Beacon agents (pricing, terms, product details)</li>
+        </ul>
+
+        <h2>3. How We Use Information</h2>
+        <p>We use collected information to operate and improve the AURA platform, authenticate developers and agents, process and route commerce transactions, monitor platform health and prevent abuse, and communicate important updates about the service.</p>
+
+        <h2>4. Data Sharing</h2>
+        <p>We do not sell personal information. We share data only as necessary to operate the platform: transaction data is shared between the Scout and Beacon agents involved in a session, aggregate usage statistics may be used to improve the platform, and we may disclose information if required by law or to protect the safety of users.</p>
+
+        <h2>5. Data Security</h2>
+        <p>We implement industry-standard security measures including encryption in transit (TLS), agent identity verification via Ed25519 cryptographic signatures, Row Level Security on all database tables, and regular security audits of the platform infrastructure.</p>
+
+        <h2>6. Data Retention</h2>
+        <p>Developer account data is retained while your account is active. Transaction data is retained for the period required by applicable regulations and for platform integrity purposes. You may request deletion of your account and associated data by contacting us.</p>
+
+        <h2>7. Your Rights</h2>
+        <p>Depending on your jurisdiction, you may have rights regarding your personal data including access, correction, deletion, data portability, and the right to object to processing. To exercise these rights, contact us at the address below.</p>
+
+        <h2>8. Cookies and Analytics</h2>
+        <p>The AURA developer portal uses session-based authentication. We do not use third-party tracking cookies or advertising analytics. Essential cookies may be used for authentication state management.</p>
+
+        <h2>9. Changes to This Policy</h2>
+        <p>We may update this policy from time to time. We will notify registered developers of material changes via email. The "Last updated" date at the top of this page indicates when the policy was last revised.</p>
+
+        <h2>10. Contact</h2>
+        <p>For privacy-related questions or requests, contact us at <a href="mailto:privacy@aura-labs.ai">privacy@aura-labs.ai</a>.</p>
+    </div>
+</body>
+</html>
