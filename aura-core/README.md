@@ -92,20 +92,20 @@ GET /health/ready
 
 ### Scouts
 ```
-POST /scouts/register
+POST /v1/agents/register   # type: "scout"
 WS   /ws/scout
 ```
 
 ### Beacons
 ```
-POST /beacons/register
+POST /v1/beacons/register
 WS   /ws/beacon
 ```
 
 ### Sessions
 ```
-POST /sessions          # Create new session with intent
-GET  /sessions/:id      # Get session status
+POST /v1/sessions          # Create new session with intent
+GET  /v1/sessions/:id      # Get session status
 ```
 
 ## Environment Variables

@@ -19,6 +19,10 @@ import {
   AuthenticationError,
 } from '../shared/errors.js';
 
+// API version prefix — all requests target this version of the Core API.
+// Bump this constant when upgrading to a new API version.
+const API_VERSION = '/v1';
+
 export class AuraClient {
   #baseUrl;
   #timeout;
@@ -132,7 +136,8 @@ export class AuraClient {
    * @param {Object} [extraHeaders] - Additional headers
    */
   async #request(method, path, body = null, extraHeaders = {}) {
-    const url = `${this.#baseUrl}${path}`;
+    const prefix = path === '/health' ? '' : API_VERSION;
+    const url = `${this.#baseUrl}${prefix}${path}`;
     const bodyString = body ? JSON.stringify(body) : null;
 
     const headers = {
@@ -147,7 +152,8 @@ export class AuraClient {
       const bodyDigest = bodyString
         ? await this.#sha256Base64(bodyString)
         : '';
-      const signingString = `${method}\n${path}\n${timestamp}\n${bodyDigest}`;
+      const versionedPath = `${prefix}${path}`;
+      const signingString = `${method}\n${versionedPath}\n${timestamp}\n${bodyDigest}`;
       const signature = await this.#signFn(signingString);
 
       headers['X-Agent-Id'] = this.#agentId;

@@ -79,7 +79,7 @@ describe('AuraClient', () => {
       expect(mockFetch).toHaveBeenCalledOnce();
 
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toBe(`${CORE_API_URL}/sessions`);
+      expect(url).toBe(`${CORE_API_URL}/v1/sessions`);
       expect(options.method).toBe('POST');
       expect(JSON.parse(options.body)).toEqual({
         intent: 'I need 10 keyboards',
@@ -140,7 +140,7 @@ describe('AuraClient', () => {
       expect(signFn).toHaveBeenCalledOnce();
 
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toBe(`${CORE_API_URL}/agents/register`);
+      expect(url).toBe(`${CORE_API_URL}/v1/agents/register`);
       expect(options.method).toBe('POST');
       expect(options.headers['X-Agent-Signature']).toBe('sig_base64');
     });
@@ -155,7 +155,7 @@ describe('AuraClient', () => {
 
       expect(result).toEqual(sessionData);
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toBe(`${CORE_API_URL}/sessions/sess_456`);
+      expect(url).toBe(`${CORE_API_URL}/v1/sessions/sess_456`);
       expect(options.method).toBe('GET');
     });
   });
@@ -169,7 +169,7 @@ describe('AuraClient', () => {
 
       expect(result).toEqual(offersData);
       const [url] = mockFetch.mock.calls[0];
-      expect(url).toBe(`${CORE_API_URL}/sessions/sess_789/offers`);
+      expect(url).toBe(`${CORE_API_URL}/v1/sessions/sess_789/offers`);
     });
   });
 
@@ -188,7 +188,7 @@ describe('AuraClient', () => {
 
       expect(result).toEqual(txData);
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toBe(`${CORE_API_URL}/sessions/sess_1/commit`);
+      expect(url).toBe(`${CORE_API_URL}/v1/sessions/sess_1/commit`);
       expect(JSON.parse(options.body)).toEqual({
         offerId: 'offer_2',
         idempotencyKey: 'uuid-1234',
@@ -213,7 +213,7 @@ describe('AuraClient', () => {
 
       expect(result.status).toBe('cancelled');
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toBe(`${CORE_API_URL}/sessions/sess_1/cancel`);
+      expect(url).toBe(`${CORE_API_URL}/v1/sessions/sess_1/cancel`);
       expect(options.method).toBe('POST');
     });
   });

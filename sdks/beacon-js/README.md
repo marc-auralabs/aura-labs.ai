@@ -415,7 +415,7 @@ try {
 Beacons have two optional registration paths:
 
 ### 1. Beacon Registration (Required for polling)
-Call `beacon.register()` or `beacon.startPolling()` to register via `POST /beacons/register`. This creates a **Beacon** record in Core, allowing the beacon to poll for sessions and submit offers.
+Call `beacon.register()` or `beacon.startPolling()` to register via `POST /v1/beacons/register`. This creates a **Beacon** record in Core, allowing the beacon to poll for sessions and submit offers.
 
 ```javascript
 const result = await beacon.register();
@@ -423,9 +423,9 @@ const result = await beacon.register();
 ```
 
 ### 2. Agent Registration (Optional, for Ed25519 signing)
-For added security and to participate in protocols requiring cryptographic identity (like AP2 mandates or TAP), a Beacon can optionally register as an **Agent** via `POST /agents/register` with type `beacon`. This generates and stores an Ed25519 key pair for signing requests.
+For added security and to participate in protocols requiring cryptographic identity (like AP2 mandates or TAP), a Beacon can optionally register as an **Agent** via `POST /v1/agents/register` with type `beacon`. This generates and stores an Ed25519 key pair for signing requests.
 
-**Current Status:** The Beacon SDK currently uses simple HTTP requests for `POST /beacons/register`. In the future, Beacons can opt into Ed25519-based agent registration for enhanced security and protocol support.
+**Current Status:** The Beacon SDK currently uses simple HTTP requests for `POST /v1/beacons/register`. In the future, Beacons can opt into Ed25519-based agent registration for enhanced security and protocol support.
 
 ## Environment Variables
 
