@@ -187,7 +187,7 @@ Each state change dispatches a webhook to your `endpointUrl` with the event type
 
 1. **Local Testing**: Run AURA Core locally (`node src/index.js` in `aura-core/services/core-api/`)
 2. **Railway Deployment**: Test against `https://aura-labsai-production.up.railway.app`
-3. **Demo Script**: Run `./demo.sh` for a full end-to-end walkthrough
+3. **Demo Script**: Run `./scripts/demo.sh` for a full end-to-end walkthrough
 
 ## Support
 

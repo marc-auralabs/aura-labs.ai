@@ -119,13 +119,6 @@ cd simple-beacon
 npm test
 ```
 
-Use the Scout Simulator for integration testing:
-
-```bash
-cd ../tools/simulators/scout-simulator
-npm start
-```
-
 ## See Also
 
 - [Quickstart Guide](../docs/QUICKSTART.md)

@@ -21,7 +21,7 @@ A Scout is an autonomous agent that represents a buyer's interests. It:
 ### Installation
 
 ```bash
-cd scouts/simple-scout
+cd examples/agents/simple-scout
 npm install
 ```
 

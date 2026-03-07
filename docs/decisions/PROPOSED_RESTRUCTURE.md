@@ -1,6 +1,6 @@
 # Proposed: Repository Structure Reorganisation
 
-> **Status:** DRAFT — awaiting review before any files are moved.
+> **Status:** EXECUTED — restructure completed 2026-03-07.
 > **Date:** 2026-03-07
 > **Context:** Post-versioning audit revealed structural issues that would
 > confuse a new developer joining the project.

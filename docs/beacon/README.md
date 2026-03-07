@@ -508,7 +508,7 @@ beacon.onSession(async (session) => {
 
 ## Examples
 
-See [Beacon Implementations](../../beacons/) for:
+See [Beacon Implementations](../../examples/agents/) for:
 - Simple Beacon (learning/prototyping)
 - Retail Beacon (e-commerce)
 - Travel Beacon (hospitality)

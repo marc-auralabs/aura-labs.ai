@@ -149,10 +149,10 @@ Last sensitivity audit: 2026-03-07. Findings:
 
 | File | Purpose | Contains API Paths |
 |------|---------|-------------------|
-| `scouts/simple-scout/simple-scout.js` | Reference Scout implementation | Yes (via SDK) |
-| `beacons/simple-beacon/simple-beacon.js` | Reference Beacon implementation | Yes (via SDK) |
-| `core/src/mock-aura-core.js` | Mock Core API for local dev | Yes (route defs) |
-| `core/src/client-management/client-manager.js` | Client management module | No |
+| `examples/agents/simple-scout/simple-scout.js` | Reference Scout implementation | Yes (via SDK) |
+| `examples/agents/simple-beacon/simple-beacon.js` | Reference Beacon implementation | Yes (via SDK) |
+| `mock/src/mock-aura-core.js` | Mock Core API for local dev | Yes (route defs) |
+| `mock/src/client-management/client-manager.js` | Client management module | No |
 
 ## 6. Test Files
 
@@ -186,7 +186,7 @@ Last sensitivity audit: 2026-03-07. Findings:
 
 | File | Purpose | Contains API Paths |
 |------|---------|-------------------|
-| `demo.sh` | Production end-to-end demo | Yes (curl calls) |
+| `scripts/demo.sh` | Production end-to-end demo | Yes (curl calls) |
 | `scripts/test-flow.sh` | Quick integration test flow | Yes (curl calls) |
 | `scripts/run-beacons.sh` | Beacon registration + polling | Yes (curl calls) |
 | `scripts/security-tests.sh` | Security test suite | Yes (curl calls) |
@@ -298,11 +298,11 @@ Last sensitivity audit: 2026-03-07. Findings:
 | File | Purpose | Contains API Paths |
 |------|---------|-------------------|
 | `aura-core/README.md` | Core API README | Yes (endpoint list) |
-| `core/README.md` | Core module README | No |
-| `scouts/README.md` | Scouts overview | No |
-| `scouts/simple-scout/README.md` | Simple Scout README | No |
-| `beacons/README.md` | Beacons overview | No |
-| `beacons/simple-beacon/README.md` | Simple Beacon README | No |
+| `mock/README.md` | Mock Core README | No |
+| `examples/agents/scouts-README.md` | Scouts overview | No |
+| `examples/agents/simple-scout/README.md` | Simple Scout README | No |
+| `examples/agents/beacons-README.md` | Beacons overview | No |
+| `examples/agents/simple-beacon/README.md` | Simple Beacon README | No |
 | `examples/README.md` | Examples overview | No |
 | `schemas/README.md` | Schemas overview | No |
 | `docs/README.md` | Docs index | No |
@@ -334,7 +334,7 @@ Last sensitivity audit: 2026-03-07. Findings:
 
 When making changes that affect API paths, schemas, or interfaces, sweep these files in order of priority:
 
-1. **CRITICAL** — `demo.sh`, `scripts/*.sh`, SDK `client.js` files, Chrome ext `aura-client.js`
+1. **CRITICAL** — `scripts/demo.sh`, `scripts/*.sh`, SDK `client.js` files, Chrome ext `aura-client.js`
 2. **HIGH** — `docs/api/README.md`, `docs/architecture/flows.html`, `docs/protocol/PROTOCOL_SPECIFICATION.md`, all test files with URL assertions
 3. **MEDIUM** — `docs/beacon/README.md`, `docs/scout/README.md`, `docs/tutorials/*.md`, `aura-core/README.md`, `sdks/*/README.md`
 4. **LOW** — `docs/architecture/PROTOCOL_NEGOTIATION.md`, `docs/decisions/DECISION_LOG.md`, `CHANGELOG.md` (Unreleased section only)

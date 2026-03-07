@@ -13,7 +13,7 @@
  * Run with: node examples/e2e-demo.js
  *
  * Prerequisites:
- * - npm install in /core, /beacons/simple-beacon, /scouts/simple-scout
+ * - npm install in /mock, /examples/agents/simple-beacon, /examples/agents/simple-scout
  */
 
 const { spawn } = require('child_process');
@@ -93,7 +93,7 @@ ${colors.bright}╔════════════════════�
     log('SETUP', 'Starting AURA Core...', colors.cyan);
 
     coreProcess = spawn('node', ['src/mock-aura-core.js'], {
-      cwd: path.join(__dirname, '..', 'core'),
+      cwd: path.join(__dirname, '..', 'mock'),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
@@ -116,7 +116,7 @@ ${colors.bright}╔════════════════════�
     log('SETUP', 'Starting Beacon...', colors.cyan);
 
     beaconProcess = spawn('node', ['simple-beacon.js'], {
-      cwd: path.join(__dirname, '..', 'beacons', 'simple-beacon'),
+      cwd: path.join(__dirname, 'agents', 'simple-beacon'),
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env, PORT: '3001' },
     });

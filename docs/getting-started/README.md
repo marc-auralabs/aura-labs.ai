@@ -40,7 +40,7 @@ git clone https://github.com/aura-labs-ai/aura-labs.ai
 cd aura-labs.ai
 
 # Run the simple Beacon example
-cd beacons/simple-beacon
+cd examples/agents/simple-beacon
 npm install
 npm start
 ```

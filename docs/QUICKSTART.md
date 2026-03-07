@@ -16,7 +16,7 @@ git clone https://github.com/aura-labs-ai/aura-labs.ai.git
 cd aura-labs.ai
 
 # Navigate to the simple beacon example
-cd beacons/simple-beacon
+cd examples/agents/simple-beacon
 
 # Install dependencies
 npm install
@@ -34,7 +34,7 @@ A Beacon has five main responsibilities:
 
 ## Step 3: Configure Your Beacon
 
-Create a `.env` file in the `beacons/simple-beacon` directory:
+Create a `.env` file in the `examples/agents/simple-beacon` directory:
 
 ```bash
 # Beacon identification

@@ -51,27 +51,16 @@ aura-labs.ai/
 │   ├── protocol/                  # Protocol specifications
 │   └── integration-guides/        # Platform-specific guides
 │
-├── core/                          # AURA Core components
-│   ├── client-management/        # Scout & Beacon registration
-│   ├── proposition-gateway/      # Proposition Universe access
-│   ├── model-management/         # Protocol and schema management
-│   └── shared/                   # Common utilities
+├── mock/                          # Mock Core for local development
+│   ├── mock-aura-core.js        # Simulated AURA Core API
+│   └── client-manager.js        # Client management mock
 │
-├── beacons/                      # Beacon reference implementations
-│   ├── simple-beacon/           # Basic Beacon example
-│   ├── retail-beacon/           # E-commerce Beacon
-│   ├── travel-beacon/           # Travel/hospitality Beacon
-│   └── service-beacon/          # Service provider Beacon
-│
-├── examples/                     # Full integration examples
-│   ├── nodejs/                  # Node.js examples
-│   ├── python/                  # Python examples
-│   └── go/                      # Go examples
-│
-├── tools/                       # Developer tools
-│   ├── validators/             # Protocol validators
-│   ├── simulators/             # Testing simulators
-│   └── monitoring/             # Monitoring tools
+├── examples/                     # Runnable examples & reference agents
+│   ├── agents/
+│   │   ├── simple-scout/        # Reference Scout implementation
+│   │   └── simple-beacon/       # Reference Beacon implementation
+│   ├── nodejs/                  # Node.js integration examples
+│   └── python/                  # Python integration examples
 │
 └── schemas/                    # JSON schemas and contracts
     ├── beacon/                # Beacon message schemas
@@ -89,7 +78,7 @@ git clone https://github.com/aura-labs-ai/aura-labs.ai.git
 cd aura-labs.ai
 
 # Start with the simple beacon example
-cd beacons/simple-beacon
+cd examples/agents/simple-beacon
 npm install
 npm start
 ```

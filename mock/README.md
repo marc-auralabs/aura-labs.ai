@@ -1,6 +1,6 @@
-# AURA Core
+# Mock AURA Core
 
-The central coordination layer of the AURA Framework.
+A lightweight mock implementation of AURA Core for local development and testing.
 
 ## Overview
 
@@ -68,7 +68,7 @@ Validates messages and enforces protocol rules.
 ### Local Development
 
 ```bash
-cd core
+cd mock
 npm install
 npm run dev
 ```
