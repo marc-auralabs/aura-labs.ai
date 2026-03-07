@@ -1,6 +1,6 @@
 # AURA API Reference
 
-Complete REST API documentation for integrating with AURA. The API is built on Fastify and deployed on Railway.
+Complete REST API documentation for integrating with AURA. The API is built on Fastify and deployed on Railway. Internally, route handlers are organized into domain-aligned modules (see `src/routes/`) following the COMPONENT_REGISTRY domain boundaries.
 
 ## Overview
 
