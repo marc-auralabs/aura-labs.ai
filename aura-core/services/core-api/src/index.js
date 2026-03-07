@@ -16,6 +16,7 @@ import {
   verifyRegistrationSignature,
   computeKeyFingerprint,
   createSignatureVerifier,
+  validateRedirectUrl,
 } from './lib/agent-auth.js';
 import { parseIntent } from './lib/intent-parser.js';
 import { matchBeacons } from './lib/beacon-matcher.js';
@@ -169,6 +170,14 @@ app.addHook('onRequest', async (request, reply) => {
   reply.header('X-RateLimit-Reset', Math.ceil(result.resetAt / 1000));
 
   if (!result.allowed) {
+    // SECURITY: Log rate limit violations
+    request.log.warn({
+      event: 'security.rate_limited',
+      agentId: agentId || null,
+      ip: request.ip,
+      path: request.url,
+      limit: result.limit,
+    });
     reply.code(429);
     return reply.send({
       error: 'rate_limit_exceeded',
@@ -837,11 +846,12 @@ async function businessRoutesV1(app, opts) {
     }
 
     try {
-      // Return sessions that are waiting for offers
+      // Return sessions that are waiting for offers and have not expired
       const result = await db.query(
         `SELECT id, scout_id, status, raw_intent, parsed_intent, constraints, created_at
          FROM sessions
          WHERE status IN ('created', 'market_forming', 'collecting_offers')
+           AND (expires_at IS NULL OR expires_at > NOW())
          ORDER BY created_at DESC
          LIMIT $1`,
         [parseInt(limit) || 20]
@@ -855,16 +865,25 @@ async function businessRoutesV1(app, opts) {
       });
 
       return {
-        sessions: result.rows.map(s => ({
-          sessionId: s.id,
-          status: s.status,
-          intent: { raw: s.raw_intent, parsed: s.parsed_intent },
-          constraints: s.constraints,
-          createdAt: s.created_at,
-          _links: {
-            submitOffer: { href: versionedHref(request, `/sessions/${s.id}/offers`), methods: ['POST'] },
-          },
-        })),
+        sessions: result.rows.map(s => {
+          // SECURITY: Redact buyer constraints from beacon-facing endpoint.
+          // Beacons see only the categories the session is looking for, not
+          // the buyer's budget or delivery deadline (information asymmetry).
+          const safeConstraints = s.constraints ? {
+            categories: s.constraints.categories || [],
+          } : {};
+
+          return {
+            sessionId: s.id,
+            status: s.status,
+            intent: { raw: s.raw_intent, parsed: s.parsed_intent },
+            constraints: safeConstraints,
+            createdAt: s.created_at,
+            _links: {
+              submitOffer: { href: versionedHref(request, `/sessions/${s.id}/offers`), methods: ['POST'] },
+            },
+          };
+        }),
         _links: { self: { href: versionedHref(request, '/beacons/sessions') } },
       };
     } catch (error) {
@@ -998,6 +1017,13 @@ async function businessRoutesV1(app, opts) {
 
       const session = result.rows[0];
 
+      // SECURITY: Enforce session expiry — auto-expire stale sessions
+      if (session.expires_at && new Date(session.expires_at) < new Date() &&
+          !['completed', 'cancelled', 'expired'].includes(session.status)) {
+        await db.query('UPDATE sessions SET status = $1 WHERE id = $2', ['expired', sessionId]);
+        session.status = 'expired';
+      }
+
       // Check if there are offers
       const offersResult = await db.query(
         'SELECT COUNT(*) as count FROM offers WHERE session_id = $1 AND status = $2',
@@ -1107,6 +1133,15 @@ async function businessRoutesV1(app, opts) {
         }
 
         const session = sessionResult.rows[0];
+
+        // SECURITY: Reject offers to expired sessions
+        if (session.expires_at && new Date(session.expires_at) < new Date()) {
+          await client.query('UPDATE sessions SET status = $1 WHERE id = $2', ['expired', sessionId]);
+          await client.query('COMMIT');
+          reply.code(400);
+          return { error: 'session_expired', message: 'Session has expired and is no longer accepting offers' };
+        }
+
         if (!['created', 'market_forming', 'collecting_offers', 'offers_available'].includes(session.status)) {
           await client.query('ROLLBACK');
           reply.code(400);
@@ -1257,6 +1292,18 @@ async function businessRoutesV1(app, opts) {
       return { error: 'missing_offer_id', message: 'offerId is required' };
     }
 
+    // SECURITY: Idempotency key is mandatory for transaction commits
+    if (!idempotencyKey) {
+      reply.code(400);
+      return { error: 'missing_idempotency_key', message: 'idempotencyKey is required for transaction commits. Generate a UUID v4 client-side.' };
+    }
+
+    // SECURITY: Validate idempotency key format (must be UUID)
+    if (!isValidUUID(idempotencyKey)) {
+      reply.code(400);
+      return { error: 'invalid_idempotency_key', message: 'idempotencyKey must be a valid UUID v4.' };
+    }
+
     // SECURITY: Validate offerId is UUID
     if (!isValidUUID(offerId)) {
       reply.code(400);
@@ -1311,6 +1358,15 @@ async function businessRoutesV1(app, opts) {
 
         session = sessionResult.rows[0];
 
+        // SECURITY: Reject commits to expired sessions
+        if (session.expires_at && new Date(session.expires_at) < new Date() &&
+            !['committed', 'completed'].includes(session.status)) {
+          await client.query('UPDATE sessions SET status = $1 WHERE id = $2', ['expired', sessionId]);
+          await client.query('COMMIT');
+          reply.code(400);
+          return { error: 'session_expired', message: 'Session has expired' };
+        }
+
         // SECURITY: Reject if already committed (after acquiring lock)
         if (session.status === 'committed' || session.status === 'completed' || session.status === 'cancelled') {
           await client.query('ROLLBACK');
@@ -1344,7 +1400,7 @@ async function businessRoutesV1(app, opts) {
             currency: offer.currency,
             deliveryDate: offer.delivery_date,
             terms: offer.terms,
-          }, idempotencyKey || null]
+          }, idempotencyKey]
         );
 
         transaction = txResult.rows[0];
@@ -1774,11 +1830,35 @@ async function businessRoutesV1(app, opts) {
   // WebSocket Endpoints (keeping for future real-time support)
   // =============================================================================
 
+  // SECURITY: WebSocket payload size limit (64 KB)
+  const WS_MAX_PAYLOAD = 64 * 1024;
+
   app.get('/ws/scout', { websocket: true }, (connection) => {
+    // SECURITY: Close connections that send oversized payloads
+    connection.socket._socket?.setMaxListeners?.(20);
+
     connection.socket.on('message', (message) => {
-      const data = JSON.parse(message.toString());
-      app.log.info({ type: 'scout_message', data });
-      connection.socket.send(JSON.stringify({ type: 'ack', received: data }));
+      const raw = message.toString();
+
+      // SECURITY: Reject oversized payloads
+      if (raw.length > WS_MAX_PAYLOAD) {
+        connection.socket.send(JSON.stringify({ type: 'error', message: 'Payload too large' }));
+        connection.socket.close(1009, 'Payload too large');
+        return;
+      }
+
+      // SECURITY: Safe JSON parsing — don't crash on malformed input
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        connection.socket.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' }));
+        return;
+      }
+
+      app.log.info({ type: 'scout_message', messageType: data?.type });
+      // SECURITY: Don't echo back raw user data — only acknowledge with type
+      connection.socket.send(JSON.stringify({ type: 'ack', messageType: data?.type }));
     });
     connection.socket.send(JSON.stringify({
       type: 'connected',
@@ -1789,9 +1869,27 @@ async function businessRoutesV1(app, opts) {
 
   app.get('/ws/beacon', { websocket: true }, (connection) => {
     connection.socket.on('message', (message) => {
-      const data = JSON.parse(message.toString());
-      app.log.info({ type: 'beacon_message', data });
-      connection.socket.send(JSON.stringify({ type: 'ack', received: data }));
+      const raw = message.toString();
+
+      // SECURITY: Reject oversized payloads
+      if (raw.length > WS_MAX_PAYLOAD) {
+        connection.socket.send(JSON.stringify({ type: 'error', message: 'Payload too large' }));
+        connection.socket.close(1009, 'Payload too large');
+        return;
+      }
+
+      // SECURITY: Safe JSON parsing
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        connection.socket.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' }));
+        return;
+      }
+
+      app.log.info({ type: 'beacon_message', messageType: data?.type });
+      // SECURITY: Don't echo back raw user data
+      connection.socket.send(JSON.stringify({ type: 'ack', messageType: data?.type }));
     });
     connection.socket.send(JSON.stringify({
       type: 'connected',

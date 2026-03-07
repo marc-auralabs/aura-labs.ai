@@ -30,6 +30,16 @@ const config = {
   coreUrl: flags['core-url'] || process.env.AURA_CORE_URL || 'https://aura-labsai-production.up.railway.app',
 };
 
+// SECURITY: Enforce HTTPS for all non-localhost connections
+const coreUrlLower = config.coreUrl.toLowerCase();
+const isLocalhost = coreUrlLower.startsWith('http://localhost') || coreUrlLower.startsWith('http://127.0.0.1');
+if (!coreUrlLower.startsWith('https://') && !isLocalhost) {
+  console.error('Error: Core URL must use HTTPS. Plaintext HTTP is only allowed for localhost development.');
+  console.error(`  Provided: ${config.coreUrl}`);
+  console.error('  Use --core-url https://... or set AURA_CORE_URL with an HTTPS URL.');
+  process.exit(1);
+}
+
 // Help text
 if (flags.help || flags.h) {
   console.log(`

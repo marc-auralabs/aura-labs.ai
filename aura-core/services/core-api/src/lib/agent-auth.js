@@ -13,6 +13,7 @@
  */
 
 import crypto from 'node:crypto';
+import { URL } from 'node:url';
 
 // Ed25519 SPKI DER prefix for 32-byte raw public keys
 // This wraps a raw key in the ASN.1 structure Node's crypto API expects
@@ -171,6 +172,14 @@ export function createSignatureVerifier(db) {
 
     // If partial headers, reject
     if (!agentId || !signature || !timestamp) {
+      // SECURITY: Log partial auth attempts (potential probing)
+      request.log?.warn({
+        event: 'security.auth_failure',
+        reason: 'missing_auth_headers',
+        agentId: agentId || null,
+        ip: request.ip,
+        path: request.url,
+      });
       reply.code(401);
       return reply.send({
         error: 'missing_auth_headers',
@@ -190,6 +199,14 @@ export function createSignatureVerifier(db) {
     );
 
     if (result.rows.length === 0) {
+      // SECURITY: Log unknown agent ID attempts
+      request.log?.warn({
+        event: 'security.auth_failure',
+        reason: 'unknown_agent',
+        agentId,
+        ip: request.ip,
+        path: request.url,
+      });
       reply.code(401);
       return reply.send({ error: 'unknown_agent', message: 'Agent not found' });
     }
@@ -198,11 +215,25 @@ export function createSignatureVerifier(db) {
 
     // SECURITY: Reject revoked or suspended agents
     if (agent.status === 'revoked') {
+      request.log?.warn({
+        event: 'security.auth_failure',
+        reason: 'agent_revoked',
+        agentId,
+        ip: request.ip,
+        path: request.url,
+      });
       reply.code(403);
       return reply.send({ error: 'agent_revoked', message: 'Agent has been revoked' });
     }
 
     if (agent.status === 'suspended') {
+      request.log?.warn({
+        event: 'security.auth_failure',
+        reason: 'agent_suspended',
+        agentId,
+        ip: request.ip,
+        path: request.url,
+      });
       reply.code(403);
       return reply.send({ error: 'agent_suspended', message: 'Agent has been suspended' });
     }
@@ -219,6 +250,15 @@ export function createSignatureVerifier(db) {
     });
 
     if (!verification.valid) {
+      // SECURITY: Log signature verification failures
+      request.log?.warn({
+        event: 'security.auth_failure',
+        reason: 'invalid_signature',
+        detail: verification.reason,
+        agentId,
+        ip: request.ip,
+        path: request.url,
+      });
       reply.code(401);
       return reply.send({
         error: 'invalid_signature',
@@ -232,4 +272,46 @@ export function createSignatureVerifier(db) {
     // Update last_seen_at (fire-and-forget, don't block the request)
     db.query('UPDATE agents SET last_seen_at = NOW() WHERE id = $1', [agentId]).catch(() => {});
   };
+}
+
+/**
+ * SECURITY: Validate a redirect URL against an allowlist of trusted domains
+ *
+ * Prevents open redirect attacks. Only allows HTTPS URLs on explicitly
+ * trusted domains. Rejects relative URLs, data: URIs, javascript: URIs,
+ * and any non-HTTPS scheme.
+ *
+ * @param {string} redirectUrl - The URL to validate
+ * @param {string[]} allowedDomains - List of allowed domain names (e.g., ['aura-labs.ai', 'portal.aura-labs.ai'])
+ * @returns {{ valid: boolean, reason?: string }} Validation result
+ */
+export function validateRedirectUrl(redirectUrl, allowedDomains = []) {
+  if (!redirectUrl || typeof redirectUrl !== 'string') {
+    return { valid: false, reason: 'Missing or invalid URL' };
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(redirectUrl);
+  } catch {
+    return { valid: false, reason: 'Malformed URL' };
+  }
+
+  // Only allow HTTPS
+  if (parsed.protocol !== 'https:') {
+    return { valid: false, reason: `Disallowed protocol: ${parsed.protocol}` };
+  }
+
+  // Check domain against allowlist
+  const hostname = parsed.hostname.toLowerCase();
+  const isAllowed = allowedDomains.some(domain => {
+    const d = domain.toLowerCase();
+    return hostname === d || hostname.endsWith(`.${d}`);
+  });
+
+  if (!isAllowed) {
+    return { valid: false, reason: `Domain not in allowlist: ${hostname}` };
+  }
+
+  return { valid: true };
 }

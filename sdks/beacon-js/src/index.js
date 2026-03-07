@@ -34,7 +34,7 @@
  */
 
 import { BeaconClient } from './client.js';
-import { BeaconError, ConnectionError, RegistrationError, OfferError, ValidationError } from './errors.js';
+import { BeaconError, ConnectionError, RegistrationError, OfferError, ValidationError, AuthenticationError } from './errors.js';
 import { ActivityLogger, ActivityEventTypes } from './activity.js';
 
 /**
@@ -626,6 +626,6 @@ export class Beacon {
   }
 }
 
-export { BeaconError, ConnectionError, RegistrationError, OfferError, ValidationError } from './errors.js';
+export { BeaconError, ConnectionError, RegistrationError, OfferError, ValidationError, AuthenticationError } from './errors.js';
 export { ActivityLogger, ActivityEventTypes, ActivityEvent } from './activity.js';
 export default { createBeacon, Beacon };

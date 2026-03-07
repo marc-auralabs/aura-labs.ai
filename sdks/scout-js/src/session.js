@@ -400,7 +400,18 @@ export class Constraints {
     return Math.max(0, Math.min(100, score));
   }
 
+  // SECURITY: Operator allowlist — unknown operators fail closed (reject, not accept)
+  static #ALLOWED_OPERATORS = new Set(['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'contains', 'in']);
+
   #evaluateConstraint(constraint, offer) {
+    // Validate constraint has required fields
+    if (!constraint.field || typeof constraint.field !== 'string') {
+      return false; // Malformed constraint → fail closed
+    }
+    if (!constraint.operator || !Constraints.#ALLOWED_OPERATORS.has(constraint.operator)) {
+      return false; // Unknown/missing operator → fail closed
+    }
+
     const value = offer[constraint.field];
 
     switch (constraint.operator) {
@@ -410,9 +421,9 @@ export class Constraints {
       case 'gte': return value >= constraint.value;
       case 'lt': return value < constraint.value;
       case 'lte': return value <= constraint.value;
-      case 'contains': return String(value).includes(constraint.value);
-      case 'in': return constraint.value.includes(value);
-      default: return true;
+      case 'contains': return String(value).includes(String(constraint.value));
+      case 'in': return Array.isArray(constraint.value) && constraint.value.includes(value);
+      default: return false; // Unreachable, but fail closed
     }
   }
 }

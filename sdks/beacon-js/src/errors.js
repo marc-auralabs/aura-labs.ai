@@ -32,6 +32,13 @@ export class OfferError extends BeaconError {
   }
 }
 
+export class AuthenticationError extends BeaconError {
+  constructor(message = 'Authentication failed') {
+    super(message, 'AUTHENTICATION_FAILED');
+    this.name = 'AuthenticationError';
+  }
+}
+
 export class ValidationError extends BeaconError {
   constructor(message, details) {
     super(message, 'VALIDATION_FAILED');

@@ -53,6 +53,8 @@ npx @aura-labs/scout
 npx @aura-labs/scout --intent "I need office supplies" --max-budget 500
 ```
 
+**HTTPS Enforcement:** The CLI requires HTTPS for all Core API connections. Plaintext HTTP is only permitted for `localhost` and `127.0.0.1` during local development. Use `--core-url https://...` or set `AURA_CORE_URL` with an HTTPS URL.
+
 ## Constraint Engine
 
 Define hard constraints (must be met) and soft preferences (influence ranking):
@@ -75,6 +77,8 @@ const session = await scout.intent('Buy enterprise software licenses', {
 ```
 
 ### Constraint Operators
+
+Only the following operators are accepted. Unknown operators are rejected (fail-closed) to prevent constraint bypass:
 
 | Operator | Description |
 |----------|-------------|

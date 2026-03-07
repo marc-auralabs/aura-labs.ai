@@ -376,15 +376,18 @@ The SDK exports the following error types for precise error handling:
 - `RegistrationError` — Registration failures
 - `OfferError` — Offer submission failures
 - `ValidationError` — Thrown by `beforeOffer` validators
+- `AuthenticationError` — Ed25519 signature or Bearer token authentication failures (HTTP 401/403)
 
 **Example: Error Handling**
 ```javascript
-import { createBeacon, ValidationError, OfferError } from '@aura-labs/beacon';
+import { createBeacon, ValidationError, OfferError, AuthenticationError } from '@aura-labs/beacon';
 
 try {
   await beacon.submitOffer(sessionId, offer);
 } catch (error) {
-  if (error instanceof ValidationError) {
+  if (error instanceof AuthenticationError) {
+    console.error('Authentication failed:', error.message);
+  } else if (error instanceof ValidationError) {
     console.error('Offer validation failed:', error.message);
   } else if (error instanceof OfferError) {
     console.error('Offer submission failed:', error.message);
@@ -393,6 +396,8 @@ try {
 ```
 
 ## Session Object
+
+Sessions returned from `beacon.getSessions()` have buyer constraints redacted to preserve information asymmetry. Beacons only see the `categories` field — budget, delivery deadline, and other constraint details are not exposed.
 
 ```javascript
 {
@@ -403,8 +408,7 @@ try {
     parsed: { keywords: ['need', '500', 'widgets'] }
   },
   constraints: {
-    maxBudget: 50000,
-    deliveryBy: '2026-03-01'
+    categories: ['widgets', 'industrial']
   },
   createdAt: '2026-02-08T...'
 }
@@ -425,7 +429,7 @@ const result = await beacon.register();
 ### 2. Agent Registration (Optional, for Ed25519 signing)
 For added security and to participate in protocols requiring cryptographic identity (like AP2 mandates or TAP), a Beacon can optionally register as an **Agent** via `POST /v1/agents/register` with type `beacon`. This generates and stores an Ed25519 key pair for signing requests.
 
-**Current Status:** The Beacon SDK currently uses simple HTTP requests for `POST /v1/beacons/register`. In the future, Beacons can opt into Ed25519-based agent registration for enhanced security and protocol support.
+**Dual Authentication:** The Beacon SDK supports Ed25519 signed requests (preferred) with automatic fallback to Bearer token authentication. When a key manager is configured via `beacon.setKeyManager(keyManager)`, all requests are signed with `X-Agent-Id`, `X-Agent-Signature`, and `X-Agent-Timestamp` headers. If no key manager is set, the SDK falls back to the Bearer token from registration. The SDK throws `AuthenticationError` on HTTP 401/403 responses.
 
 ## Environment Variables
 

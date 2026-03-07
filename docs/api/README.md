@@ -325,7 +325,9 @@ Get Beacon details by ID.
 ```
 
 #### GET /v1/beacons/sessions
-Get available sessions for Beacons to poll and respond to.
+Get available sessions for Beacons to poll and respond to. Only returns non-expired sessions.
+
+**Constraint Redaction:** To preserve information asymmetry, buyer constraints are redacted from this endpoint. Beacons only see the `categories` field — budget, delivery deadline, and other constraint details are not exposed.
 
 **Response:** `200 OK`
 ```json
@@ -335,6 +337,9 @@ Get available sessions for Beacons to poll and respond to.
       "sessionId": "uuid",
       "intent": "Looking for wireless headphones under $100",
       "scoutId": "uuid",
+      "constraints": {
+        "categories": ["electronics"]
+      },
       "createdAt": "2026-03-03T00:00:00Z",
       "_links": {
         "self": { "href": "/v1/sessions/{sessionId}" },
@@ -349,6 +354,8 @@ Get available sessions for Beacons to poll and respond to.
 ```
 
 ### Sessions (Commerce Flow)
+
+**Session Expiry:** Sessions have a 24-hour TTL. Expired sessions are automatically transitioned to `expired` status when accessed. Expired sessions cannot accept new offers or be committed. The `GET /v1/beacons/sessions` endpoint only returns non-expired sessions.
 
 #### POST /v1/sessions
 Create a new commerce session with NLP-parsed intent. AURA matches intent to compatible Beacons.
@@ -478,14 +485,17 @@ List all offers in a session.
 ```
 
 #### POST /v1/sessions/:sessionId/commit
-Commit to an offer, creating a transaction. Required to have at least one offer in the session.
+Commit to an offer, creating a transaction. Required to have at least one offer in the session. The session must not be expired.
 
 **Request:**
 ```json
 {
-  "offerId": "uuid"
+  "offerId": "uuid",
+  "idempotencyKey": "uuid-v4 (required)"
 }
 ```
+
+The `idempotencyKey` field is **required** and must be a valid UUID v4 generated client-side. This prevents duplicate transactions from retried requests. If a commit with the same idempotency key already exists, the existing transaction is returned.
 
 **Response:** `201 Created`
 ```json
@@ -641,6 +651,11 @@ WebSocket endpoint for Scouts. Currently a basic placeholder with limited functi
 #### GET /v1/ws/beacon
 WebSocket endpoint for Beacons. Currently a basic placeholder with limited functionality.
 
+**WebSocket Security:**
+- Maximum payload size: 64 KB. Messages exceeding this limit cause the connection to close with status code 1009 (Message Too Big).
+- Malformed JSON payloads receive an error response and do not crash the connection.
+- The server never echoes raw client data back to the sender.
+
 ## Transaction Lifecycle Diagram
 
 ```
@@ -711,10 +726,18 @@ Standard HTTP status codes with AURA-specific error messages:
 | Code | Name | Description |
 |------|------|-------------|
 | 400 | Bad Request | Malformed request body or invalid parameters |
+| 400 | `missing_idempotency_key` | Commit request missing the required `idempotencyKey` field |
+| 400 | `invalid_idempotency_key` | `idempotencyKey` is not a valid UUID v4 |
+| 400 | `session_expired` | Session TTL has elapsed; no further actions allowed |
 | 401 | Unauthorized | Missing or invalid authentication |
+| 401 | `unknown_agent` | Agent ID not found in registry |
+| 401 | `invalid_signature` | Ed25519 signature verification failed |
+| 403 | `agent_revoked` | Agent has been revoked |
+| 403 | `agent_suspended` | Agent has been suspended |
 | 404 | Not Found | Resource not found (session, beacon, etc.) |
 | 409 | Conflict | Invalid state transition (e.g., committing when session is already committed) |
 | 422 | Unprocessable Entity | Validation error (e.g., offer not in session) |
+| 429 | Too Many Requests | Rate limit exceeded |
 | 500 | Internal Server Error | Server error |
 
 **Error Response Format:**
